@@ -20,9 +20,9 @@ SOURCES		:=	source
 RESOURCES	:=	resources
 DATA		:=	data
 INCLUDES	:=	include /lib/borealis/library/include/borealis/extern/nlohmann
-APP_TITLE	:=	All-in-One Switch Updater
-APP_AUTHOR	:=	HamletDuFromage
-APP_VERSION :=	2.23.3
+APP_TITLE	:=	All-in-One OQB Updater
+APP_AUTHOR	:=	OHQUEBACAN
+APP_VERSION :=	2.23.4
 TARGET		:=	$(notdir $(CURDIR))
 
 ROMFS				:=	resources
