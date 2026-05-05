@@ -44,17 +44,11 @@ MainFrame::MainFrame() : TabFrame()
     if (!util::getBoolValue(hideStatus, "atmosphere"))
         this->addTab("menus/main/update_ams"_i18n, new AmsTab_Regular(nxlinks, erista));
 
-    if (!util::getBoolValue(hideStatus, "cfw"))
-        this->addTab("menus/main/update_bootloaders"_i18n, new ListDownloadTab(contentType::bootloaders, nxlinks));
-
     if (!util::getBoolValue(hideStatus, "firmwares"))
         this->addTab("menus/main/download_firmware"_i18n, new ListDownloadTab(contentType::fw, nxlinks));
 
     if (!util::getBoolValue(hideStatus, "cheats"))
         this->addTab("menus/main/download_cheats"_i18n, new ListDownloadTab(contentType::cheats));
-
-    if (!util::getBoolValue(hideStatus, "custom"))
-        this->addTab("menus/main/custom_downloads"_i18n, new AmsTab_Custom(nxlinks, erista));
 
     if (!util::getBoolValue(hideStatus, "apps"))
         this->addTab("menus/main/apps"_i18n, new ListDownloadTab(contentType::apps, nxlinks));
