@@ -21,8 +21,7 @@ jobs:
 
     - name: install dependencies
       run: |
-        dkp-pacman -Syu --noconfirm
-        dkp-pacman -S --noconfirm switch-curl switch-zlib switch-mbedtls
+        dkp-pacman -S --needed --noconfirm switch-curl switch-zlib switch-mbedtls
 
     - name: Building OQB-updater
       run: |
