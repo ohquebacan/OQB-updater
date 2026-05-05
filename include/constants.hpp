@@ -19,7 +19,7 @@ constexpr const char APP_URL[] = "https://github.com/HamletDuFromage/aio-switch-
 constexpr const char TAGS_INFO[] = "https://api.github.com/repos/HamletDuFromage/aio-switch-updater/releases/latest";
 constexpr const char APP_FILENAME[] = "/config/aio-switch-updater/app.zip";
 
-constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/nx-links.json";
+constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/master/nx-links.json";
 
 constexpr const char CUSTOM_FILENAME[] = "/config/aio-switch-updater/custom.zip";
 constexpr const char HEKATE_IPL_PATH[] = "/bootloader/hekate_ipl.ini";

@@ -5,7 +5,7 @@
     "cfw": false,
     "cheats": false,
     "cleanup": false,
-    "custom": true,
+    "custom": false,
     "downloadpayload": false,
     "firmwares": false,
     "jccolor": false,
