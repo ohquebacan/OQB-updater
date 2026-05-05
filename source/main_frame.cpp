@@ -7,6 +7,7 @@
 #include "ams_tab.hpp"
 #include "download.hpp"
 #include "fs.hpp"
+#include "language_tab.hpp"
 #include "list_download_tab.hpp"
 #include "tools_tab.hpp"
 #include "utils.hpp"
@@ -60,6 +61,9 @@ MainFrame::MainFrame() : TabFrame()
 
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
+
+    if (!util::getBoolValue(hideStatus, "language"))
+        this->addTab("menus/tools/language"_i18n, new LanguageTab());
 
     this->registerAction("", brls::Key::B, [this] { return true; });
 }
