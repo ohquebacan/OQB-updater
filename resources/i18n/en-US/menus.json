@@ -119,7 +119,8 @@
     "app": "app",
     "cfw": "CFW",
     "ams": "Atmosphère",
-    "ams_text": "\u25c6 From this menu, you can download and update the Atmosphère custom firmware necessary to run homebrew software.",
+    "ams_text": "◆ Este paquete contiene solo los archivos que van en la SD para actualizar el CFW.
+Si ya instalaste la ultima version de los archivos del CFW y lo que buscas es actualizar el Firmware de tu consola, ve a la pestana de Descargar Firmwares",
     "cfw_text": "\u25c6 Alternative CFWs, bootloaders.",
     "bootloaders_text": "\u25c6 Download and update bootloaders.",
     "cheats": "cheats",
