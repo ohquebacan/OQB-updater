@@ -150,6 +150,9 @@ void ListDownloadTab::setDescription(contentType type)
         case contentType::hekate_ipl:
             description->setText("menus/main/hekate_ipl_label"_i18n);
             break;
+        case contentType::apps:
+            description->setText("menus/main/apps_text"_i18n);
+            break;
         default:
             break;
     }

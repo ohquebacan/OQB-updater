@@ -55,6 +55,9 @@ MainFrame::MainFrame() : TabFrame()
     if (!util::getBoolValue(hideStatus, "custom"))
         this->addTab("menus/main/custom_downloads"_i18n, new AmsTab_Custom(nxlinks, erista));
 
+    if (!util::getBoolValue(hideStatus, "apps"))
+        this->addTab("menus/main/apps"_i18n, new ListDownloadTab(contentType::apps, nxlinks));
+
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
 

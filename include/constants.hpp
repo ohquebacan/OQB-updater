@@ -44,6 +44,7 @@ constexpr const char DEEPSEA_BUILD_URL[] = "https://builder.teamneptune.net/buil
 constexpr const char DEEPSEA_PACKAGE_PATH[] = "/config/deepsea/customPackage.json";
 
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
+constexpr const char CUSTOM_PACKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/master/custom_packs.json";
 
 constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles.zip";
 constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents.zip";
@@ -119,9 +120,10 @@ enum class contentType
     ams_cfw,
     payloads,
     hekate_ipl,
+    apps,
 };
 
-constexpr std::string_view contentTypeNames[8]{"custom", "cheats", "firmwares", "app", "bootloaders", "cfws", "payloads", "hekate_ipl"};
+constexpr std::string_view contentTypeNames[9]{"custom", "cheats", "firmwares", "app", "bootloaders", "cfws", "payloads", "hekate_ipl", "apps"};
 
 enum class CFW
 {

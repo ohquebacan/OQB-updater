@@ -212,7 +212,9 @@ void AmsTab_Regular::ShowCustomDeepseaBuilder(nlohmann::ordered_json& modules)
 
 AmsTab_Custom::AmsTab_Custom(const nlohmann::ordered_json& nxlinks, const bool erista) : AmsTab(nxlinks, erista)
 {
-    this->custom_packs = fs::parseJsonFile(CUSTOM_PACKS_PATH);
+    download::getRequest(CUSTOM_PACKS_URL, this->custom_packs);
+    if (this->custom_packs.empty())
+        this->custom_packs = fs::parseJsonFile(CUSTOM_PACKS_PATH);
     this->CreateLists();
 }
 
