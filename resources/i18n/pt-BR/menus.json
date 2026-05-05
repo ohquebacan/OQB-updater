@@ -118,7 +118,7 @@
     "app": "aplicativo",
     "cfw": "CFW",
     "ams": "Atmosphère",
-    "ams_text": "\u25c6 A partir deste menu, você pode baixar e atualizar o custom firmware Atmosphère necessário para executar software homebrew.",
+    "ams_text": "◆ Este pacote contem apenas os arquivos que vao no SD para atualizar o CFW.\nSe ja instalou a versao mais recente do CFW e quer atualizar o Firmware do console, va para a aba Baixar Firmwares",
     "cfw_text": "\u25c6 CFWs alternativos, bootloaders.",
     "bootloaders_text": "\u25c6 Baixar e atualizar bootloaders.",
     "cheats": "códigos de trapaça",
@@ -160,7 +160,7 @@
     "batch_copy": "Cópia em lote de arquivos",
     "batch_copy_not_found": "Os seguintes arquivos não foram encontrados e não puderam ser copiados:\n",
     "batch_copy_config_not_found": "Esta ferramenta permite copiar automaticamente arquivos para locais específicos. Isso pode ser útil dependendo do seu bootloader/trinket. Pegue o arquivo copy_files.txt em 'https://git.io/aiosu_copyfiles', edite-o e adicione-o à sua pasta de configuração. Isso também será realizado após as atualizações.",
-    "language": "Alterar o idioma do aplicativo",
+    "language": "Idioma",
     "outdated_titles": "Atualizações ausentes",
     "latest_version_not_found": "Não foi possível encontrar informações de atualizações",
     "outdated_titles_desc": "Os seguintes títulos têm atualizações disponíveis:"

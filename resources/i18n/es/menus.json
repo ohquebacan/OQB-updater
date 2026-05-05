@@ -120,7 +120,7 @@
     "app": "app",
     "cfw": "CFW",
     "ams": "Atmosphère",
-    "ams_text": "\u25c6 Desde este menú puedes descargar y actualizar el custom firmware Atmosphère necesario para ejecutar homebrew.",
+    "ams_text": "◆ Este paquete contiene solo los archivos que van en la SD para actualizar el CFW.\nSi ya instalaste la ultima version de los archivos del CFW y lo que buscas es actualizar el Firmware de tu consola, ve a la pestana de Descargar Firmwares",
     "cfw_text": "\u25c6 CFWs alternativos, bootloaders.",
     "bootloaders_text": "\u25c6 Descarga y actualiza el bootloader.",
     "cheats": "trucos",
@@ -162,7 +162,7 @@
     "batch_copy": "Copiar archivos batch",
     "batch_copy_not_found": "No se encuentran los siguientes archivos y no se pudieron copiar:\n",
     "batch_copy_config_not_found": "Esta herramienta te permite copiar automáticamente ficheros a una direccion específica. Esto podría ser de ayuda dependiendo de tu bootloader. Usa el copy_files.txt en 'https://git.io/aiosu_copyfiles', edítalo y añádelo a la carpeta config. Esto se mantendrá despues de las actualizaciones.",
-    "language": "Cambiar idioma de la app",
+    "language": "Lenguaje",
     "outdated_titles": "Actualizaciones pendientes",
     "latest_version_not_found": "No se pudo conseguir información sobre actualizaciones",
     "outdated_titles_desc": "Los siguientes títulos tienen actualizaciones:"
