@@ -19,7 +19,7 @@ constexpr const char APP_URL[] = "https://github.com/ohquebacan/OQB-updater/rele
 constexpr const char TAGS_INFO[] = "https://api.github.com/repos/ohquebacan/OQB-updater/releases/latest";
 constexpr const char APP_FILENAME[] = "/config/aio-switch-updater/app.zip";
 
-constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/master/nx-links.json";
+constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/nx-links.json";
 
 constexpr const char CUSTOM_FILENAME[] = "/config/aio-switch-updater/custom.zip";
 constexpr const char HEKATE_IPL_PATH[] = "/bootloader/hekate_ipl.ini";
@@ -44,7 +44,7 @@ constexpr const char DEEPSEA_BUILD_URL[] = "https://builder.teamneptune.net/buil
 constexpr const char DEEPSEA_PACKAGE_PATH[] = "/config/deepsea/customPackage.json";
 
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
-constexpr const char CUSTOM_PACKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/master/custom_packs.json";
+constexpr const char CUSTOM_PACKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/custom_packs.json";
 
 constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles.zip";
 constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents.zip";
