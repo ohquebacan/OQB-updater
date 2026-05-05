@@ -19,11 +19,6 @@ jobs:
         git config --global --add safe.directory /__w/OQB-updater/OQB-updater/TegraExplorer
         git submodule update --init --recursive
 
-    - name: install dependencies
-      run: |
-        sudo apt update -y
-        sudo apt install build-essential -y
-
     - name: Building OQB-updater
       run: |
         make -C aiosu-forwarder -f Makefile
