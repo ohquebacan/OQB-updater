@@ -1,9 +1,9 @@
 {
     "ams": {
-        "Name of Atmosphère pack": "link_to_zip",
-        "Name of another pack": "link_to_zip"
+        "OQB HATS Pack": "https://github.com/ohquebacan/OQB-HATS-PACK/releases/latest/download/hats-pack.zip"
     },
     "misc": {
-        "name of download": "link"
+        "Ticobro": "https://github.com/StonedModder/Ticobro/releases/latest/download/Ticbro.nro",
+        "Tico": "https://github.com/ticohq/tico/releases/latest/download/tico-0-7-1.zip"
     }
 }
