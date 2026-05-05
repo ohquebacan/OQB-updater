@@ -8,7 +8,7 @@ jobs:
   OQB-updater:
     runs-on: ubuntu-latest
     #container: hamletdufromage/devkita64_devkitarm
-    container: hamletdufromage/devkita64_devkitarm
+    container: devkitpro/devkita64
     steps:
     - uses: actions/checkout@v1
 
@@ -18,6 +18,11 @@ jobs:
         git config --global --add safe.directory /__w/OQB-updater/OQB-updater
         git config --global --add safe.directory /__w/OQB-updater/OQB-updater/TegraExplorer
         git submodule update --init --recursive
+
+    - name: install dependencies
+      run: |
+        sudo apt update -y
+        sudo apt install build-essential -y
 
     - name: Building OQB-updater
       run: |
