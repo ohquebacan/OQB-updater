@@ -105,7 +105,7 @@ void AmsTab_Regular::CreateLists()
     auto cfws = util::getValueFromKey(this->nxlinks, "cfws");
 
     this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/main/ams_text"_i18n + (CurrentCfw::running_cfw == CFW::ams ? "\n" + "menus/ams_update/current_ams"_i18n + CurrentCfw::getAmsInfo() : "") + (erista ? "\n" + "menus/ams_update/erista_rev"_i18n : "\n" + "menus/ams_update/mariko_rev"_i18n), true));
-    CreateDownloadItems(util::getValueFromKey(cfws, "Atmosphere"));
+    CreateDownloadItems(util::getValueFromKey(cfws, "Atmosphere"), false);
 
     CreateDownloadItems(util::getValueFromKey(cfws, "DeepSea"), false);
 }

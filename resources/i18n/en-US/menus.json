@@ -1,10 +1,10 @@
 {
   "about": {
-    "title": "All-in-One Nintendo Switch Updater",
+    "title": "Oh! Qu\u00e8 Bac\u00e1n Switch Updater",
     "copyright": "AIO-Switch-Updater is licensed under GPL-3.0",
     "disclaimers_title": "Disclaimers",
     "disclaimers": "\u25c6 Aside from cheat codes that are mirrored from the main GBAtemp thread, HamletDuFromage isn't hosting anything. All credits go to respective owners.\n\u25c6 Links are refreshed every 30 minutes. If a link remains broken after 30 minutes have passed, please open a Github issue.",
-    "donate": "\u25c6 Like the app? Consider donating to support my efforts: 'https://git.io/donate_homlet'"
+    "donate": ""
   },
   "cheats": {
     "installed": "Installed cheats",
@@ -187,7 +187,7 @@
     "depends_on": "The following modules will also be installed:",
     "download_custom_deepsea": "Download this custom DeepSea package",
     "get_custom_deepsea": "Get custom DeepSea package",
-    "deepsea_label": "\u25c6 DeepSea by Team Neptune is a CFW pack that includes Atmosphère, hekate, and various homebrew apps.",
+    "deepsea_label": "\u25c6 OQB HATS PACK by Team BACÁN is a CFW pack that includes Atmosphère, hekate, and various homebrew apps.",
     "download_deepsea_package": "Compile and download",
     "cant_fetch_deepsea": "Couldn't fetch packages. Open a Github issue if this persists.",
     "build_your_deepsea": "Build your own custom DeepSea package by selecting packages",
