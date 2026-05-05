@@ -21,8 +21,8 @@ jobs:
 
     - name: install dependencies
       run: |
-        sudo apt update -y
-        sudo apt install build-essential -y
+        dkp-pacman -Syu --noconfirm
+        dkp-pacman -S --noconfirm switch-curl switch-zlib switch-minizip switch-mbedtls
 
     - name: Building OQB-updater
       run: |
