@@ -1,11 +1,11 @@
-name: Build AIO-switch-updater
+name: Build OQB-updater
 
 on: 
   push:
   workflow_dispatch:
 
 jobs:
-  AIO-switch-updater:
+  OQB-updater:
     runs-on: ubuntu-latest
     #container: hamletdufromage/devkita64_devkitarm
     container: devkitpro/devkita64
@@ -14,9 +14,9 @@ jobs:
 
     - name: update repo
       run: |
-        git config --global --add safe.directory /__w/aio-switch-updater/aio-switch-updater/lib/borealis
-        git config --global --add safe.directory /__w/aio-switch-updater/aio-switch-updater
-        git config --global --add safe.directory /__w/aio-switch-updater/aio-switch-updater/TegraExplorer
+        git config --global --add safe.directory /__w/OQB-updater/OQB-updater/lib/borealis
+        git config --global --add safe.directory /__w/OQB-updater/OQB-updater
+        git config --global --add safe.directory /__w/OQB-updater/OQB-updater/TegraExplorer
         git submodule update --init --recursive
 
     - name: install dependencies
@@ -24,12 +24,12 @@ jobs:
         sudo apt update -y
         sudo apt install build-essential -y
 
-    - name: Building aio-switch-updater
+    - name: Building OQB-updater
       run: |
         make -C aiosu-forwarder -f Makefile
         make -j$(nproc)
         
     - uses: actions/upload-artifact@master
       with:
-        name: aio-switch-updater
-        path: aio-switch-updater.nro
+        name: OQB-updater
+        path: OQB-updater.nro
