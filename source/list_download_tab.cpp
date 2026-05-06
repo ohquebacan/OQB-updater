@@ -76,7 +76,13 @@ void ListDownloadTab::createList(contentType type)
                         }
                     }
                 }
-                if (type != contentType::payloads && type != contentType::hekate_ipl) {
+                if (type == contentType::apps && url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
+                    std::string filename = url.substr(url.rfind('/') + 1);
+                    std::string dest = std::string("/switch/") + filename;
+                    fs::createTree("/switch/");
+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest]() { download::downloadFile(url, dest, OFF); }));
+                }
+                else if (type != contentType::payloads && type != contentType::hekate_ipl) {
                     if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline")) {
                         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, url]() { util::downloadArchive(url, type); }));
                     }
