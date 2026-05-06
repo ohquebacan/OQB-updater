@@ -163,6 +163,7 @@
     "batch_copy_not_found": "No se encuentran los siguientes archivos y no se pudieron copiar:\n",
     "batch_copy_config_not_found": "Esta herramienta te permite copiar automáticamente ficheros a una direccion específica. Esto podría ser de ayuda dependiendo de tu bootloader. Usa el copy_files.txt en 'https://git.io/aiosu_copyfiles', edítalo y añádelo a la carpeta config. Esto se mantendrá despues de las actualizaciones.",
     "language": "Lenguaje",
+    "language_restart": "La app se cerrará para aplicar el cambio de idioma.",
     "outdated_titles": "Actualizaciones pendientes",
     "latest_version_not_found": "No se pudo conseguir información sobre actualizaciones",
     "outdated_titles_desc": "Los siguientes títulos tienen actualizaciones:"
