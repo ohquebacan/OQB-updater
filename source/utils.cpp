@@ -63,6 +63,9 @@ namespace util {
             case contentType::ams_cfw:
                 status_code = download::downloadFile(url, AMS_FILENAME, OFF);
                 break;
+            case contentType::apps:
+                status_code = download::downloadFile(url, CUSTOM_FILENAME, OFF);
+                break;
             default:
                 break;
         }
@@ -144,6 +147,9 @@ namespace util {
             case contentType::ams_cfw:
                 filename = AMS_FILENAME;
                 break;
+            case contentType::apps:
+                filename = CUSTOM_FILENAME;
+                break;
             default:
                 return;
         }
@@ -191,6 +197,9 @@ namespace util {
                 extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
                 break;
             }
+            case contentType::apps:
+                extract::extract(CUSTOM_FILENAME, ROOT_PATH);
+                break;
             default:
                 break;
         }
