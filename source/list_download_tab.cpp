@@ -61,7 +61,7 @@ void ListDownloadTab::createList(contentType type)
         for (const auto& link : links) {
             const std::string title = link.first;
             const std::string url = link.second;
-            const std::string text("menus/common/download"_i18n + link.first + "menus/common/from"_i18n + url);
+            const std::string text("menus/common/download"_i18n + link.first);
             listItem = new brls::ListItem(link.first);
             listItem->setHeight(LISTITEM_HEIGHT);
             listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {

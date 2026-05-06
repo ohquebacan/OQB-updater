@@ -3,7 +3,7 @@
     "title": "Actualizador Todo-en-Uno de Nintendo Switch",
     "copyright": "AIO-Switch-Updater tiene licencia GPL-3.0",
     "disclaimers_title": "Descargo de responsabilidad",
-    "disclaimers": "\u25c6 Aparte de trucos obtenidos del hilo principal de GBAtemp.net, HamletDuFromage no provee nada. Todo el crédito pertenece a sus respectivos dueños.\n\u25c6 Los enlaces se actualizan cada tres horas. Si un enlace sigue roto después de 3 horas, por favor abre una incidencia en GitHub.\n",
+    "disclaimers": "◆ Esta aplicación utiliza herramientas y apps de terceros. Todos los derechos y créditos corresponden a sus respectivos desarrolladores.\n◆ Síguenos en YouTube para más tutoriales",
     "donate": "\u25c6 ¿Te gusta la app? Considera hacer una donación para apoyar mi trabajo: 'https://git.io/donate_homlet'"
   },
   "cheats": {
@@ -109,7 +109,7 @@
   },
   "main": {
     "getting": "Obteniendo {}",
-    "firmware_text": "\u25c6 Firmwares de 'https://darthsternie.net/switch-firmwares/'. Una vez descargado será extraído en '/firmware'. Entonces podrás instalar la actualización a través de Daybreak.\n\u25c6 FW actual: ",
+    "firmware_text": "\u25c6 Firmwares de 'https://github.com/THZoria/NX_Firmware'. Una vez descargado será extraído en '/firmware'. Entonces podrás instalar la actualización a través de Daybreak.\n\u25c6 FW actual: ",
     "cheats_text": "\u25c6 Esto descargará un paquete actualizado diario de trucos de 'GBATemp.net'. Los trucos de juegos que no tengas instalados no se extraerán en tu tarjeta SD. Puedes desactivar los trucos actualizados en 'Herramientas→Menú de trucos'.\n\u25c6 Versión de trucos actual: ",
     "get_cheats": "Descargar archivo de trucos de GBAtemp.net (ver {})",
     "get_cheats_gfx": "Descargar trucos de mejoras gráficas",

@@ -3,7 +3,7 @@
     "title": "Atualizador tudo em um Nintendo Switch",
     "copyright": "AIO-Switch-Updater usa a licença GPL-3.0",
     "disclaimers_title": "Avisos",
-    "disclaimers": "\u25c6 Além dos códigos de trapaça que são espelhados do tópico principal do GBAtemp, o HamletDuFromage não hospeda nada. Todos os créditos vão para os respectivos proprietários.\n\u25c6 Os links são atualizados a cada 30 minutos. Se um link permanecer quebrado após 30 minutos, por favor, abra uma issue no Github.",
+    "disclaimers": "◆ Este aplicativo usa ferramentas e apps de terceiros. Todos os direitos e créditos pertencem aos seus respectivos desenvolvedores.\n◆ Siga-nos no YouTube para mais tutoriais",
     "donate": "\u25c6 Gostou do aplicativo? Considere fazer uma doação para apoiar meus esforços: 'https://git.io/donate_homlet'"
   },
   "cheats": {
@@ -107,7 +107,7 @@
   },
   "main": {
     "getting": "Obtendo {}",
-    "firmware_text": "\u25c6 Dumps de firmware de 'https://darthsternie.net/switch-firmwares/'. Uma vez baixados, serão extraídos em '/firmware'. Em seguida, você pode instalar a atualização através do Daybreak.\n\u25c6 FW atual: ",
+    "firmware_text": "\u25c6 Dumps de firmware de 'https://github.com/THZoria/NX_Firmware'. Uma vez baixados, serão extraídos em '/firmware'. Em seguida, você pode instalar a atualização através do Daybreak.\n\u25c6 FW atual: ",
     "cheats_text": "\u25c6 Isso irá baixar um arquivo de códigos de trapaça atualizado diariamente de 'gbatemp.net'. Os códigos de trapaça para jogos que você não possui instalados não serão extraídos para o seu cartão SD. Você pode desativar as atualizações de trapaça para jogos específicos em 'Ferramentas→Menu de trapaças'.\n\u25c6 Versão atual dos códigos de trapaça: ",
     "get_cheats": "Baixar arquivo de códigos de trapaça do GBAtemp.net (ver {})",
     "get_cheats_gfx": "Baixar códigos de trapaça para aprimoramento gráfico",

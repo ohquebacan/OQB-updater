@@ -36,7 +36,7 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
         for (const auto& link : links) {
             bool pack = link.first.contains("[PACK]");
             std::string url = link.second;
-            std::string text("menus/common/download"_i18n + link.first + "menus/common/from"_i18n + url);
+            std::string text("menus/common/download"_i18n + link.first);
             listItem = new brls::ListItem(link.first);
             listItem->setHeight(LISTITEM_HEIGHT);
             listItem->getClickEvent()->subscribe([this, text, text_hekate, url, hekate_url, hekate, pack, ams](brls::View* view) {

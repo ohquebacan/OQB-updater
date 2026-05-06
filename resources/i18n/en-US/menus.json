@@ -3,7 +3,7 @@
     "title": "Oh! Qu\u00e8 Bac\u00e1n Switch Updater",
     "copyright": "AIO-Switch-Updater is licensed under GPL-3.0",
     "disclaimers_title": "Disclaimers",
-    "disclaimers": "\u25c6 Aside from cheat codes that are mirrored from the main GBAtemp thread, HamletDuFromage isn't hosting anything. All credits go to respective owners.\n\u25c6 Links are refreshed every 30 minutes. If a link remains broken after 30 minutes have passed, please open a Github issue.",
+    "disclaimers": "◆ This app uses third-party tools and apps. All rights and credits belong to their respective developers.\n◆ Follow us on YouTube for more tutorials",
     "donate": ""
   },
   "cheats": {
@@ -108,7 +108,7 @@
   },
   "main": {
     "getting": "Getting {}",
-    "firmware_text": "\u25c6 Firmware dumps from 'https://darthsternie.net/switch-firmwares/'. Once downloaded, it will be extracted in '/firmware'. You can then install the update through Daybreak.\n\u25c6 Current FW: ",
+    "firmware_text": "\u25c6 Firmware dumps from 'https://github.com/THZoria/NX_Firmware'. Once downloaded, it will be extracted in '/firmware'. You can then install the update through Daybreak.\n\u25c6 Current FW: ",
     "cheats_text": "\u25c6 This will download a daily updated archive of cheat codes from 'gbatemp.net'. Cheat codes for games you don't have installed won't be extracted to your SD card. You can turn off cheat updates for specific games in 'Tools→Cheat menu'.\n\u25c6 Current cheats version: ",
     "get_cheats": "Download GBAtemp.net cheat archive (ver {})",
     "get_cheats_gfx": "Download graphics enhancing cheats",
@@ -119,7 +119,7 @@
     "app": "app",
     "cfw": "CFW",
     "ams": "Atmosphère",
-    "ams_text": "◆ Este paquete contiene solo los archivos que van en la SD para actualizar el CFW.\nSi ya instalaste la ultima version de los archivos del CFW y lo que buscas es actualizar el Firmware de tu consola, ve a la pestana de Descargar Firmwares",
+    "ams_text": "◆ This package contains only the files that go on the SD card to update the CFW.\nIf you have already installed the latest CFW files and you are looking to update your console Firmware, go to the Download Firmwares tab",
     "cfw_text": "\u25c6 Alternative CFWs, bootloaders.",
     "bootloaders_text": "\u25c6 Download and update bootloaders.",
     "cheats": "cheats",
