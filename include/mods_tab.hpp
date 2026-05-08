@@ -20,4 +20,9 @@ private:
 class ModsTab : public brls::List {
 public:
     ModsTab();
+    void willAppear(bool resetState = false) override;
+
+private:
+    void loadGames();
+    bool loaded = false;
 };

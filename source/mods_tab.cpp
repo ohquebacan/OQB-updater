@@ -166,7 +166,19 @@ ModsTab::ModsTab() : brls::List()
 {
     this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION,
         "Descarga mods para tus juegos desde GameBanana.", true));
+}
 
+void ModsTab::willAppear(bool resetState)
+{
+    brls::List::willAppear(resetState);
+    if (!loaded) {
+        loaded = true;
+        loadGames();
+    }
+}
+
+void ModsTab::loadGames()
+{
     if (util::isApplet()) {
         this->addView(new brls::Label(brls::LabelStyle::SMALL,
             "menus/common/applet_mode_not_supported"_i18n, true));
@@ -184,9 +196,9 @@ ModsTab::ModsTab() : brls::List()
             u64 tid = records[i].application_id;
 
             // Only show user-installed base games (filter system titles, sysmodules, updates, DLC)
-            if (tid < 0x0100000000010000ULL) continue; // system/reserved titles
-            if (tid >= 0x0200000000000000ULL) continue; // community sysmodules (0x4200...)
-            if ((tid & 0xFFFULL) != 0) continue;       // updates (0x800) and DLC
+            if (tid < 0x0100000000010000ULL) continue;
+            if (tid >= 0x0200000000000000ULL) continue;
+            if ((tid & 0xFFFULL) != 0) continue;
 
             free(controlData);
             controlData = (NsApplicationControlData*)malloc(sizeof(NsApplicationControlData));
