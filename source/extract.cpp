@@ -74,12 +74,14 @@ namespace extract {
                 fs::createTree(filename);
                 return;
             }
-            if (forceCreateTree) {
-                fs::createTree(filename);
-            }
+            // Always create parent directories — some zips omit directory entries
+            fs::createTree(filename);
             void* buf = malloc(WRITE_BUFFER_SIZE);
-            FILE* outfile;
-            outfile = fopen(filename.c_str(), "wb");
+            FILE* outfile = fopen(filename.c_str(), "wb");
+            if (!outfile) {
+                free(buf);
+                return;
+            }
             for (int j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE); j > 0; j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE)) {
                 fwrite(buf, 1, j, outfile);
             }
