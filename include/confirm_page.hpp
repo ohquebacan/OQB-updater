@@ -37,3 +37,9 @@ class ConfirmPage_AmsUpdate : public ConfirmPage_Done
 public:
     ConfirmPage_AmsUpdate(brls::StagedAppletFrame* frame, const std::string& text, bool erista = true);
 };
+
+class ConfirmPage_SelfUpdate : public ConfirmPage_Done
+{
+public:
+    ConfirmPage_SelfUpdate(brls::StagedAppletFrame* frame, const std::string& text);
+};

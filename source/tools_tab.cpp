@@ -173,25 +173,21 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             stagedFrame->addStage(new ConfirmPage(stagedFrame,
                 fmt::format("Descargar OQB-updater {}?\nSe instalará en: {}{}", tag, installDir, "OQB-updater.nro")));
             stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n,
-                []() {
-                    util::downloadArchive(APP_URL, contentType::app);
-                }));
-            stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n,
                 [installDir]() {
-                    // Extraer a carpeta temporal para evitar el bloqueo de auto-sobreescritura
-                    std::string tempDir = "/config/aio-switch-updater/app_update/";
-                    fs::createTree(tempDir);
-                    extract::extract(APP_FILENAME, tempDir);
-                    // Mover el NRO al destino final
-                    std::string tempNro  = tempDir + "OQB-updater.nro";
+                    std::string tempNro  = installDir + "OQB-updater.new";
                     std::string finalNro = installDir + "OQB-updater.nro";
-                    if (std::filesystem::exists(tempNro)) {
-                        fs::copyFile(tempNro, finalNro);
-                        std::filesystem::remove(tempNro);
+                    // Descargar a un archivo .new en el MISMO directorio que el NRO final.
+                    // fopen sobre el NRO en ejecución falla en FAT; un archivo nuevo no.
+                    download::downloadFile(APP_NRO_URL, tempNro, OFF);
+                    // Verificar que el archivo descargado tiene contenido
+                    if (std::filesystem::exists(tempNro) && std::filesystem::file_size(tempNro) > 0) {
+                        // Borrar el NRO viejo (el hbloader ya lo soltó tras cargarlo en RAM)
+                        std::filesystem::remove(finalNro);
+                        // Rename dentro del mismo directorio — siempre funciona en FAT
+                        std::filesystem::rename(tempNro, finalNro);
                     }
-                    fs::removeDir(tempDir);
                 }));
-            stagedFrame->addStage(new ConfirmPage_Done(stagedFrame, "menus/common/all_done"_i18n));
+            stagedFrame->addStage(new ConfirmPage_SelfUpdate(stagedFrame, "menus/common/all_done"_i18n));
             brls::Application::pushView(stagedFrame);
         });
         this->addView(updateApp);

@@ -42,6 +42,15 @@ ConfirmPage_AppUpdate::ConfirmPage_AppUpdate(brls::StagedAppletFrame* frame, con
     this->registerAction("", brls::Key::B, [this] { return true; });
 }
 
+ConfirmPage_SelfUpdate::ConfirmPage_SelfUpdate(brls::StagedAppletFrame* frame, const std::string& text) : ConfirmPage_Done(frame, text)
+{
+    this->button->setLabel("menus/common/ok"_i18n);
+    this->button->getClickEvent()->subscribe([](View* view) {
+        util::restartApp();
+    });
+    this->registerAction("", brls::Key::B, [this] { return true; });
+}
+
 ConfirmPage_AmsUpdate::ConfirmPage_AmsUpdate(brls::StagedAppletFrame* frame, const std::string& text, bool erista) : ConfirmPage_Done(frame, text)
 {
     this->button->getClickEvent()->subscribe([this, erista](View* view) {
