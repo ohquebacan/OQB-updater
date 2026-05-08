@@ -111,30 +111,21 @@ void ModListPage::buildList()
                 fileItem->setHeight(60);
 
                 fileItem->getClickEvent()->subscribe([file](brls::View* view) mutable {
-                    file.loadFile();
-
-                    std::string gameTid = file.getGame().getTid();
                     std::string gameName = sanitizePath(file.getGame().getTitle());
                     std::string modName = sanitizePath(file.getModName());
-                    std::string destPath;
-
-                    if (gameTid == "01006A800016E000")
-                        destPath = fmt::format("/ultimate/mods/{}/", modName);
-                    else if (file.getRomfs())
-                        destPath = fmt::format("/atmosphere/contents/{}/", gameTid);
-                    else
-                        destPath = fmt::format("/mods/{}/{}/", gameName, modName);
+                    std::string destPath = fmt::format("/mods/{}/{}/", gameName, modName);
 
                     brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                     stagedFrame->setTitle(fmt::format("Mod: {}", file.getName()));
 
                     std::string confirmText = fmt::format(
-                        "Descargar {} ({}) y extraer en:\n{}",
+                        "Descargar {} ({}) en:\n{}",
                         file.getName(), formatFileSize(file.getSize()), destPath);
 
                     stagedFrame->addStage(new ConfirmPage(stagedFrame, confirmText));
                     stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n,
                         [file]() mutable {
+                            fs::createTree(DOWNLOAD_PATH);
                             download::downloadFile(file.getUrl(), GB_MOD_FILENAME);
                         }));
                     stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n,
