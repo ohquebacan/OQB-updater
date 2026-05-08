@@ -32,3 +32,16 @@ jobs:
       with:
         name: OQB-updater
         path: OQB-updater.nro
+
+    - name: Crear zip para release
+      run: zip OQB-updater.zip OQB-updater.nro
+
+    - name: Publicar Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: latest
+        name: Latest Build
+        files: OQB-updater.zip
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
