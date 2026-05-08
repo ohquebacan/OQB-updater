@@ -180,11 +180,12 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
                     // fopen sobre el NRO en ejecución falla en FAT; un archivo nuevo no.
                     download::downloadFile(APP_NRO_URL, tempNro, OFF);
                     // Verificar que el archivo descargado tiene contenido
-                    if (std::filesystem::exists(tempNro) && std::filesystem::file_size(tempNro) > 0) {
+                    std::error_code ec;
+                    if (std::filesystem::exists(tempNro, ec) && std::filesystem::file_size(tempNro, ec) > 0) {
                         // Borrar el NRO viejo (el hbloader ya lo soltó tras cargarlo en RAM)
-                        std::filesystem::remove(finalNro);
+                        std::filesystem::remove(finalNro, ec);
                         // Rename dentro del mismo directorio — siempre funciona en FAT
-                        std::filesystem::rename(tempNro, finalNro);
+                        std::filesystem::rename(tempNro, finalNro, ec);
                     }
                 }));
             stagedFrame->addStage(new ConfirmPage_SelfUpdate(stagedFrame, "menus/common/all_done"_i18n));
