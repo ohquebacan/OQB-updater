@@ -194,6 +194,8 @@ namespace util {
                 int deleteContents = showDialogBoxBlocking("menus/ams_update/delete_sysmodules_flags"_i18n, "menus/common/no"_i18n, "menus/common/yes"_i18n);
                 if (deleteContents == 1)
                     removeSysmodulesFlags(AMS_CONTENTS);
+                // Limpiar carpetas de sysmodules externos antes de extraer el HATS pack
+                fs::removeDir("/SaltySD");
                 extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
                 break;
             }
