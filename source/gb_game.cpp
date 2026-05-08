@@ -34,13 +34,26 @@ void GBGame::parseJson()
             return;
 
         const auto& records = json.at("_aRecords");
-        int pos = 0;
+
+        // Extract first word of the title to use as matching keyword
+        std::string firstWord = title.substr(0, title.find(' '));
+        if (firstWord.empty()) firstWord = title;
+
+        int pos = -1;
         for (size_t i = 0; i < records.size(); ++i) {
-            if (records[i].at("_sName").get<std::string>().find("Switch") != std::string::npos) {
+            std::string sName = records[i].at("_sName").get<std::string>();
+            // Skip generic platform pages
+            if (sName == "Nintendo Switch" || sName == "Switch" || sName == "Nintendo 3DS")
+                continue;
+            // Accept first result containing the first keyword of our title
+            if (sName.find(firstWord) != std::string::npos) {
                 pos = i;
                 break;
             }
         }
+
+        if (pos == -1)
+            return; // No good match found, leave gamebananaID = 0
 
         const auto& record = records[pos];
         title = record.at("_sName").get<std::string>();

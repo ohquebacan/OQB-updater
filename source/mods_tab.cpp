@@ -181,12 +181,18 @@ ModsTab::ModsTab() : brls::List()
 
     if (R_SUCCEEDED(nsListApplicationRecord(records, MaxTitleCount, 0, &recordCount))) {
         for (s32 i = 0; i < recordCount; i++) {
+            u64 tid = records[i].application_id;
+
+            // Only show user-installed base games (filter system titles, sysmodules, updates, DLC)
+            if (tid < 0x0100000000010000ULL) continue; // system/reserved titles
+            if (tid >= 0x0200000000000000ULL) continue; // community sysmodules (0x4200...)
+            if ((tid & 0xFFFULL) != 0) continue;       // updates (0x800) and DLC
+
             free(controlData);
             controlData = (NsApplicationControlData*)malloc(sizeof(NsApplicationControlData));
             if (!controlData) break;
             memset(controlData, 0, sizeof(NsApplicationControlData));
 
-            u64 tid = records[i].application_id;
             Result rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, tid,
                 controlData, sizeof(NsApplicationControlData), &controlSize);
             if (R_FAILED(rc)) continue;
