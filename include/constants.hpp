@@ -1,9 +1,9 @@
 #pragma once
 
 constexpr const char ROOT_PATH[] = "/";
-constexpr const char APP_PATH[] = "/switch/OQB-updater/";
-constexpr const char NRO_PATH[] = "/switch/OQB-updater/OQB-updater.nro";
-constexpr const char NRO_PATH_REGEX[] = ".*(/switch/.*OQB-updater\\.nro).*";
+constexpr const char APP_PATH[] = "/switch/";
+constexpr const char NRO_PATH[] = "/switch/OQB-updater.nro";
+constexpr const char NRO_PATH_REGEX[] = ".*(/switch/OQB-updater\\.nro).*";
 constexpr const char DOWNLOAD_PATH[] = "/config/aio-switch-updater/";
 constexpr const char CONFIG_PATH[] = "/config/aio-switch-updater/";
 constexpr const char CONFIG_FILE[] = "/config/aio-switch-updater/config.json";
