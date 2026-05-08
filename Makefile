@@ -22,7 +22,7 @@ DATA		:=	data
 INCLUDES	:=	include /lib/borealis/library/include/borealis/extern/nlohmann
 APP_TITLE	:=	All in One OQB Updater
 APP_AUTHOR	:=	OHQUEBACAN
-APP_VERSION :=	1.0
+APP_VERSION :=	1.1.0
 TARGET		:=	$(notdir $(CURDIR))
 
 ROMFS				:=	resources
@@ -31,7 +31,7 @@ BOREALIS_RESOURCES	:=	romfs:/
 #APP_RESOURCES		:=	romfs:/
 
 #---------------------------------------------------------------------------------
-# version control constants
+# version control constants — descomenta para tomar version del git tag
 #---------------------------------------------------------------------------------
 #TARGET_VERSION	:= $(shell git describe --dirty --always --tags)
 #APP_VERSION		:= $(TARGET_VERSION)
