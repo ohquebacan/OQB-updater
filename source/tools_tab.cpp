@@ -167,28 +167,21 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             fmt::format("Actualizar app ({} → {})", AppVersion, tag));
         updateApp->setHeight(LISTITEM_HEIGHT);
         updateApp->getClickEvent()->subscribe([tag](brls::View* view) {
-            std::string installDir = std::filesystem::path(util::getAppPath()).parent_path().string() + "/";
             brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
             stagedFrame->setTitle(fmt::format("Actualizar a {}", tag));
             stagedFrame->addStage(new ConfirmPage(stagedFrame,
-                fmt::format("Descargar OQB-updater {}?\nSe instalará en: {}{}", tag, installDir, "OQB-updater.nro")));
+                fmt::format("Descargar e instalar OQB-updater {}?", tag)));
             stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n,
-                [installDir]() {
-                    std::string tempNro  = installDir + "OQB-updater.new";
-                    std::string finalNro = installDir + "OQB-updater.nro";
-                    // Descargar a un archivo .new en el MISMO directorio que el NRO final.
-                    // fopen sobre el NRO en ejecución falla en FAT; un archivo nuevo no.
-                    download::downloadFile(APP_NRO_URL, tempNro, OFF);
-                    // Verificar que el archivo descargado tiene contenido
-                    std::error_code ec;
-                    if (std::filesystem::exists(tempNro, ec) && std::filesystem::file_size(tempNro, ec) > 0) {
-                        // Borrar el NRO viejo (el hbloader ya lo soltó tras cargarlo en RAM)
-                        std::filesystem::remove(finalNro, ec);
-                        // Rename dentro del mismo directorio — siempre funciona en FAT
-                        std::filesystem::rename(tempNro, finalNro, ec);
-                    }
+                []() {
+                    util::downloadArchive(APP_URL, contentType::app);
                 }));
-            stagedFrame->addStage(new ConfirmPage_SelfUpdate(stagedFrame, "menus/common/all_done"_i18n));
+            stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n,
+                []() {
+                    // Extrae OQB-updater.nro a /config/aio-switch-updater/
+                    // El forwarder lo moverá a /switch/ y lanzará el nuevo binario
+                    util::extractArchive(contentType::app);
+                }));
+            stagedFrame->addStage(new ConfirmPage_AppUpdate(stagedFrame, "menus/common/all_done"_i18n));
             brls::Application::pushView(stagedFrame);
         });
         this->addView(updateApp);
