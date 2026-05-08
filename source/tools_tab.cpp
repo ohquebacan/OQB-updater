@@ -178,7 +178,18 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
                 }));
             stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n,
                 [installDir]() {
-                    extract::extract(APP_FILENAME, installDir);
+                    // Extraer a carpeta temporal para evitar el bloqueo de auto-sobreescritura
+                    std::string tempDir = "/config/aio-switch-updater/app_update/";
+                    fs::createTree(tempDir);
+                    extract::extract(APP_FILENAME, tempDir);
+                    // Mover el NRO al destino final
+                    std::string tempNro  = tempDir + "OQB-updater.nro";
+                    std::string finalNro = installDir + "OQB-updater.nro";
+                    if (std::filesystem::exists(tempNro)) {
+                        fs::copyFile(tempNro, finalNro);
+                        std::filesystem::remove(tempNro);
+                    }
+                    fs::removeDir(tempDir);
                 }));
             stagedFrame->addStage(new ConfirmPage_Done(stagedFrame, "menus/common/all_done"_i18n));
             brls::Application::pushView(stagedFrame);
