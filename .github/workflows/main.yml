@@ -36,11 +36,15 @@ jobs:
     - name: Crear zip para release
       run: zip OQB-updater.zip OQB-updater.nro
 
+    - name: Obtener version del Makefile
+      id: version
+      run: echo "version=$(grep 'APP_VERSION' Makefile | head -1 | awk '{print $NF}')" >> $GITHUB_OUTPUT
+
     - name: Publicar Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: latest
-        name: Latest Build
+        tag_name: ${{ steps.version.outputs.version }}
+        name: OQB-updater ${{ steps.version.outputs.version }}
         files: |
           OQB-updater.zip
           OQB-updater.nro
