@@ -41,7 +41,9 @@ jobs:
       with:
         tag_name: latest
         name: Latest Build
-        files: OQB-updater.zip
+        files: |
+          OQB-updater.zip
+          OQB-updater.nro
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

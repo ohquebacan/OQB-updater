@@ -8,6 +8,8 @@
 #include "app_page.hpp"
 #include "cheats_page.hpp"
 #include "confirm_page.hpp"
+#include "constants.hpp"
+#include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
 #include "hide_tabs_page.hpp"
@@ -158,6 +160,27 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::PopupFrame::open("menus/tools/hide_tabs"_i18n, new HideTabsPage(), "", "");
     });
     hideTabs->setHeight(LISTITEM_HEIGHT);
+
+    // Botón de actualización — solo visible cuando hay una versión nueva
+    if (!tag.empty() && tag != AppVersion) {
+        brls::ListItem* updateApp = new brls::ListItem(
+            fmt::format("Actualizar app ({} → {})", AppVersion, tag));
+        updateApp->setHeight(LISTITEM_HEIGHT);
+        updateApp->getClickEvent()->subscribe([tag](brls::View* view) {
+            std::string appPath = "sdmc:" + util::getAppPath();
+            brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
+            stagedFrame->setTitle(fmt::format("Actualizar a {}", tag));
+            stagedFrame->addStage(new ConfirmPage(stagedFrame,
+                fmt::format("Descargar OQB-updater {}?\nSe instalará en: {}", tag, appPath)));
+            stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n,
+                [appPath]() {
+                    download::downloadFile(APP_NRO_URL, appPath);
+                }));
+            stagedFrame->addStage(new ConfirmPage_Done(stagedFrame, "menus/common/all_done"_i18n));
+            brls::Application::pushView(stagedFrame);
+        });
+        this->addView(updateApp);
+    }
 
     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
     if (!util::getBoolValue(hideStatus, "outdatedtitles")) this->addView(outdatedTitles);
