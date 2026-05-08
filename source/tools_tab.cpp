@@ -167,14 +167,18 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             fmt::format("Actualizar app ({} → {})", AppVersion, tag));
         updateApp->setHeight(LISTITEM_HEIGHT);
         updateApp->getClickEvent()->subscribe([tag](brls::View* view) {
-            std::string appPath = "sdmc:" + util::getAppPath();
+            std::string installDir = std::filesystem::path(util::getAppPath()).parent_path().string() + "/";
             brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
             stagedFrame->setTitle(fmt::format("Actualizar a {}", tag));
             stagedFrame->addStage(new ConfirmPage(stagedFrame,
-                fmt::format("Descargar OQB-updater {}?\nSe instalará en: {}", tag, appPath)));
+                fmt::format("Descargar OQB-updater {}?\nSe instalará en: {}{}", tag, installDir, "OQB-updater.nro")));
             stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n,
-                [appPath]() {
-                    download::downloadFile(APP_NRO_URL, appPath);
+                []() {
+                    util::downloadArchive(APP_URL, contentType::app);
+                }));
+            stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n,
+                [installDir]() {
+                    extract::extract(APP_FILENAME, installDir);
                 }));
             stagedFrame->addStage(new ConfirmPage_Done(stagedFrame, "menus/common/all_done"_i18n));
             brls::Application::pushView(stagedFrame);
