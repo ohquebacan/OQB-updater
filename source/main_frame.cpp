@@ -9,7 +9,6 @@
 #include "fs.hpp"
 #include "language_tab.hpp"
 #include "list_download_tab.hpp"
-#include "mods_tab.hpp"
 #include "tools_tab.hpp"
 #include "utils.hpp"
 
@@ -53,9 +52,6 @@ MainFrame::MainFrame() : TabFrame()
 
     if (!util::getBoolValue(hideStatus, "apps"))
         this->addTab("menus/main/apps"_i18n, new ListDownloadTab(contentType::apps, nxlinks));
-
-    if (!util::getBoolValue(hideStatus, "mods"))
-        this->addTab("Mods", new ModsTab());
 
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
