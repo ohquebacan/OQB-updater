@@ -10,6 +10,7 @@ private:
     brls::ListItem* listItem;
     brls::ListItem* restore;
     brls::ListItem* backup;
+    brls::ListItem* customColor;
 
 public:
     PCPage();

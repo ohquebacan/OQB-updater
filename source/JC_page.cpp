@@ -1,5 +1,6 @@
 #include "JC_page.hpp"
 
+#include "color_picker_page.hpp"
 #include "color_swapper.hpp"
 #include "confirm_page.hpp"
 #include "constants.hpp"
@@ -26,6 +27,19 @@ JCPage::JCPage() : AppletFrame(true, true)
         brls::Application::pushView(stagedFrame);
     });
     list->addView(backup);
+
+    // Selector de color personalizado (sliders RGB en vivo)
+    customColor = new brls::ListItem("Color personalizado (RGB)");
+    customColor->getClickEvent()->subscribe([](brls::View* view) {
+        brls::AppletFrame* appView = new brls::AppletFrame(true, true);
+        appView->setContentView(new ColorPickerPage(ColorPickerPage::Controller::JoyCon));
+        brls::PopupFrame::open(
+            "Color personalizado",
+            appView,
+            "↑↓ canal  ·  ←→ ajustar  ·  L/R ±16  ·  X parte  ·  A aplicar",
+            "");
+    });
+    list->addView(customColor);
 
     list->addView(new brls::ListItemGroupSpacing(true));
 
