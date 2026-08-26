@@ -161,16 +161,25 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     hideTabs->setHeight(LISTITEM_HEIGHT);
 
-    // Botón de actualización — solo visible cuando hay una versión nueva
-    if (!tag.empty() && tag != AppVersion) {
+    // Botón de actualización — siempre visible. Si hay versión nueva ofrece
+    // actualizar; si ya está al día permite volver a descargar, que sirve para
+    // recoger un rebuild publicado bajo el mismo tag.
+    {
+        const bool hasUpdate = !tag.empty() && tag != AppVersion;
+        const std::string targetTag = hasUpdate ? tag : std::string(AppVersion);
+
         brls::ListItem* updateApp = new brls::ListItem(
-            fmt::format("Actualizar app ({} → {})", AppVersion, tag));
+            hasUpdate ? fmt::format("Actualizar app ({} → {})", AppVersion, tag)
+                      : fmt::format("Volver a descargar app ({})", AppVersion));
         updateApp->setHeight(LISTITEM_HEIGHT);
-        updateApp->getClickEvent()->subscribe([tag](brls::View* view) {
+        updateApp->getClickEvent()->subscribe([targetTag, hasUpdate](brls::View* view) {
             brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-            stagedFrame->setTitle(fmt::format("Actualizar a {}", tag));
+            stagedFrame->setTitle(hasUpdate
+                                      ? fmt::format("Actualizar a {}", targetTag)
+                                      : fmt::format("Volver a descargar {}", targetTag));
             stagedFrame->addStage(new ConfirmPage(stagedFrame,
-                fmt::format("Descargar e instalar OQB-updater {}?", tag)));
+                hasUpdate ? fmt::format("Descargar e instalar OQB-updater {}?", targetTag)
+                          : fmt::format("Volver a descargar e instalar OQB-updater {}?", targetTag)));
             stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n,
                 []() {
                     util::downloadArchive(APP_URL, contentType::app);
