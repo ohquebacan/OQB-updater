@@ -66,6 +66,13 @@ void ListDownloadTab::createList(contentType type)
             const std::string text("menus/common/download"_i18n + link.first);
             listItem = new brls::ListItem(link.first);
             listItem->setHeight(LISTITEM_HEIGHT);
+            // Marcar las apps que ya están en la SD. Sólo se puede saber para
+            // los .nro: los .zip no dicen dónde terminan sus archivos.
+            if (type == contentType::apps && url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
+                if (std::filesystem::exists(std::string(APP_PATH) + url.substr(url.rfind('/') + 1))) {
+                    listItem->setValue("menus/apps/installed"_i18n, true);
+                }
+            }
             listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
                 brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                 stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
@@ -78,41 +85,27 @@ void ListDownloadTab::createList(contentType type)
                         }
                     }
                 }
-                if (type == contentType::apps && url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
-                    std::string filename = url.substr(url.rfind('/') + 1);
-                    std::string dest = std::string("/switch/") + filename;
-                    fs::createTree("/switch/");
-                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest]() { download::downloadFile(url, dest, OFF); }));
+                if (type == contentType::apps) {
+                    // La ruta del NRO se conoce de entrada si el link es un .nro;
+                    // si viene en zip, la descubre el worker de extracción.
+                    auto nroPath = std::make_shared<std::string>();
 
-                    // Tras bajar el NRO, ofrecer crear el acceso directo en el menú HOME.
-                    auto makeForwarder = std::make_shared<bool>(false);
-                    auto forwarderResult = std::make_shared<std::string>();
-                    stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/apps/forwarder_ask"_i18n, makeForwarder));
-                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/apps/forwarder_creating"_i18n, [dest, makeForwarder, forwarderResult]() {
-                        auto& progress = ProgressEvent::instance();
+                    if (url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
+                        const std::string dest = std::string(APP_PATH) + url.substr(url.rfind('/') + 1);
+                        *nroPath = dest;
+                        fs::createTree(APP_PATH);
+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest]() { download::downloadFile(url, dest, OFF); }));
+                    }
+                    else {
+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() { util::downloadArchive(url, contentType::apps); }));
+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [nroPath]() {
+                            // Se anota antes de extraer, mientras el zip sigue en disco.
+                            *nroPath = extract::findNroInArchive(CUSTOM_FILENAME);
+                            util::extractArchive(contentType::apps);
+                        }));
+                    }
 
-                        if (*makeForwarder) {
-                            fwd::Config config;
-                            Result rc = fwd::configFromNro(dest, config);
-                            if (R_SUCCEEDED(rc)) {
-                                rc = fwd::install(config, [](int step, int total) {
-                                    ProgressEvent::instance().setTotalSteps(total);
-                                    ProgressEvent::instance().setStep(step);
-                                });
-                            }
-                            // El diálogo no se puede abrir desde este hilo, así que
-                            // el mensaje se deja acá y lo muestra la página siguiente.
-                            *forwarderResult = R_SUCCEEDED(rc)
-                                ? "menus/common/all_done"_i18n
-                                : fmt::format("menus/apps/forwarder_error"_i18n, fwd::resultToString(rc));
-                        }
-                        else {
-                            *forwarderResult = "menus/common/all_done"_i18n;
-                        }
-
-                        progress.setStep(progress.getMax());
-                    }));
-                    stagedFrame->addStage(new ConfirmPage_Deferred(stagedFrame, forwarderResult));
+                    this->addForwarderStages(stagedFrame, nroPath);
                     brls::Application::pushView(stagedFrame);
                     return;
                 }
@@ -148,6 +141,41 @@ void ListDownloadTab::createList(contentType type)
     else {
         this->displayNotFound();
     }
+}
+
+void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath)
+{
+    auto makeForwarder = std::make_shared<bool>(false);
+    auto forwarderResult = std::make_shared<std::string>();
+
+    // Si nroPath sigue vacío al llegar acá, el zip no traía ningún .nro y la
+    // pregunta se saltea sola.
+    stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/apps/forwarder_ask"_i18n, makeForwarder, nroPath));
+    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/apps/forwarder_creating"_i18n, [nroPath, makeForwarder, forwarderResult]() {
+        auto& progress = ProgressEvent::instance();
+
+        if (*makeForwarder && !nroPath->empty()) {
+            fwd::Config config;
+            Result rc = fwd::configFromNro(*nroPath, config);
+            if (R_SUCCEEDED(rc)) {
+                rc = fwd::install(config, [](int step, int total) {
+                    ProgressEvent::instance().setTotalSteps(total);
+                    ProgressEvent::instance().setStep(step);
+                });
+            }
+            // El diálogo no se puede abrir desde este hilo, así que el mensaje
+            // se deja acá y lo muestra la página siguiente.
+            *forwarderResult = R_SUCCEEDED(rc)
+                                   ? "menus/common/all_done"_i18n
+                                   : fmt::format("menus/apps/forwarder_error"_i18n, fwd::resultToString(rc));
+        }
+        else {
+            *forwarderResult = "menus/common/all_done"_i18n;
+        }
+
+        progress.setStep(progress.getMax());
+    }));
+    stagedFrame->addStage(new ConfirmPage_Deferred(stagedFrame, forwarderResult));
 }
 
 void ListDownloadTab::displayNotFound()

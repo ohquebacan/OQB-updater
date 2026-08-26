@@ -1,129 +1,88 @@
-# Reporte — Forwarders en la sección Apps (OQB-updater)
+# Reporte — Forwarders y mejoras (OQB-updater)
 
-Rama: `feat/forwarders` · Fecha: 2026-08-26
+Rama: `feat/forwarders` · Fecha: 2026-08-26 · Versión: 1.7.1
 
-## Qué se pidió
+## Estado
 
-Que al descargar una app desde la pestaña **Apps**, la app ofrezca crear un
-**forwarder** de esa misma app (acceso directo en el menú HOME de la Switch).
+La función de forwarders está **probada y funcionando en consola real**. Lo de
+esta última tanda todavía no.
 
-Emilio señaló [sphaira](https://github.com/NaGaa95/sphaira) como referencia — fue
-exactamente la guía correcta.
+## Recorrido de la sesión
 
-## Estado del repo al empezar
-
-- El repo no existía en esta computadora. Clonado a `~/OQB-updater`.
-- Es el fork de AIO-Switch-Updater (C++, borealis, devkitPro/devkitA64).
-- Submódulos (`lib/borealis`, `TegraExplorer`) inicializados.
-- `gh` no está autenticado en esta máquina (el clone se hizo por HTTPS público).
-
-## Cómo funciona un forwarder (lo que se investigó)
-
-Un forwarder es un título instalado (NCAs registrados en `ncm` + un record en
-`ns`) cuyo programa es una copia de **nx-hbloader** con la ruta del NRO destino
-metida en su romfs. El menú HOME lo ve como un juego más.
-
-Hallazgo clave que hace esto viable: sphaira crea los NCAs con las secciones
-**sin cifrar** (`EncryptionType_None`), así que la única clave necesaria es
-`header_key` — y esa se **deriva de la propia consola** con `splCrypto`.
-**No hace falta `prod.keys` en la SD**, a diferencia de NSP Forwarder Nx o NTON.
-
-La firma RSA del header del NCA no se puede falsificar, pero los sigpatches
-hacen que FS no la verifique — que es justamente por qué los forwarders son
-cosa de CFW.
-
-## Qué se construyó
-
-### 1. Sub-proyecto `hbl/` (nuevo)
-
-El loader que se empaqueta dentro de cada forwarder generado.
-
-- `hbl/source/main.c`, `hbl/source/trampoline.s`, `hbl/hbl.json` — portados del
-  fork de nx-hbloader que usa sphaira.
-- `hbl/Makefile` — nuevo, estilo devkitPro. A diferencia del resto del proyecto
-  no produce un `.nro` sino `exefs/main` (NSO vía `elf2nso`) y `exefs/main.npdm`
-  (vía `npdmtool`).
-
-### 2. Módulo de forwarders (nuevo)
-
-| Archivo | Qué hace |
+| Versión | Qué salió |
 |---|---|
-| `include/forwarder.hpp` | API pública: `configFromNro`, `install`, `remove`, `exists`, `resultToString` |
-| `include/forwarder/nx_types.hpp` | Structs binarias de NCA, NPDM y `ContentStorageRecord` |
-| `include/forwarder/ns_ex.hpp` + `source/forwarder/ns_ex.cpp` | Comandos de `ns:am` que libnx no expone (`PushApplicationRecord`, `InvalidateApplicationControlCache`) |
-| `include/forwarder/result.hpp` | Códigos de error del módulo (módulo 424) |
-| `source/forwarder/forwarder.cpp` | El grueso: construcción de romfs/PFS0/IVFC/NCA, parcheo de NPDM y NACP, CNMT, e instalación vía `ncm` + `ns` |
-| `source/forwarder/nro_asset.cpp` | Lee el asset section del NRO para sacar icono y NACP (nombre/autor) |
+| 1.6.0 | Forwarders al menú HOME al descargar una app (`.nro`) |
+| 1.6.1 | Fix: la barra de progreso se quedaba en 0% para siempre |
+| 1.6.2 | Botón "volver a descargar app" aunque ya esté al día |
+| 1.6.3 | Fix: reinstalar un forwarder lo dejaba con el ícono de nube |
+| 1.7.1 | Forwarders para apps `.zip`, crear desde la SD, gestionar, marcar instaladas |
 
-Portado de `source/owo.cpp` de sphaira (GPLv3, misma licencia que este repo, así
-que es compatible; queda atribuido en el README y en los encabezados).
+## Los dos bugs que aparecieron y por qué
 
-Diferencias deliberadas respecto de sphaira:
+**Barra congelada en 0% (1.6.1).** `WorkerPage` sólo avanza de stage cuando
+`ProgressEvent` llega a su máximo (`_current == _max`, con `_max = 60` por
+defecto). Los workers que ya existían actualizan ese contador por dentro; el
+lambda del forwarder no lo tocaba. No era un cuelgue: la instalación terminaba
+bien y la UI seguía esperando una señal que nadie mandaba.
 
-- **No se borra el `old_tid`.** Sphaira, además del tid nuevo (prefijo `0x05`),
-  borra un tid legacy con prefijo `0x01` — que cae dentro del rango de títulos
-  retail. Sphaira lo hace para limpiar forwarders de sus versiones viejas; acá no
-  hay legacy que limpiar, y dejarlo sería arriesgar borrar un juego real ante una
-  colisión de hash. Se quitó.
-- El hbl se carga desde `romfs:/hbl/` en vez de `#embed` (que necesita un
-  compilador más nuevo que el de este proyecto).
-- Se dejaron fuera las opciones de sphaira que no aplican acá: modo de 4 núcleos,
-  logo/GIF de arranque, `prepare_core_launch`.
+De paso se corrigió que el error se mostraba con `util::showDialogBoxInfo` desde
+el hilo del worker. Todos los demás usos de esa función están en el hilo de la
+UI, y abrir vistas fuera de él no es seguro en borealis — habría sido un crash
+intermitente justo cuando algo fallara. Ahora el mensaje lo muestra
+`ConfirmPage_Deferred`, que resuelve su texto al dibujarse.
 
-### 3. UI
+**Ícono de nube al reinstalar (1.6.3).** `nsDeleteApplicationEntity(tid)` corría
+*después* de escribir y registrar los NCAs nuevos. Como el content id de un NCA
+es el sha256 de su propio contenido, reinstalar el mismo NRO genera ids
+idénticos: esa limpieza borraba justamente los NCAs recién escritos, y el record
+quedaba apuntando a contenido inexistente. No se notaba en la primera
+instalación porque no había nada que borrar.
 
-- `DialoguePage_optional` (nuevo, en `dialogue_page.cpp/hpp`): pregunta sí/no
-  donde **ambas respuestas continúan** al siguiente stage. El `DialoguePage_confirm`
-  que ya existía manda al menú principal si respondés que no — no servía acá,
-  porque decir "no quiero forwarder" no debería abortar el flujo después de que la
-  app ya se descargó.
-- `list_download_tab.cpp`: tras bajar un `.nro` en la pestaña Apps, se agregan dos
-  stages — la pregunta y un worker que crea el forwarder si dijiste que sí.
+Ahora la limpieza va antes de escribir nada, con `nsDeleteApplicationCompletely`
+para llevarse también el record viejo. **Este bug viene heredado de sphaira tal
+cual — probablemente esté también allá.**
 
-### 4. i18n
+## Lo que se agregó en 1.7.1
 
-Sección `apps` nueva en los 15 idiomas (español real, el resto en inglés):
-`forwarder_ask`, `forwarder_creating`, `forwarder_error`.
+**Forwarders para apps `.zip`.** 8 de las 19 apps del catálogo llegan
+comprimidas y caían por otra rama del código que ni ofrecía la pregunta. Se
+unificó el flujo: un helper nuevo (`extract::findNroInArchive`) escanea las
+entradas del zip *antes* de extraerlo y anota qué `.nro` va a quedar en la SD,
+prefiriendo el que caiga en `/switch/`. Si el zip no trae ninguno, la pregunta
+se saltea sola en vez de ofrecer algo imposible.
 
-De paso: `menus/main/apps` y `apps_text` sólo existían en `en-US`, así que la
-pestaña Apps se veía en inglés en español. Agregados al `es`.
+**Crear forwarder desde la SD.** Página nueva en Tools que lista los `.nro` de
+`/switch/`, incluyendo la convención `/switch/<app>/<app>.nro` de hbmenu, y
+marca cuáles ya tienen acceso directo. Cubre todo lo instalado desde antes.
 
-### 5. Infraestructura
+**Gestionar accesos directos.** Lista los forwarders instalados filtrando los
+títulos con prefijo `0x05`, con su icono y nombre reales, y permite borrarlos.
+Antes había que ir a Gestión de datos del sistema.
 
-- `docker_build.sh` (nuevo): build local en el contenedor `devkitpro/devkita64`,
-  replicando el workflow de CI. Monta el repo en `/OQB-updater` porque el Makefile
-  deriva `TARGET` del nombre de la carpeta.
-- `.gitignore`: `hbl/exefs/` y `resources/hbl/` (artefactos de build).
-- `Makefile`: `SOURCES` incluye `source/forwarder`; el target `$(ROMFS)` compila
-  el `hbl` y copia su exefs a `resources/hbl/`. **CI no necesita cambios** — el
-  workflow ya ejecuta `make`, que dispara todo esto.
-- `resources/forwarder_icon.jpg`: icono de reserva para NROs sin assets. Se usa
-  un JPEG 256×256 porque el menú HOME no acepta otra cosa (el `gui_icon.png` que
-  se pensó usar primero es PNG de 52×52 y habría salido roto).
-- `APP_VERSION` 1.5.0 → 1.6.0.
+**Marcar apps ya instaladas.** Sólo para los `.nro`: los `.zip` no dicen dónde
+terminan sus archivos, así que ahí no se puede saber sin extraerlos.
 
-## Verificación
+Las dos entradas nuevas de Tools quedaron en `hide_tabs.json`.
 
-- Build completo desde cero en `devkitpro/devkita64`: **compila sin errores**,
-  produce `OQB-updater.nro`.
-- El `hbl` compila a NSO + NPDM correctamente.
+## Infraestructura
 
-**Lo que NO está verificado: nada de esto se probó en una consola real.** El
-código construye NCAs e instala títulos en el sistema — es la parte más delicada
-que toca esta app hasta ahora. Antes de subirlo a `master` conviene:
+`docker_build.sh` ahora limpia `build/` cuando el Makefile cambió. `APP_VERSION`
+llega a los fuentes como `-D` y make no ve esa dependencia, así que cambiar la
+versión sin limpiar dejaba el binario reportando la vieja — que es justo el dato
+con el que la app decide si hay actualización disponible. Pasó dos veces en esta
+sesión. CI no lo necesita porque siempre parte de un checkout limpio.
 
-1. Probar el `.nro` en tu Switch y crear un forwarder de alguna app de prueba.
-2. Confirmar que aparece en el menú HOME, que lanza la app, y que el icono y el
-   nombre se ven bien.
-3. Confirmar que volver a descargar la misma app reemplaza el acceso directo en
-   vez de duplicarlo.
-4. Confirmar que se puede borrar desde Gestión de datos del sistema.
+Se intentó primero resolverlo en el Makefile con `$(OFILES_SRC): $(TOPDIR)/Makefile`,
+pero no dispara la recompilación; se descartó por no seguir peleando con
+semántica sutil de make cuando el script resuelve el caso de forma directa.
 
-## Pendientes / ideas
+## Pendientes
 
-- `fwd::remove()` y `fwd::exists()` están implementados pero todavía no hay UI que
-  los use. Faltaría una pantalla tipo "gestionar accesos directos" en Tools.
-- Las apps que llegan como `.zip` (Dusk, SysDVR, ARCropolis, etc.) no pasan por
-  esta rama del código, así que no ofrecen forwarder. Habría que buscar el `.nro`
-  dentro del zip extraído para cubrirlas.
-- Nada de esto está commiteado todavía.
+- Nada de 1.7.1 está probado en consola.
+- El fork tiene strings en español hardcodeados en `tools_tab.cpp` y
+  `color_picker_page.cpp` en vez de pasar por i18n.
+- Si alguna vez se publica un rebuild bajo el **mismo** tag (`gh release --clobber`),
+  `APP_URL` apunta a `releases/latest/download/...` y la descarga no manda
+  cabeceras anti-caché. Normalmente el clobber genera una URL firmada nueva, pero
+  si "volver a descargar" no trae los cambios, ese es el sospechoso.
+- La rama sigue sin mergear a `master`.

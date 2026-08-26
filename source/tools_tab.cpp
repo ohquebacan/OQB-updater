@@ -11,6 +11,7 @@
 #include "constants.hpp"
 #include "download.hpp"
 #include "extract.hpp"
+#include "forwarder_page.hpp"
 #include "fs.hpp"
 #include "hide_tabs_page.hpp"
 #include "net_page.hpp"
@@ -155,6 +156,18 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     language->setHeight(LISTITEM_HEIGHT);
 
+    brls::ListItem* createForwarder = new brls::ListItem("menus/forwarders/create_title"_i18n);
+    createForwarder->getClickEvent()->subscribe([](brls::View* view) {
+        brls::Application::pushView(new ForwarderCreatePage());
+    });
+    createForwarder->setHeight(LISTITEM_HEIGHT);
+
+    brls::ListItem* manageForwarders = new brls::ListItem("menus/forwarders/manage_title"_i18n);
+    manageForwarders->getClickEvent()->subscribe([](brls::View* view) {
+        brls::Application::pushView(new ForwarderManagePage());
+    });
+    manageForwarders->setHeight(LISTITEM_HEIGHT);
+
     brls::ListItem* hideTabs = new brls::ListItem("menus/tools/hide_tabs"_i18n);
     hideTabs->getClickEvent()->subscribe([](brls::View* view) {
         brls::PopupFrame::open("menus/tools/hide_tabs"_i18n, new HideTabsPage(), "", "");
@@ -196,6 +209,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         this->addView(updateApp);
     }
 
+    if (!util::getBoolValue(hideStatus, "createforwarder")) this->addView(createForwarder);
+    if (!util::getBoolValue(hideStatus, "manageforwarders")) this->addView(manageForwarders);
     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
     if (!util::getBoolValue(hideStatus, "outdatedtitles")) this->addView(outdatedTitles);
     if (!util::getBoolValue(hideStatus, "jccolor")) this->addView(JCcolor);

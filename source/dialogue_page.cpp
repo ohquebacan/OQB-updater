@@ -179,3 +179,18 @@ void DialoguePage_optional::instantiateButtons()
 
     this->label = new brls::Label(brls::LabelStyle::DIALOG, this->text, true);
 }
+
+void DialoguePage_optional::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    if (this->condition && this->condition->empty()) {
+        if (!this->skipped) {
+            this->skipped = true;
+            *this->result = false;
+            if (!frame->isLastStage())
+                frame->nextStage();
+        }
+        return;
+    }
+
+    DialoguePage::draw(vg, x, y, width, height, style, ctx);
+}

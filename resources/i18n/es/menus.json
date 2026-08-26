@@ -242,6 +242,17 @@
   "apps": {
     "forwarder_ask": "¿Quieres crear un acceso directo de esta app en el menú HOME?",
     "forwarder_creating": "Creando acceso directo...",
-    "forwarder_error": "No se pudo crear el acceso directo: {}"
+    "forwarder_error": "No se pudo crear el acceso directo: {}",
+    "installed": "Instalada"
+  },
+  "forwarders": {
+    "create_title": "Crear acceso directo en el menú HOME",
+    "create_desc": "Elegí una app homebrew que ya tengas en la SD para agregarla al menú HOME.",
+    "already_created": "Ya tiene acceso directo",
+    "confirm_create": "¿Crear un acceso directo en el menú HOME para {}?",
+    "manage_title": "Gestionar accesos directos",
+    "manage_desc": "Accesos directos creados por esta app. Seleccioná uno para borrarlo.",
+    "confirm_delete": "¿Borrar el acceso directo de {}?",
+    "delete_error": "No se pudo borrar el acceso directo: {}"
   }
 }

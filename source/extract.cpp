@@ -145,6 +145,45 @@ namespace extract {
         ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
     }
 
+    std::string findNroInArchive(const std::string& archivePath, const std::string& workingPath)
+    {
+        unzFile zfile = unzOpen(archivePath.c_str());
+        if (!zfile) return "";
+
+        unz_global_info gi;
+        if (unzGetGlobalInfo(zfile, &gi) != UNZ_OK) {
+            unzClose(zfile);
+            return "";
+        }
+
+        std::string firstMatch;
+        std::string switchMatch;
+
+        for (uLong i = 0; i < gi.number_entry; ++i) {
+            char szFilename[0x301] = "";
+            unzGetCurrentFileInfo(zfile, NULL, szFilename, sizeof(szFilename), NULL, 0, NULL, 0);
+
+            std::string entry = szFilename;
+            if (entry.length() > 4 && entry.substr(entry.length() - 4) == ".nro") {
+                const std::string full = workingPath + entry;
+                if (firstMatch.empty()) {
+                    firstMatch = full;
+                }
+                // Un pack puede traer varios nro; el que va a /switch/ es el
+                // que el usuario realmente lanza.
+                if (switchMatch.empty() && full.rfind("/switch/", 0) == 0) {
+                    switchMatch = full;
+                    break;
+                }
+            }
+
+            unzGoToNextFile(zfile);
+        }
+
+        unzClose(zfile);
+        return switchMatch.empty() ? firstMatch : switchMatch;
+    }
+
     std::vector<std::string> getInstalledTitlesNs()
     {
         std::vector<std::string> titles;

@@ -70,8 +70,15 @@ private:
     std::string text;
     brls::StagedAppletFrame* frame;
     std::shared_ptr<bool> result;
+    // Si está y resulta vacío al mostrarse, la pregunta no aplica y la página
+    // se saltea sola. Sirve cuando recién al descargar se sabe si hay un NRO.
+    std::shared_ptr<std::string> condition;
+    bool skipped = false;
 
 public:
-    DialoguePage_optional(brls::StagedAppletFrame* frame, const std::string& text, std::shared_ptr<bool> result)
-        : DialoguePage(), text(text), frame(frame), result(std::move(result)) { CreateView(); }
+    DialoguePage_optional(brls::StagedAppletFrame* frame, const std::string& text, std::shared_ptr<bool> result,
+                          std::shared_ptr<std::string> condition = nullptr)
+        : DialoguePage(), text(text), frame(frame), result(std::move(result)), condition(std::move(condition)) { CreateView(); }
+
+    void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 };

@@ -28,6 +28,9 @@ namespace extract {
 
     void extract(
         const std::string& filename, const std::string& workingPath = ROOT_PATH, bool preserveInis = false, std::function<void()> func = []() { return; });
+    // Ruta que tendrá el .nro del archivo una vez extraído bajo workingPath, o
+    // "" si el zip no trae ninguno. Se prefiere el que caiga en /switch/.
+    std::string findNroInArchive(const std::string& archivePath, const std::string& workingPath = ROOT_PATH);
     std::vector<std::string> getInstalledTitlesNs();
     std::vector<std::string> excludeTitles(const std::string& path, const std::vector<std::string>& listedTitles);
     void writeTitlesToFile(const std::set<std::string>& titles, const std::string& path);

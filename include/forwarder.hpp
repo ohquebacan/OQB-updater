@@ -36,6 +36,11 @@ struct Config
 // Si el NRO no trae assets, cae al nombre del archivo y al icono de esta app.
 Result configFromNro(const std::string& nro_path, Config& out);
 
+// Sólo el nombre que declara el NRO, sin leer el icono. Para listar muchos
+// NROs sin cargar cientos de KB de imágenes que no se van a usar.
+// Cae al nombre del archivo si el NRO no trae metadatos.
+std::string nameFromNro(const std::string& nro_path);
+
 // Construye los NCAs (program/control/meta) e instala el registro del título.
 // Reinstalar el mismo NRO sobrescribe el forwarder anterior.
 Result install(Config& config, const ProgressFn& progress = {}, NcmStorageId storage_id = NcmStorageId_SdCard);

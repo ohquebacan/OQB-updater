@@ -38,7 +38,45 @@ namespace {
         return std::filesystem::path(path).stem().string();
     }
 
+    // Deja el archivo posicionado y devuelve el asset header si el NRO trae uno.
+    bool readNroHeaders(FILE* f, NroHeader& header, NroAssetHeader& asset)
+    {
+        NroStart start{};
+        if (!readAt(f, 0, &start, sizeof(start)) || !readAt(f, sizeof(start), &header, sizeof(header))) {
+            return false;
+        }
+        if (header.magic != NROHEADER_MAGIC) {
+            return false;
+        }
+
+        // El asset header, si existe, va justo después del cuerpo del NRO.
+        return readAt(f, header.size, &asset, sizeof(asset)) &&
+               asset.magic == NROASSETHEADER_MAGIC &&
+               asset.version <= NROASSETHEADER_VERSION;
+    }
+
 }  // namespace
+
+std::string nameFromNro(const std::string& nro_path)
+{
+    FILE* raw = std::fopen(nro_path.c_str(), "rb");
+    if (!raw) return nameFromPath(nro_path);
+    FileCloser closer{raw};
+
+    NroHeader header{};
+    NroAssetHeader asset{};
+    if (readNroHeaders(raw, header, asset) && asset.nacp.size >= sizeof(NacpStruct)) {
+        NacpStruct nacp{};
+        if (readAt(raw, header.size + asset.nacp.offset, &nacp, sizeof(nacp))) {
+            NacpLanguageEntry* entry = nullptr;
+            if (R_SUCCEEDED(nacpGetLanguageEntry(&nacp, &entry)) && entry && entry->name[0]) {
+                return entry->name;
+            }
+        }
+    }
+
+    return nameFromPath(nro_path);
+}
 
 Result configFromNro(const std::string& nro_path, Config& out)
 {
@@ -46,23 +84,14 @@ Result configFromNro(const std::string& nro_path, Config& out)
     if (!raw) return Result_NroInvalid;
     FileCloser closer{raw};
 
-    NroStart start{};
     NroHeader header{};
-    if (!readAt(raw, 0, &start, sizeof(start)) || !readAt(raw, sizeof(start), &header, sizeof(header))) {
-        return Result_NroInvalid;
-    }
+    NroAssetHeader asset{};
+    const bool has_assets = readNroHeaders(raw, header, asset);
     if (header.magic != NROHEADER_MAGIC) {
         return Result_NroInvalid;
     }
 
     out.nro_path = nro_path;
-
-    // El asset header, si existe, va justo después del cuerpo del NRO.
-    NroAssetHeader asset{};
-    const bool has_assets =
-        readAt(raw, header.size, &asset, sizeof(asset)) &&
-        asset.magic == NROASSETHEADER_MAGIC &&
-        asset.version <= NROASSETHEADER_VERSION;
 
     bool got_nacp = false;
     if (has_assets && asset.nacp.size >= sizeof(NacpStruct)) {
