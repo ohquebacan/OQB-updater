@@ -163,7 +163,8 @@
     "language_restart": "O aplicativo será fechado para aplicar a mudança de idioma.",
     "outdated_titles": "Atualizações ausentes",
     "latest_version_not_found": "Não foi possível encontrar informações de atualizações",
-    "outdated_titles_desc": "Os seguintes títulos têm atualizações disponíveis:"
+    "outdated_titles_desc": "Os seguintes títulos têm atualizações disponíveis:",
+    "scanning": "Checking {} of {}... (B to cancel)"
   },
   "utils": {
     "fw_warning": "Devido ao tamanho dos arquivos de firmware, o download de firmwares no modo applet não é suportado. Por favor, inicie o aplicativo com acesso total à RAM.",
@@ -223,6 +224,7 @@
     "manage_title": "Manage shortcuts",
     "manage_desc": "Shortcuts created by this app. Select one to delete it.",
     "confirm_delete": "Delete the shortcut for {}?",
-    "delete_error": "The shortcut could not be deleted: {}"
+    "delete_error": "The shortcut could not be deleted: {}",
+    "removed": "Deleted"
   }
 }

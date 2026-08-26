@@ -38,6 +38,37 @@ namespace {
         return std::filesystem::path(path).stem().string();
     }
 
+    // El menú HOME sólo muestra bien un JPEG de 256x256; con cualquier otra
+    // cosa dibuja un mosaico roto. Los NROs pueden traer el icono que quieran,
+    // así que hay que mirarlo antes de meterlo en el NCA de control.
+    bool isValidHomeMenuIcon(const std::vector<u8>& icon)
+    {
+        // SOI
+        if (icon.size() < 4 || icon[0] != 0xFF || icon[1] != 0xD8) {
+            return false;
+        }
+
+        size_t i = 2;
+        while (i + 9 < icon.size()) {
+            if (icon[i] != 0xFF) return false;
+
+            const u8 marker = icon[i + 1];
+            const u16 len = (icon[i + 2] << 8) | icon[i + 3];
+            if (len < 2) return false;
+
+            // SOF0/1/2: acá vienen alto y ancho.
+            if (marker == 0xC0 || marker == 0xC1 || marker == 0xC2) {
+                const u16 h = (icon[i + 5] << 8) | icon[i + 6];
+                const u16 w = (icon[i + 7] << 8) | icon[i + 8];
+                return w == 256 && h == 256;
+            }
+
+            i += 2 + len;
+        }
+
+        return false;
+    }
+
     // Deja el archivo posicionado y devuelve el asset header si el NRO trae uno.
     bool readNroHeaders(FILE* f, NroHeader& header, NroAssetHeader& asset)
     {
@@ -120,7 +151,9 @@ Result configFromNro(const std::string& nro_path, Config& out)
 
     if (has_assets && asset.icon.size > 0) {
         out.icon.resize(asset.icon.size);
-        if (!readAt(raw, header.size + asset.icon.offset, out.icon.data(), out.icon.size())) {
+        if (!readAt(raw, header.size + asset.icon.offset, out.icon.data(), out.icon.size()) ||
+            !isValidHomeMenuIcon(out.icon)) {
+            // Mejor el icono genérico que un mosaico roto en el menú HOME.
             out.icon.clear();
         }
     }

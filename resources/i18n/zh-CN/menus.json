@@ -164,7 +164,8 @@
     "language": "更改程序语言",
     "outdated_titles": "检查游戏更新",
     "latest_version_not_found": "找不到更新信息",
-    "outdated_titles_desc": "以下游戏有可用的更新:"
+    "outdated_titles_desc": "以下游戏有可用的更新:",
+    "scanning": "Checking {} of {}... (B to cancel)"
   },
   "utils": {
     "fw_warning": "由于固件的体积，不支持在 Applet 模式下下载固件。请以完全 RAM 访问权限运行此程序。",
@@ -224,6 +225,7 @@
     "manage_title": "Manage shortcuts",
     "manage_desc": "Shortcuts created by this app. Select one to delete it.",
     "confirm_delete": "Delete the shortcut for {}?",
-    "delete_error": "The shortcut could not be deleted: {}"
+    "delete_error": "The shortcut could not be deleted: {}",
+    "removed": "Deleted"
   }
 }

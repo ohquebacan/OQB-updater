@@ -154,7 +154,8 @@
     "language": "Sprache der Anwendung ändern",
     "outdated_titles": "Fehlende Aktualisierungen für Spiele",
     "latest_version_not_found": "Konnte keine Aktualisierungsinformationen finden",
-    "outdated_titles_desc": "Die folgende Spiele haben verfügbare Aktualisierungen:"
+    "outdated_titles_desc": "Die folgende Spiele haben verfügbare Aktualisierungen:",
+    "scanning": "Checking {} of {}... (B to cancel)"
   },
   "utils": {
     "fw_warning": "Wegen der Größe der Firmwarearchive werden Downloads im Applet Mode nicht unterstützt. Bitte öffne die App mit vollem RAM Zugriff (Title Override).",
@@ -213,6 +214,7 @@
     "manage_title": "Manage shortcuts",
     "manage_desc": "Shortcuts created by this app. Select one to delete it.",
     "confirm_delete": "Delete the shortcut for {}?",
-    "delete_error": "The shortcut could not be deleted: {}"
+    "delete_error": "The shortcut could not be deleted: {}",
+    "removed": "Deleted"
   }
 }

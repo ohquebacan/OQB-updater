@@ -109,8 +109,8 @@ void ForwarderCreatePage::populate()
     for (const auto& nroPath : nros) {
         const std::string name = fwd::nameFromNro(nroPath);
 
+        // Sin setHeight: la altura fija de 50 recorta el subLabel por abajo.
         brls::ListItem* item = new brls::ListItem(name, "", nroPath);
-        item->setHeight(LISTITEM_HEIGHT);
         if (nsReady && fwd::exists(nroPath)) {
             item->setValue("menus/forwarders/already_created"_i18n, true);
         }
@@ -175,13 +175,14 @@ void ForwarderManagePage::populate()
                         }
                     }
 
+                    // Sin setHeight: con subLabel, la altura fija de 50 recorta
+                    // el texto por abajo.
                     brls::ListItem* item = new brls::ListItem(name, "", util::formatApplicationId(tid));
-                    item->setHeight(LISTITEM_HEIGHT);
                     if (hasIcon) {
                         item->setThumbnail(controlData->icon, sizeof(controlData->icon));
                     }
-                    item->getClickEvent()->subscribe([this, tid, name](brls::View* view) {
-                        this->removeForwarder(tid, name);
+                    item->getClickEvent()->subscribe([this, tid, name, item](brls::View* view) {
+                        this->removeForwarder(tid, name, item);
                     });
                     this->list->addView(item);
                     found++;
@@ -202,24 +203,37 @@ void ForwarderManagePage::populate()
     this->setContentView(this->list);
 }
 
-void ForwarderManagePage::removeForwarder(u64 tid, const std::string& name)
+void ForwarderManagePage::removeForwarder(u64 tid, const std::string& name, brls::ListItem* item)
 {
+    if (this->removed.count(tid)) {
+        return;
+    }
+
     // showDialogBoxBlocking hace busy-wait esperando la respuesta, así que no
     // sirve acá: esto corre en el hilo de la UI y se trabaría a sí mismo.
     brls::Dialog* dialog = new brls::Dialog(fmt::format("menus/forwarders/confirm_delete"_i18n, name));
 
-    dialog->addButton("menus/common/yes"_i18n, [dialog, tid](brls::View* view) {
-        Result rc = nsInitialize();
-        if (R_SUCCEEDED(rc)) {
-            rc = nsDeleteApplicationCompletely(tid);
-            nsExit();
-        }
-        dialog->close();
-        util::showDialogBoxInfo(R_SUCCEEDED(rc)
-                                    ? "menus/common/all_done"_i18n
-                                    : fmt::format("menus/forwarders/delete_error"_i18n, fwd::resultToString(rc)));
-        // La lista queda desactualizada; se vuelve a armar al reentrar.
-        brls::Application::popView();
+    dialog->addButton("menus/common/yes"_i18n, [this, dialog, tid, item](brls::View* view) {
+        // El trabajo va en el callback de close(), que corre recién cuando el
+        // diálogo terminó de salir de la pila de vistas. Hacerlo acá mismo y
+        // encima abrir otro diálogo y llamar a popView() dejaba dos pops en
+        // vuelo sobre la misma pila: la app se congelaba y al segundo borrado
+        // se caía.
+        dialog->close([this, tid, item] {
+            Result rc = nsDeleteApplicationCompletely(tid);
+
+            if (R_SUCCEEDED(rc)) {
+                // La entrada se marca en vez de sacarla de la lista: destruir
+                // una vista que puede tener el foco es justamente lo que hace
+                // caer a borealis.
+                this->removed.insert(tid);
+                item->setValue("menus/forwarders/removed"_i18n, true);
+                this->invalidate();
+            }
+            else {
+                util::showDialogBoxInfo(fmt::format("menus/forwarders/delete_error"_i18n, fwd::resultToString(rc)));
+            }
+        });
     });
     dialog->addButton("menus/common/no"_i18n, [dialog](brls::View* view) { dialog->close(); });
     dialog->setCancelable(true);

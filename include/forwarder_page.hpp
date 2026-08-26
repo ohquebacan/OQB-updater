@@ -3,6 +3,7 @@
 #include <switch.h>
 
 #include <borealis.hpp>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -23,8 +24,9 @@ class ForwarderManagePage : public brls::AppletFrame
 {
 private:
     brls::List* list;
+    std::set<u64> removed;
     void populate();
-    void removeForwarder(u64 tid, const std::string& name);
+    void removeForwarder(u64 tid, const std::string& name, brls::ListItem* item);
 
 public:
     ForwarderManagePage();

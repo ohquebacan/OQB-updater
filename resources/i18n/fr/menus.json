@@ -164,7 +164,8 @@
     "language": "Changer la langue de l'application",
     "outdated_titles": "Mises à jour manquantes",
     "latest_version_not_found": "Impossible de trouver les informations de mise à jour",
-    "outdated_titles_desc": "Des mises à jour sont disponibles pour les titres suivants :"
+    "outdated_titles_desc": "Des mises à jour sont disponibles pour les titres suivants :",
+    "scanning": "Checking {} of {}... (B to cancel)"
   },
   "utils": {
     "fw_warning": "En raison de la taille des archives FW, le téléchargement de firmwares en mode applet n'est pas pris en charge. Veuillez lancer l'application avec un accès complet à la RAM.",
@@ -229,6 +230,7 @@
     "manage_title": "Manage shortcuts",
     "manage_desc": "Shortcuts created by this app. Select one to delete it.",
     "confirm_delete": "Delete the shortcut for {}?",
-    "delete_error": "The shortcut could not be deleted: {}"
+    "delete_error": "The shortcut could not be deleted: {}",
+    "removed": "Deleted"
   }
 }

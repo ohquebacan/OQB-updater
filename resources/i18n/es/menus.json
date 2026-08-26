@@ -167,7 +167,8 @@
     "language_restart": "La app se cerrará para aplicar el cambio de idioma.",
     "outdated_titles": "Actualizaciones pendientes",
     "latest_version_not_found": "No se pudo conseguir información sobre actualizaciones",
-    "outdated_titles_desc": "Los siguientes títulos tienen actualizaciones:"
+    "outdated_titles_desc": "Los siguientes títulos tienen actualizaciones:",
+    "scanning": "Revisando {} de {}... (B para cancelar)"
   },
   "utils": {
     "fw_warning": "Debido al tamaño de los FW, descargar firmwares en modo applet no está soportado. Por favor, ejecuta la aplicación con acceso a toda la RAM.",
@@ -253,6 +254,7 @@
     "manage_title": "Gestionar accesos directos",
     "manage_desc": "Accesos directos creados por esta app. Seleccioná uno para borrarlo.",
     "confirm_delete": "¿Borrar el acceso directo de {}?",
-    "delete_error": "No se pudo borrar el acceso directo: {}"
+    "delete_error": "No se pudo borrar el acceso directo: {}",
+    "removed": "Borrado"
   }
 }

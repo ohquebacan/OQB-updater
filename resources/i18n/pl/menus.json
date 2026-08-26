@@ -126,7 +126,8 @@
     "batch_copy": "Zbiorcza kopia plików",
     "batch_copy_not_found": "Poniższe pliki nie zostały znalezione i nie mogły zostać skopiowane:\n",
     "batch_copy_config_not_found": "To narzędzie pozwala na kopiowanie plików do innych lokalizacji, z których może korzystać twój bootloader/trinket. Pobierz copy_files.txt z 'https://git.io/aiosu_copyfiles' i wrzuć go do twojego folderu z konfiguracją. Operacja zostanie również wykonana po aktualizacjach.",
-    "language": "Zmień język aplikacji"
+    "language": "Zmień język aplikacji",
+    "scanning": "Checking {} of {}... (B to cancel)"
   },
   "utils": {
     "fw_warning": "Z powodu rozmiarów archiwów z firmwarem, ich pobieranie w trybie appletu nie jest wspierane. Uruchom aplikację z pełnym dostępem do pamięci RAM.",
@@ -157,6 +158,7 @@
     "manage_title": "Manage shortcuts",
     "manage_desc": "Shortcuts created by this app. Select one to delete it.",
     "confirm_delete": "Delete the shortcut for {}?",
-    "delete_error": "The shortcut could not be deleted: {}"
+    "delete_error": "The shortcut could not be deleted: {}",
+    "removed": "Deleted"
   }
 }

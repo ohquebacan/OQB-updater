@@ -932,6 +932,20 @@ namespace {
         return 0;
     }
 
+    // Según de dónde venga la ruta puede traer el prefijo del devoptab. El tid
+    // se deriva de la ruta, así que sin normalizar el mismo NRO daría dos
+    // forwarders distintos según si se creó al descargarlo o desde la SD.
+    std::string normalize_nro_path(const std::string& nro_path)
+    {
+        constexpr const char SDMC_PREFIX[] = "sdmc:";
+        constexpr size_t SDMC_PREFIX_LEN = sizeof(SDMC_PREFIX) - 1;
+
+        if (nro_path.rfind(SDMC_PREFIX, 0) == 0) {
+            return nro_path.substr(SDMC_PREFIX_LEN);
+        }
+        return nro_path;
+    }
+
     // Los argumentos completos son "<ruta del nro> <args extra>"; el título se
     // deriva de ahí, así que el mismo NRO siempre da el mismo tid.
     std::string build_full_args(const std::string& nro_path, const std::string& args)
@@ -984,6 +998,7 @@ Result install(Config& config, const ProgressFn& progress, NcmStorageId storage_
     u8 header_key[0x20];
     FWD_TRY(derive_header_key(header_key));
 
+    config.nro_path = normalize_nro_path(config.nro_path);
     const auto full_args = build_full_args(config.nro_path, config.args);
     const auto tid = derive_tid(config.nro_path, full_args);
 
@@ -1092,7 +1107,8 @@ Result remove(const std::string& nro_path, const std::string& args)
         return Result_BadArgs;
     }
 
-    const auto tid = derive_tid(nro_path, build_full_args(nro_path, args));
+    const auto path = normalize_nro_path(nro_path);
+    const auto tid = derive_tid(path, build_full_args(path, args));
 
     FWD_TRY(nsInitialize());
     FWD_ON_SCOPE_EXIT(nsExit());
@@ -1106,7 +1122,8 @@ bool exists(const std::string& nro_path, const std::string& args)
         return false;
     }
 
-    const auto tid = derive_tid(nro_path, build_full_args(nro_path, args));
+    const auto path = normalize_nro_path(nro_path);
+    const auto tid = derive_tid(path, build_full_args(path, args));
 
     if (R_FAILED(nsInitialize())) {
         return false;

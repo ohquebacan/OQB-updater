@@ -96,8 +96,19 @@ class AppPage_OutdatedTitles : public AppPage
 {
 private:
     nlohmann::ordered_json versions;
-    void AddListItem(const std::string& name, uint64_t tid) override;
+    void PopulatePage() override;
+
+    // El escaneo se hace de a poco desde draw(), no de una sola vez en el
+    // constructor: pedir el control data de un título es caro y con muchos
+    // juegos instalados la app quedaba congelada medio minuto, sin poder
+    // cancelar y sin señal de que estuviera haciendo algo.
+    std::vector<uint64_t> pending;
+    size_t scanned = 0;
+    int found = 0;
+    bool scanning = false;
+    brls::Label* progressLabel = nullptr;
 
 public:
     AppPage_OutdatedTitles();
+    void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 };

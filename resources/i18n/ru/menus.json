@@ -163,7 +163,8 @@
     "language": "Изменить язык приложения",
     "outdated_titles": "Устаревшие игры",
     "latest_version_not_found": "Не удалось найти информацию об обновлениях",
-    "outdated_titles_desc": "Следующие игры имеют доступные обновления:"
+    "outdated_titles_desc": "Следующие игры имеют доступные обновления:",
+    "scanning": "Checking {} of {}... (B to cancel)"
   },
   "utils": {
     "fw_warning": "Из-за размера архивов, загрузка прошивок в режиме апплета не поддерживается. Пожалуйста, запустите приложение с полным доступом к оперативной памяти.",
@@ -223,6 +224,7 @@
     "manage_title": "Manage shortcuts",
     "manage_desc": "Shortcuts created by this app. Select one to delete it.",
     "confirm_delete": "Delete the shortcut for {}?",
-    "delete_error": "The shortcut could not be deleted: {}"
+    "delete_error": "The shortcut could not be deleted: {}",
+    "removed": "Deleted"
   }
 }

@@ -359,19 +359,84 @@ AppPage_OutdatedTitles::AppPage_OutdatedTitles() : AppPage()
     }
 }
 
-void AppPage_OutdatedTitles::AddListItem(const std::string& name, u64 tid)
+void AppPage_OutdatedTitles::PopulatePage()
 {
-    u32 version = cheats_util::GetVersion(tid);
-    std::string tid_string = util::formatApplicationId(tid);
-    if (versions.find(tid_string) != versions.end()) {
-        u32 latest = versions.at(tid_string).at("latest");
-        if (version < latest) {
-            listItem->setSubLabel(fmt::format("{}\t|\t v{} (local) → v{} (latest)", tid_string, version, latest));
-            list->addView(listItem);
+    this->progressLabel = new brls::Label(brls::LabelStyle::DESCRIPTION, "", true);
+    list->addView(this->progressLabel);
+
+    if (util::isApplet()) {
+        this->progressLabel->setText("menus/common/applet_mode_not_supported"_i18n);
+        this->setContentView(list);
+        return;
+    }
+
+    NsApplicationRecord* records = new NsApplicationRecord[MaxTitleCount];
+    s32 recordCount = 0;
+
+    if (R_SUCCEEDED(nsListApplicationRecord(records, MaxTitleCount, 0, &recordCount))) {
+        this->pending.reserve(recordCount);
+        for (s32 i = 0; i < recordCount; i++) {
+            this->pending.push_back(records[i].application_id);
         }
     }
-    /* else {
-        listItem->setSubLabel(fmt::format("{}\t|\t {}", tid_string, "menus/tools/latest_version_not_found"_i18n));
-        list->addView(listItem);
-    } */
+    delete[] records;
+
+    this->scanning = !this->pending.empty();
+    this->progressLabel->setText(this->scanning
+                                     ? fmt::format("menus/tools/scanning"_i18n, 0, this->pending.size())
+                                     : "menus/common/nothing_to_see"_i18n);
+
+    this->setContentView(list);
+}
+
+void AppPage_OutdatedTitles::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    if (this->scanning) {
+        // Pocos por frame: así la interfaz sigue respondiendo y se puede salir
+        // con B en el medio si uno se arrepiente.
+        constexpr size_t BATCH = 4;
+        const size_t end = std::min(this->scanned + BATCH, this->pending.size());
+
+        for (; this->scanned < end; this->scanned++) {
+            const u64 tid = this->pending[this->scanned];
+            const std::string tid_string = util::formatApplicationId(tid);
+
+            const auto entry = this->versions.find(tid_string);
+            if (entry == this->versions.end()) continue;
+
+            const u32 latest = entry->at("latest");
+            const u32 local = cheats_util::GetVersion(tid);
+            if (local >= latest) continue;
+
+            // El control data (que arrastra el icono) se pide sólo para los
+            // títulos que de verdad tienen actualización, no para todos.
+            NsApplicationControlData* controlData = NULL;
+            if (R_FAILED(InitControlData(&controlData))) continue;
+
+            u64 controlSize = 0;
+            std::string name;
+            if (R_SUCCEEDED(GetControlData(tid, controlData, controlSize, name))) {
+                brls::ListItem* item = new brls::ListItem(
+                    name, "", fmt::format("{}\t|\t v{} (local) → v{} (latest)", tid_string, local, latest));
+                item->setThumbnail(controlData->icon, sizeof(controlData->icon));
+                list->addView(item);
+                this->found++;
+            }
+
+            free(controlData);
+        }
+
+        if (this->scanned >= this->pending.size()) {
+            this->scanning = false;
+            this->progressLabel->setText(this->found ? "menus/tools/outdated_titles_desc"_i18n
+                                                     : "menus/common/nothing_to_see"_i18n);
+        }
+        else {
+            this->progressLabel->setText(fmt::format("menus/tools/scanning"_i18n, this->scanned, this->pending.size()));
+        }
+
+        this->invalidate();
+    }
+
+    brls::AppletFrame::draw(vg, x, y, width, height, style, ctx);
 }
