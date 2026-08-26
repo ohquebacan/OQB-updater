@@ -2,6 +2,8 @@
 
 #include <borealis.hpp>
 #include <chrono>
+#include <memory>
+#include <string>
 
 class ConfirmPage : public brls::View
 {
@@ -42,4 +44,18 @@ class ConfirmPage_SelfUpdate : public ConfirmPage_Done
 {
 public:
     ConfirmPage_SelfUpdate(brls::StagedAppletFrame* frame, const std::string& text);
+};
+
+// Página cuyo texto se decide recién al dibujarse. La usa el flujo de
+// forwarders: el worker corre en otro hilo y deja ahí su resultado, y el texto
+// se lee desde el hilo de la UI, que es el único que puede tocar las vistas.
+class ConfirmPage_Deferred : public ConfirmPage_Done
+{
+private:
+    std::shared_ptr<std::string> message;
+    bool applied = false;
+
+public:
+    ConfirmPage_Deferred(brls::StagedAppletFrame* frame, std::shared_ptr<std::string> message);
+    void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 };

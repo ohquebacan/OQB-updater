@@ -11,10 +11,16 @@
 
 #include <switch.h>
 
+#include <functional>
 #include <string>
 #include <vector>
 
 namespace fwd {
+
+// Se llama con (paso, total) mientras avanza la instalación. `paso` nunca
+// llega a `total`: quien llama marca el final recién cuando install() retorna,
+// así la UI no puede darse por terminada mientras el worker sigue corriendo.
+using ProgressFn = std::function<void(int step, int total)>;
 
 struct Config
 {
@@ -32,7 +38,7 @@ Result configFromNro(const std::string& nro_path, Config& out);
 
 // Construye los NCAs (program/control/meta) e instala el registro del título.
 // Reinstalar el mismo NRO sobrescribe el forwarder anterior.
-Result install(Config& config, NcmStorageId storage_id = NcmStorageId_SdCard);
+Result install(Config& config, const ProgressFn& progress = {}, NcmStorageId storage_id = NcmStorageId_SdCard);
 
 // Elimina el forwarder asociado a un NRO, si existe.
 Result remove(const std::string& nro_path, const std::string& args = "");

@@ -12,6 +12,7 @@
 #include "extract.hpp"
 #include "forwarder.hpp"
 #include "fs.hpp"
+#include "progress_event.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -85,19 +86,35 @@ void ListDownloadTab::createList(contentType type)
 
                     // Tras bajar el NRO, ofrecer crear el acceso directo en el menú HOME.
                     auto makeForwarder = std::make_shared<bool>(false);
+                    auto forwarderResult = std::make_shared<std::string>();
                     stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/apps/forwarder_ask"_i18n, makeForwarder));
-                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/apps/forwarder_creating"_i18n, [dest, makeForwarder]() {
-                        if (!*makeForwarder) return;
+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/apps/forwarder_creating"_i18n, [dest, makeForwarder, forwarderResult]() {
+                        auto& progress = ProgressEvent::instance();
 
-                        fwd::Config config;
-                        Result rc = fwd::configFromNro(dest, config);
-                        if (R_SUCCEEDED(rc)) {
-                            rc = fwd::install(config);
+                        if (*makeForwarder) {
+                            fwd::Config config;
+                            Result rc = fwd::configFromNro(dest, config);
+                            if (R_SUCCEEDED(rc)) {
+                                rc = fwd::install(config, [](int step, int total) {
+                                    ProgressEvent::instance().setTotalSteps(total);
+                                    ProgressEvent::instance().setStep(step);
+                                });
+                            }
+                            // El diálogo no se puede abrir desde este hilo, así que
+                            // el mensaje se deja acá y lo muestra la página siguiente.
+                            *forwarderResult = R_SUCCEEDED(rc)
+                                ? "menus/common/all_done"_i18n
+                                : fmt::format("menus/apps/forwarder_error"_i18n, fwd::resultToString(rc));
                         }
-                        if (R_FAILED(rc)) {
-                            util::showDialogBoxInfo(fmt::format("menus/apps/forwarder_error"_i18n, fwd::resultToString(rc)));
+                        else {
+                            *forwarderResult = "menus/common/all_done"_i18n;
                         }
+
+                        progress.setStep(progress.getMax());
                     }));
+                    stagedFrame->addStage(new ConfirmPage_Deferred(stagedFrame, forwarderResult));
+                    brls::Application::pushView(stagedFrame);
+                    return;
                 }
                 else if (type != contentType::payloads && type != contentType::hekate_ipl) {
                     if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline")) {

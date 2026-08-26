@@ -71,6 +71,21 @@ ConfirmPage_AmsUpdate::ConfirmPage_AmsUpdate(brls::StagedAppletFrame* frame, con
     this->registerAction("", brls::Key::B, [this] { return true; });
 };
 
+ConfirmPage_Deferred::ConfirmPage_Deferred(brls::StagedAppletFrame* frame, std::shared_ptr<std::string> message)
+    : ConfirmPage_Done(frame, ""), message(std::move(message))
+{
+}
+
+void ConfirmPage_Deferred::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    if (!this->applied) {
+        this->applied = true;
+        this->label->setText(*this->message);
+        this->invalidate();
+    }
+    ConfirmPage_Done::draw(vg, x, y, width, height, style, ctx);
+}
+
 void ConfirmPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
     if (!this->done) {

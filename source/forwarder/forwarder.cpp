@@ -952,12 +952,21 @@ namespace {
 
 }  // namespace
 
-Result install(Config& config, NcmStorageId storage_id)
+Result install(Config& config, const ProgressFn& progress, NcmStorageId storage_id)
 {
+    // El total queda por encima del último paso reportado a propósito: el
+    // paso final lo marca quien llama, cuando esta función ya retornó.
+    constexpr int TOTAL_STEPS = 8;
+    int step = 0;
+    const auto advance = [&] {
+        if (progress) progress(++step, TOTAL_STEPS);
+    };
+
     if (config.nro_path.empty() || config.icon.empty()) {
         return Result_BadArgs;
     }
 
+    advance();  // 1
     std::vector<u8> hbl_main, hbl_npdm;
     FWD_TRY(read_romfs_file(HBL_MAIN_PATH, hbl_main));
     FWD_TRY(read_romfs_file(HBL_NPDM_PATH, hbl_npdm));
@@ -971,6 +980,7 @@ Result install(Config& config, NcmStorageId storage_id)
     FWD_TRY(ns_ex::Initialize());
     FWD_ON_SCOPE_EXIT(ns_ex::Exit());
 
+    advance();  // 2
     u8 header_key[0x20];
     FWD_TRY(derive_header_key(header_key));
 
@@ -981,6 +991,7 @@ Result install(Config& config, NcmStorageId storage_id)
 
     // NCA de programa: hbl + la ruta del NRO destino en su romfs.
     {
+        advance();  // 3
         FileEntries exefs;
         add_file_entry(exefs, "main", hbl_main);
         add_file_entry(exefs, "main.npdm", hbl_npdm);
@@ -1000,6 +1011,7 @@ Result install(Config& config, NcmStorageId storage_id)
 
     // NCA de control: nombre, autor e icono que se ven en el menú HOME.
     {
+        advance();  // 4
         NacpPatch nacp_patch{};
         nacp_patch.tid = tid;
         nacp_patch.name = config.name;
@@ -1017,6 +1029,7 @@ Result install(Config& config, NcmStorageId storage_id)
     ContentStorageRecord content_storage_record;
     NcmContentMetaData content_meta_data;
     {
+        advance();  // 5
         const auto meta_entry = create_meta_nca(tid, header_key, storage_id, nca_entries);
 
         nca_entries.emplace_back(meta_entry.nca_entry);
@@ -1027,6 +1040,7 @@ Result install(Config& config, NcmStorageId storage_id)
 
     // Escribir los NCAs en el almacenamiento.
     {
+        advance();  // 6
         NcmContentStorage cs;
         FWD_TRY(ncmOpenContentStorage(&cs, storage_id));
         FWD_ON_SCOPE_EXIT(ncmContentStorageClose(&cs));
@@ -1046,6 +1060,7 @@ Result install(Config& config, NcmStorageId storage_id)
 
     // Registrar el título en la base de datos de ncm.
     {
+        advance();  // 7
         NcmContentMetaDatabase db;
         FWD_TRY(ncmOpenContentMetaDatabase(&db, storage_id));
         FWD_ON_SCOPE_EXIT(ncmContentMetaDatabaseClose(&db));
