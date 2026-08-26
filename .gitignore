@@ -22,3 +22,7 @@ resources/inter
 resources/.gitignore
 rcm/output/
 rcm/build/
+
+# artefactos del build del loader hbl
+hbl/exefs/
+resources/hbl/

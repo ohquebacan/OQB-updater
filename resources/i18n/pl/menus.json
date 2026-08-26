@@ -2,8 +2,8 @@
   "about": {
     "title": "All-in-One Nintendo Switch Updater",
     "copyright": "AIO-Switch-Updater jest zgodny z licencją GPL-3.0",
-    "disclaimers": "\u25c6 Oprócz cheatów które są lustrzaną kopią tych z wątku na GBAtemp.net, HamletDuFromage nie hostuje żadnych innych plików. Podziękowania za nie należy kierować do ich twórców.\n\u25c6 Linki są odświeżane co 30 minut. Jeśli po 30 minutach link nadal nie działa, utwórz nowy problem na GitHubie.\n",
-    "donate": "\u25c6 Podoba ci się apka? Rozważ datek na wsparcie moich starań: 'https://git.io/donate_homlet'"
+    "disclaimers": "◆ Oprócz cheatów które są lustrzaną kopią tych z wątku na GBAtemp.net, HamletDuFromage nie hostuje żadnych innych plików. Podziękowania za nie należy kierować do ich twórców.\n◆ Linki są odświeżane co 30 minut. Jeśli po 30 minutach link nadal nie działa, utwórz nowy problem na GitHubie.\n",
+    "donate": "◆ Podoba ci się apka? Rozważ datek na wsparcie moich starań: 'https://git.io/donate_homlet'"
   },
   "cheats": {
     "installed": "Zainstalowane cheaty",
@@ -19,7 +19,7 @@
     "deleting": "Usuwanie…",
     "cheatslips_title": "Cheaty Cheat Slips",
     "get_cheatslips": "Pobierz arkusze cheatów z Cheat Slips",
-    "cheatslips_label": "\u25c6 Zaloguj się na Cheat Slips i pobierz arkusze cheatów dla swoich gier.",
+    "cheatslips_label": "◆ Zaloguj się na Cheat Slips i pobierz arkusze cheatów dla swoich gier.",
     "cheatslips_dl": "Pobierz wybrane arkusze cheatów z Cheat Slips.\nPobrane cheaty zostaną dopisane na końcu twojego pliku z cheatami.",
     "delete_file": "Usuń istniejący plik z cheatami",
     "cheatslips_error": "Nie można było pobrać wybranych cheatów/nieprawidłowy token.",
@@ -83,8 +83,8 @@
   },
   "main": {
     "getting": "Pobieranie {}",
-    "firmware_text": "\u25c6 Oprogramowanie z 'https://darthsternie.net/switch-firmwares/'. Po pobraniu zostanie rozpakowane do '/firmware'. Możesz je później zainstalować korzystając z Daybreak.\n\u25c6 Bieżący FW: ",
-    "cheats_text": "\u25c6 Pobierze aktualizowaną codziennie paczkę cheatów z 'gbatemp.net'. Cheaty dla gier których nie masz zainstalowanych nie zostaną wypakowane na twoją kartę SD. Możesz wyłączyć aktualizację cheatów dla poszczególnych gier w 'Narzędzia→Menu cheatów'.\n\u25c6 Bieżąca wersja cheatów: ",
+    "firmware_text": "◆ Oprogramowanie z 'https://darthsternie.net/switch-firmwares/'. Po pobraniu zostanie rozpakowane do '/firmware'. Możesz je później zainstalować korzystając z Daybreak.\n◆ Bieżący FW: ",
+    "cheats_text": "◆ Pobierze aktualizowaną codziennie paczkę cheatów z 'gbatemp.net'. Cheaty dla gier których nie masz zainstalowanych nie zostaną wypakowane na twoją kartę SD. Możesz wyłączyć aktualizację cheatów dla poszczególnych gier w 'Narzędzia→Menu cheatów'.\n◆ Bieżąca wersja cheatów: ",
     "get_cheats": "Pobierz archiwum cheatów GBAtemp.net (wersja {})",
     "firmware": "firmware",
     "not_found": "nie znaleziono",
@@ -92,18 +92,18 @@
     "app": "aplikacja",
     "cfw": "CFW",
     "ams": "Atmosphère",
-    "ams_text": "\u25c6 Z poziomu tego menu możesz pobrać i zaktualizować modyfikację oprogramowania Atmosph\u00e8re potrzebną do uruchamiania aplikacji homebrew.\n\u25c6 DeepSea od Team Neptune to paczka z CFW zawierająca Atmosph\u00e8re, hekate i różne aplikacje homebrew.",
-    "cfw_text": "\u25c6 Alternatywne CFW, bootloadery.",
+    "ams_text": "◆ Z poziomu tego menu możesz pobrać i zaktualizować modyfikację oprogramowania Atmosphère potrzebną do uruchamiania aplikacji homebrew.\n◆ DeepSea od Team Neptune to paczka z CFW zawierająca Atmosphère, hekate i różne aplikacje homebrew.",
+    "cfw_text": "◆ Alternatywne CFW, bootloadery.",
     "cheats": "cheaty",
     "links_not_found": "Nie można było uzyskać linku pobierania. Upewnij się, że Switch ma połączenie z internetem.\nJeśli problem nie ustąpi, utwórz nowy problem na GitHubie.",
     "new_update": "- Dostępna aktualizacja aplikacji",
     "about": "O aplikacji",
-    "update_ams": "Zaktualizuj Atmosph\u00e8re",
+    "update_ams": "Zaktualizuj Atmosphère",
     "update_cfw": "Zaktualizuj CFW",
     "download_firmware": "Pobierz firmware",
     "download_cheats": "Pobierz cheaty",
     "tools": "Narzędzia",
-    "launch_warning": "Zwróć uwagę na następujące punkty zanim skorzystasz z aplikacji:\n\n\u25c6 Dowiedz się najpierw, jak ręcznie zaktualizować twojego Switcha. Pomoże ci to lepiej zrozumieć działanie aplikacji i będziesz wiedział co zrobić gdy coś pójdzie nie tak.\n\u25c6 Należy pamiętać, że korzystanie z tej aplikacji na karcie SD z systemem plików exFAT jest SILNIE odradzane, ponieważ ich zawartość jest bardziej podatna na uszkodzenia.\n\n\u25c6 Mogły zostać wprowadzone nowe funkcje i/lub zmiany obecnych funkcji. Rzuć na nie okiem w Narzędzia→Dziennik zmian.\n\nTen ekran nie wyświetli się ponownie.",
+    "launch_warning": "Zwróć uwagę na następujące punkty zanim skorzystasz z aplikacji:\n\n◆ Dowiedz się najpierw, jak ręcznie zaktualizować twojego Switcha. Pomoże ci to lepiej zrozumieć działanie aplikacji i będziesz wiedział co zrobić gdy coś pójdzie nie tak.\n◆ Należy pamiętać, że korzystanie z tej aplikacji na karcie SD z systemem plików exFAT jest SILNIE odradzane, ponieważ ich zawartość jest bardziej podatna na uszkodzenia.\n\n◆ Mogły zostać wprowadzone nowe funkcje i/lub zmiany obecnych funkcji. Rzuć na nie okiem w Narzędzia→Dziennik zmian.\n\nTen ekran nie wyświetli się ponownie.",
     "footer_text": "v{} | {:.1f}GB dostępne"
   },
   "hide": {
@@ -136,11 +136,16 @@
   "ams_update": {
     "reboot_rcm": "Switch uruchomi się teraz ponownie do specjalnego payloadu aby ukończyć instalację.",
     "install_hekate": "Czy chcesz również pobrać Hekate?\nJeżeli nie, Switch uruchomi się teraz ponownie do specjalnego payloadu aby ukończyć instalację.",
-    "delete_contents": "Czy chcesz usunąć istniejącą zawartość ścieżki '/atmosphere/contents/'? Zapobiegnie to błędom jeśli posiadasz sysmoduły niekompatybilne z nowym Atmosph\u00e8re. Pamiętaj, że spowoduje to usunięcie wszystkich twoich sysmodułów, modów i cheatów.",
+    "delete_contents": "Czy chcesz usunąć istniejącą zawartość ścieżki '/atmosphere/contents/'? Zapobiegnie to błędom jeśli posiadasz sysmoduły niekompatybilne z nowym Atmosphère. Pamiętaj, że spowoduje to usunięcie wszystkich twoich sysmodułów, modów i cheatów.",
     "delete_sysmodules_flags": "Czy chcesz usunąć flagi uruchamiania dodatkowych sysmodułów? Spowoduje to wyłączenie wszystkich twoich sysmodułów i zapobiegnie błędom jeśli posiadasz sysmoduły niekompatybilne z nowym Atmosphère.",
-    "current_ams": "\u25c6 Bieżące Atmosphère: "
+    "current_ams": "◆ Bieżące Atmosphère: "
   },
   "net": {
     "title": "Ustawienia internetowe"
+  },
+  "apps": {
+    "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
+    "forwarder_creating": "Creating shortcut...",
+    "forwarder_error": "The shortcut could not be created: {}"
   }
 }

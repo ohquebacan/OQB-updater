@@ -59,3 +59,19 @@ private:
 public:
     DialoguePage_confirm(brls::StagedAppletFrame* frame, const std::string& text) : DialoguePage(), text(text), frame(frame) { CreateView(); }
 };
+
+// Pregunta opcional: ambas respuestas continúan al siguiente stage, sólo
+// cambia el valor que queda en `result`. Sirve para ofrecer un extra sin
+// abortar el flujo si el usuario dice que no.
+class DialoguePage_optional : public DialoguePage
+{
+private:
+    void instantiateButtons() override;
+    std::string text;
+    brls::StagedAppletFrame* frame;
+    std::shared_ptr<bool> result;
+
+public:
+    DialoguePage_optional(brls::StagedAppletFrame* frame, const std::string& text, std::shared_ptr<bool> result)
+        : DialoguePage(), text(text), frame(frame), result(std::move(result)) { CreateView(); }
+};

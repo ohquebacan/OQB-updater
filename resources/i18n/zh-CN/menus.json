@@ -3,8 +3,8 @@
     "title": "多工具合一任天堂 Switch 更新器",
     "copyright": "多工具合一任天堂 Switch 更新器遵循 GPL-3.0 协议",
     "disclaimers_title": "声明",
-    "disclaimers": "\u25c6 除了从主 GBAtemp 线程镜像的金手指外，本软件作者不拥有任何金手指。所有的功劳归于各自的所有者。\n\u25c6 链接每 30 分钟刷新一次。如果链接在 30 分钟后仍然有问题，请到 GitHub 提交 issue。",
-    "donate": "\u25c6 喜欢这个程序？考虑捐赠以支持我的努力：'https://git.io/donate_homlet'"
+    "disclaimers": "◆ 除了从主 GBAtemp 线程镜像的金手指外，本软件作者不拥有任何金手指。所有的功劳归于各自的所有者。\n◆ 链接每 30 分钟刷新一次。如果链接在 30 分钟后仍然有问题，请到 GitHub 提交 issue。",
+    "donate": "◆ 喜欢这个程序？考虑捐赠以支持我的努力：'https://git.io/donate_homlet'"
   },
   "cheats": {
     "installed": "安装金手指",
@@ -22,7 +22,7 @@
     "gbatemp_title": "GBAtemp.net 金手指",
     "get_gbatemp": "下载独立的金手指",
     "get_cheatslips": "下载 Cheat Slips 金手指表",
-    "cheats_label": "\u25c6 从 GBAtemp.net 数据库下载单独的金手指，或从 Cheat Slips 下载金手指表",
+    "cheats_label": "◆ 从 GBAtemp.net 数据库下载单独的金手指，或从 Cheat Slips 下载金手指表",
     "cheatslips_dl": "从 Cheat Slips 下载精选的金手指表。\n这些金手指代码将被添加到您现有的金手指文件的末尾。",
     "delete_file": "删除现有金手指文件",
     "cheatslips_error": "无法下载选择的金手指 / 令牌无效。",
@@ -108,8 +108,8 @@
   },
   "main": {
     "getting": "正在获取 {}",
-    "firmware_text": "\u25c6 固件来自 'https://darthsternie.net/switch-firmwares/'。下载完成后，它将被解压缩到 '/firmware' 中。然后您可以通过 Daybreak 安装更新。\n\u25c6 当前固件版本：",
-    "cheats_text": "\u25c6 这将从 'gbatemp.net' 下载每日更新的金手指文件。未安装的游戏的金手指不会被解压到 SD 卡中。您可以在 '工具 → 金手指菜单' 中关闭特定游戏的金手指更新。\n\u25c6 当前金手指版本：",
+    "firmware_text": "◆ 固件来自 'https://darthsternie.net/switch-firmwares/'。下载完成后，它将被解压缩到 '/firmware' 中。然后您可以通过 Daybreak 安装更新。\n◆ 当前固件版本：",
+    "cheats_text": "◆ 这将从 'gbatemp.net' 下载每日更新的金手指文件。未安装的游戏的金手指不会被解压到 SD 卡中。您可以在 '工具 → 金手指菜单' 中关闭特定游戏的金手指更新。\n◆ 当前金手指版本：",
     "get_cheats": "下载 GBAtemp.net 金手指压缩包（版本 {}）",
     "get_cheats_gfx": "下载图形增强金手指",
     "get_all_cheats:": "下载 GBAtemp.net 金手指压缩包",
@@ -119,9 +119,9 @@
     "app": "app",
     "cfw": "CFW",
     "ams": "大气层",
-    "ams_text": "\u25c6 此菜单下，您可以下载和更新运行自制软件所需的大气层定制固件。",
-    "cfw_text": "\u25c6 可供替代的 CFWs，bootloaders。",
-    "bootloaders_text": "\u25c6 下载并更新 bootloaders。",
+    "ams_text": "◆ 此菜单下，您可以下载和更新运行自制软件所需的大气层定制固件。",
+    "cfw_text": "◆ 可供替代的 CFWs，bootloaders。",
+    "bootloaders_text": "◆ 下载并更新 bootloaders。",
     "cheats": "金手指",
     "links_not_found": "找不到下载链接，请确保 Switch 可以访问互联网。\n如果问题仍然存在，请到 GitHub 上提交 issue。",
     "new_update": "- 新的程序更新可用",
@@ -133,11 +133,11 @@
     "download_firmware": "下载固件",
     "download_cheats": "下载金手指",
     "tools": "工具",
-    "launch_warning": "使用此程序前请注意以下几点：\n\n\u25c6 首先阅读如何手动更新您的 Switch。这将有助于您更好地理解此程序，您将知道在出现问题时该怎么做。\n\u25c6 为了避免任何数据损坏的风险，强烈建议不要在 exFAT 格式的 SD 卡上使用此程序。\n\n\u25c6 有关已支持和已更改的功能的最新更新可在 工具 → 更新日志 菜单中查看。\n\n该说明下次将不再显示。",
+    "launch_warning": "使用此程序前请注意以下几点：\n\n◆ 首先阅读如何手动更新您的 Switch。这将有助于您更好地理解此程序，您将知道在出现问题时该怎么做。\n◆ 为了避免任何数据损坏的风险，强烈建议不要在 exFAT 格式的 SD 卡上使用此程序。\n\n◆ 有关已支持和已更改的功能的最新更新可在 工具 → 更新日志 菜单中查看。\n\n该说明下次将不再显示。",
     "footer_text": "v{} | {:.1f} GB 可用",
     "theme_warning": "您似乎安装了一个自定义主题，这可能会导致您的系统在升级固件后无法启动。\n请考虑在升级之前将其删除。\n\nDo you wish to proceed regardless?",
-    "payloads_label": "\u25c6 下载 RCM payloads 到 {}",
-    "hekate_ipl_label": "\u25c6 下载一个精简的 \"够用\"的 hekate_ipl.ini 配置文件。这将覆盖您当前的 hekate_ipl.ini。"
+    "payloads_label": "◆ 下载 RCM payloads 到 {}",
+    "hekate_ipl_label": "◆ 下载一个精简的 \"够用\"的 hekate_ipl.ini 配置文件。这将覆盖您当前的 hekate_ipl.ini。"
   },
   "hide": {
     "title": "隐藏选项卡",
@@ -172,29 +172,29 @@
     "not_an_archive": "下载的文件不是 zip 压缩包。可能是链接失效。如果问题在 30 分钟后仍然存在，请到 GitHub 上提交 issue。",
     "overwrite_inis": "是否要覆盖现有的 .ini 配置文件？",
     "set_hekate_reboot_payload": "是否将 Hekate payload `{}` 复制到 `{}`?",
-    "applet_webbrowser": "当前处于 applet 模式。\n\uE016 请通过按住 [R] 键启动游戏来启动 hbmenu"
+    "applet_webbrowser": "当前处于 applet 模式。\n 请通过按住 [R] 键启动游戏来启动 hbmenu"
   },
   "ams_update": {
     "reboot_rcm": "Switch 现在将重新启动到一个特殊的 payload，以便完成安装。",
     "install_hekate": "是否也要下载 hekate？\n如果不是，Switch 现在将重新启动到一个特殊的 payload，以便完成安装。",
     "delete_contents": "是否要删除现有的 '/atmosphere/contents/' 目录？如果您的 sysmodules 不支持最新的大气层，这能防止系统崩溃。请注意，它将删除所有现有的 sysmodules、模组和金手指。",
     "delete_sysmodules_flags": "是否要删除所有自定义 sysmodules 启动标志？如果您的 sysmodules 不支持最新的大气层，这将关闭所有的 sysmodules，并防止系统崩溃。",
-    "current_ams": "\u25c6 当前的大气层：",
-    "erista_rev": "\u25c6 Erista",
-    "mariko_rev": "\u25c6 Mariko",
+    "current_ams": "◆ 当前的大气层：",
+    "erista_rev": "◆ Erista",
+    "mariko_rev": "◆ Mariko",
     "deepsea_builder": "DeepSea 构建",
     "show_module_description": "显示模块的说明",
     "depends_on": "还将安装以下模块：",
     "download_custom_deepsea": "下载此定制的 DeepSea 包",
     "get_custom_deepsea": "获取定制 DeepSea 包",
-    "deepsea_label": "\u25c6 DeepSea 是一个包含大气层、hekate 和各种自制软件的第三方固件，由 Team Neptune 制作。",
+    "deepsea_label": "◆ DeepSea 是一个包含大气层、hekate 和各种自制软件的第三方固件，由 Team Neptune 制作。",
     "download_deepsea_package": "编译和下载",
     "cant_fetch_deepsea": "无法获取软件包。如果问题依然存在，请到 GitHub 提交 issue。",
     "build_your_deepsea": "通过选择软件包，构建自定义的 DeepSea 包",
     "getting_ams": "获取大气层",
-    "custom_packs_label": "\u25c6 以下是 {} 文件中列出的包。请注意，AIO-Switch-Updater 并未认可这些内容，因此请确保您信任它们的来源。",
-    "custom_packs_ams": "\u25c6 含第三方大气层固件的包",
-    "custom_packs_misc": "\u25c6 含自制软件和工具的包",
+    "custom_packs_label": "◆ 以下是 {} 文件中列出的包。请注意，AIO-Switch-Updater 并未认可这些内容，因此请确保您信任它们的来源。",
+    "custom_packs_ams": "◆ 含第三方大气层固件的包",
+    "custom_packs_misc": "◆ 含自制软件和工具的包",
     "custom_download": "自定义下载",
     "add_custom_link": "添加自定义的下载链接",
     "delete_custom_link": "删除"
@@ -209,5 +209,10 @@
     "insufficient_storage": "您的 SD 卡上没有足够的可用空间来执行此操作。",
     "error_message": "{}\n请稍后重试。如果问题仍然存在，请到 GitHub 提交 issue。",
     "mariko_payload_missing": "要更新大气层，您的 payload 需要重命名为 \"payload.bin\"，并且位于 SD 卡的根目录下。"
+  },
+  "apps": {
+    "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
+    "forwarder_creating": "Creating shortcut...",
+    "forwarder_error": "The shortcut could not be created: {}"
   }
 }

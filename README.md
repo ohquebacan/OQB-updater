@@ -44,6 +44,14 @@ Copy the `aio-switch-updater/` directory to `/switch/` on your sdcard.
 - Download cheat sheets from [Cheat Slips](https://www.cheatslips.com/). 
 - Download individual cheat codes from the `GBAtemp.net` database.
 
+### ⬦ Apps
+- Download homebrew apps straight to `/switch/`.
+- After downloading a `.nro`, the app offers to create a **forwarder**: a shortcut on the HOME menu that launches the app directly, with its own icon and name taken from the NRO itself.
+  - No `prod.keys` needed — the only key involved (`header_key`) is derived from the console via `spl`.
+  - Requires CFW with sigpatches, as with any forwarder.
+  - Re-downloading the same app overwrites its existing shortcut instead of creating a duplicate.
+  - The forwarder generator is a port of [sphaira](https://github.com/ITotalJustice/sphaira)'s `owo.cpp` (GPLv3), which builds on hacbrewpack and yati. The bundled loader comes from [nx-hbloader](https://github.com/switchbrew/nx-hbloader).
+
 ## Extras (in the `Tools` tab)
 - Reboot to specific payload.
 - Consult games with missing updates.

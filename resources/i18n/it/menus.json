@@ -3,8 +3,8 @@
     "title": "All-in-One Nintendo Switch Updater",
     "copyright": "AIO-Switch-Updater è distribuito con licenza GPL-3.0",
     "disclaimers_title": "Avvertenze",
-    "disclaimers": "\u25c6 A esclusione dei cheat, che sono prelevati dal thread principale di GBAtemp.net, HamletDuFromage non hosta nessun contenuto. Tutti i crediti vanno ai rispettivi proprietari.\n\u25c6 I link vengono aggiornati ogni 30 minuti. Se un link continua a non funzionare dopo 30 minuti, aprire una segnalazione su GitHub.\n",
-    "donate": "\u25c6 Ti piace l'app? Se vuoi, puoi supportarmi donando qui: 'https://git.io/donate_homlet'"
+    "disclaimers": "◆ A esclusione dei cheat, che sono prelevati dal thread principale di GBAtemp.net, HamletDuFromage non hosta nessun contenuto. Tutti i crediti vanno ai rispettivi proprietari.\n◆ I link vengono aggiornati ogni 30 minuti. Se un link continua a non funzionare dopo 30 minuti, aprire una segnalazione su GitHub.\n",
+    "donate": "◆ Ti piace l'app? Se vuoi, puoi supportarmi donando qui: 'https://git.io/donate_homlet'"
   },
   "cheats": {
     "installed": "Cheat installati",
@@ -21,7 +21,7 @@
     "cheatslips_title": "Scarica cheat da Cheat Slips",
     "gbatemp_title": "Scarica cheat da GBAtemp.net",
     "get_cheatslips": "Scarica cheat da Cheat Slips",
-    "cheats_label": "\u25c6 Scarica individualmente i cheat dal database cheat di GBAtemp.net o cheat-sheet da Cheat Slips",
+    "cheats_label": "◆ Scarica individualmente i cheat dal database cheat di GBAtemp.net o cheat-sheet da Cheat Slips",
     "cheatslips_dl": "Scarica una selezione di cheat-sheet da Cheat Slips.\nSaranno aggiunti al termine del file di cheat presente sul tuo sistema.",
     "delete_file": "Elimina i file di cheat esistenti",
     "cheatslips_error": "Impossibile ottenere i cheat selezionati/token non valido.",
@@ -37,7 +37,7 @@
     "exclude_titles_desc": "Con questo menu puoi disattivare l'aggiornamento dei cheat per i singoli titoli",
     "exclude_titles_save": "Salva ed esci",
     "dl_all": "Salva ed estrai tutti i cheat esistenti su GBAtemp.net",
-    "bid_tid_info": "Questi cheat verranno aggiunti al termine del file di cheat presente sul tuo sistema.\n\u25c6 ID della build: {}",
+    "bid_tid_info": "Questi cheat verranno aggiunti al termine del file di cheat presente sul tuo sistema.\n◆ ID della build: {}",
     "dl_cheatcodes": "Scarica cheat",
     "dl_successful": "Il seguente cheat è stato scaricato correttamente:\n{}",
     "applet_mode_not_supported": "A causa di limitazioni di memoria, nella Modalità Applet puoi ottenere i cheat soltanto per il gioco che stai attualmente giocando. Lancia AIO-Switch-Updater come applicazione per ottenere i cheat per tutti i giochi che possiedi.",
@@ -104,8 +104,8 @@
   },
   "main": {
     "getting": "Ottengo {}",
-    "firmware_text": "\u25c6 Dump del Firmware da 'https://darthsternie.net/switch-firmwares/'. Una volta scaricato, sarà estratto in '/firmware'. Puoi installare l'aggiornamento tramite Daybreak.\n\u25c6 FW attuale: ",
-    "cheats_text": "\u25c6 Questo scaricherà quotidianamente un archivio di cheat da 'gbatemp.net'. I cheat per i giochi non installati non saranno estratti sulla tua scheda SD. Puoi disabilitare l'aggiornamento dei cheat in 'Strumenti→Menu cheat'.\n\u25c6 Versione cheat corrente: ",
+    "firmware_text": "◆ Dump del Firmware da 'https://darthsternie.net/switch-firmwares/'. Una volta scaricato, sarà estratto in '/firmware'. Puoi installare l'aggiornamento tramite Daybreak.\n◆ FW attuale: ",
+    "cheats_text": "◆ Questo scaricherà quotidianamente un archivio di cheat da 'gbatemp.net'. I cheat per i giochi non installati non saranno estratti sulla tua scheda SD. Puoi disabilitare l'aggiornamento dei cheat in 'Strumenti→Menu cheat'.\n◆ Versione cheat corrente: ",
     "get_cheats": "Scarica cheat da GBAtemp.net (ver {})",
     "get_all_cheats:": "Scarica cheat da GBAtemp.net",
     "firmware": "firmware",
@@ -114,9 +114,9 @@
     "app": "app",
     "cfw": "CFW",
     "ams": "Atmosphère",
-    "ams_text": "\u25c6 Da questo menu puoi scaricare ed aggiornare il custom firmware (CFW) Atmosphère, necessario per eseguire software homebrew.",
-    "cfw_text": "\u25c6 Altri CFW e bootloader.",
-    "bootloaders_text": "\u25c6 Scarica ed aggiorna i bootloader.",
+    "ams_text": "◆ Da questo menu puoi scaricare ed aggiornare il custom firmware (CFW) Atmosphère, necessario per eseguire software homebrew.",
+    "cfw_text": "◆ Altri CFW e bootloader.",
+    "bootloaders_text": "◆ Scarica ed aggiorna i bootloader.",
     "cheats": "cheats",
     "links_not_found": "Impossibile trovare un link di download, assicurati che la Switch abbia accesso a Internet.\nSe il problema persiste, apri una segnalazione su GitHub.",
     "new_update": "- Nuovo aggiornamento disponibile",
@@ -127,11 +127,11 @@
     "download_firmware": "Scarica firmware",
     "download_cheats": "Scarica cheats",
     "tools": "Strumenti",
-    "launch_warning": "Per favore presta attenzione ai seguenti punti prima di utilizzare l'app:\n\n\u25c6 Informati su come effettuare l'aggiornamento manuale della tua console. Ti aiuterà a comprendere meglio l'app e saprai cosa fare in caso di errori.\n\u25c6 Per scongiurare ogni rischio di perdita dei dati, scoraggiamo FORTEMENTE l'utilizzo di questa app su una scheda SD exFAT.\n\n\u25c6 Puoi trovare informazioni sulle funzioni introdotte e/o modificate negli ultimi aggiornamenti nel menu  Strumenti→Cronologia aggiornamenti.\n\nQuesta schermata non verrà mostrata di nuovo.",
+    "launch_warning": "Per favore presta attenzione ai seguenti punti prima di utilizzare l'app:\n\n◆ Informati su come effettuare l'aggiornamento manuale della tua console. Ti aiuterà a comprendere meglio l'app e saprai cosa fare in caso di errori.\n◆ Per scongiurare ogni rischio di perdita dei dati, scoraggiamo FORTEMENTE l'utilizzo di questa app su una scheda SD exFAT.\n\n◆ Puoi trovare informazioni sulle funzioni introdotte e/o modificate negli ultimi aggiornamenti nel menu  Strumenti→Cronologia aggiornamenti.\n\nQuesta schermata non verrà mostrata di nuovo.",
     "footer_text": "v{} | {:.1f}GB disponibili",
     "theme_warning": "Sembra che tu stia usando un custom theme: tieni conto che potrebbe impedire l'avvio del sistema dopo l'aggiornamento del firmware.\nValuta se cancellarlo o meno prima di effettuare l'aggiornamento.\n\nDo you wish to proceed regardless?",
-    "payloads_label": "\u25c6 Scarica ed aggiorna i payload RCM in {}",
-    "hekate_ipl_label": "\u25c6 Scarica una configurazione di base di hekate_ipl.ini. Sovrascriverà l'attuale configurazione presente in hekate_ipl.ini."
+    "payloads_label": "◆ Scarica ed aggiorna i payload RCM in {}",
+    "hekate_ipl_label": "◆ Scarica una configurazione di base di hekate_ipl.ini. Sovrascriverà l'attuale configurazione presente in hekate_ipl.ini."
   },
   "hide": {
     "title": "Nascondi schede",
@@ -171,20 +171,20 @@
     "install_hekate": "Scaricare anche Hekate?\nIn alternativa, la console verrà riavviata su un payload speciale per completare l'installazione.",
     "delete_contents": "Eliminare la cartella '/atmosphere/contents/'? Questo impedirà dei crash all'avvio in presenza di sysmodule non compatibili con l'ultima versione di Atmosphère. Attenzione: questo eliminerà tutti i sysmodules, le mod e i cheat installati.",
     "delete_sysmodules_flags": "Eliminare la flag di avvio automatico per tutti i sysmodule?\nI sysmodule installati saranno disattivati di default, evitando i crash all'avvio in presenza di sysmodule non aggiornati.\nI sysmodule di sistema non verranno disattivati.",
-    "current_ams": "\u25c6 Versione di Atmosphère: ",
-    "erista_rev": "\u25c6 Revisione Erista",
-    "mariko_rev": "\u25c6 Revisione Mariko",
+    "current_ams": "◆ Versione di Atmosphère: ",
+    "erista_rev": "◆ Revisione Erista",
+    "mariko_rev": "◆ Revisione Mariko",
     "deepsea_builder": "DeepSea builder",
     "show_module_description": "Mostra la descrizione del modulo",
     "depends_on": "Verranno installati anche i seguenti moduli:",
     "download_custom_deepsea": "Scarica questo pacchetto DeepSea personalizzato",
     "get_custom_deepsea": "Personalizza pacchetto DeepSea",
-    "deepsea_label": "\u25c6 DeepSea di Team Neptune è un pacchetto CFW che include Atmosphère, Hekate e varie applicazioni homebrew.",
+    "deepsea_label": "◆ DeepSea di Team Neptune è un pacchetto CFW che include Atmosphère, Hekate e varie applicazioni homebrew.",
     "download_deepsea_package": "Compila e scarica",
     "cant_fetch_deepsea": "Impossibile ottenere i pacchetti. Apri una segnalazione su GitHub se il problema persiste.",
     "build_your_deepsea": "Personalizza il tuo pacchetto DeepSea selezionando i moduli da installare",
     "getting_ams": "Ottenendo Atmosphère",
-    "custom_packs_label": "\u25c6 Questi pacchetti sono elencati nel file {}. Questi pacchetti non sono promossi da AIO-Switch-Updater, perciò assicurati che provengano da fonti fidate."
+    "custom_packs_label": "◆ Questi pacchetti sono elencati nel file {}. Questi pacchetti non sono promossi da AIO-Switch-Updater, perciò assicurati che provengano da fonti fidate."
   },
   "firmware": {
     "launch_daybreak": "Vuoi avviare Daybreak per l'installazione dell'aggiornamento del firmware appena scaricato?"
@@ -196,5 +196,10 @@
     "insufficient_storage": "Non c'è abbastanza spazio disponibile sulla scheda SD.",
     "error_message": "{}\nPer favore riprova più tardi. Se il problema persiste, apri una segnalazione su GitHub.",
     "mariko_payload_missing": "Per aggiornare Atmosphère su modelli di Switch patchati, il payload deve essere rinominato in \"payload.bin\" e deve trovarsi alla radice della tua scheda SD."
+  },
+  "apps": {
+    "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
+    "forwarder_creating": "Creating shortcut...",
+    "forwarder_error": "The shortcut could not be created: {}"
   }
 }

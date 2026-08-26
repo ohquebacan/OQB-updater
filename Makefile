@@ -16,13 +16,13 @@ include $(DEVKITPRO)/libnx/switch_rules
 # DATA is a list of directories containing data files
 # INCLUDES is a list of directories containing header files
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source source/forwarder
 RESOURCES	:=	resources
 DATA		:=	data
 INCLUDES	:=	include /lib/borealis/library/include/borealis/extern/nlohmann
 APP_TITLE	:=	All in One OQB Updater
 APP_AUTHOR	:=	OHQUEBACAN
-APP_VERSION :=	1.5.0
+APP_VERSION :=	1.6.0
 TARGET		:=	$(notdir $(CURDIR))
 
 ROMFS				:=	resources
@@ -165,6 +165,11 @@ $(ROMFS):
 	@cp $(CURDIR)/TegraExplorer/output/TegraExplorer.bin $(CURDIR)/$(ROMFS)/aio_rcm.bin
 # @$(MAKE) -C $(CURDIR)/aiosu-forwarder -f $(CURDIR)/aiosu-forwarder/Makefile
 	@cp $(CURDIR)/aiosu-forwarder/aiosu-forwarder.nro $(CURDIR)/$(ROMFS)/aiosu-forwarder.nro
+# exefs del loader que se empaqueta dentro de cada forwarder generado
+	@$(MAKE) -C $(CURDIR)/hbl -f $(CURDIR)/hbl/Makefile
+	@mkdir -p $(CURDIR)/$(ROMFS)/hbl
+	@cp $(CURDIR)/hbl/exefs/main $(CURDIR)/$(ROMFS)/hbl/main
+	@cp $(CURDIR)/hbl/exefs/main.npdm $(CURDIR)/$(ROMFS)/hbl/main.npdm
 
 $(BUILD): $(ROMFS)
 	@[ -d $@ ] || mkdir -p $@

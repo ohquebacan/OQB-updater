@@ -20,7 +20,7 @@
     "cheatslips_title": "Códigos de trapaça Cheat Slips",
     "get_gbatemp": "Baixar códigos de trapaça individuais",
     "get_cheatslips": "Baixar folhas de trapaça Cheat Slips",
-    "cheats_label": "\u25c6 Baixar códigos de trapaça individuais do banco de dados GBAtemp.net ou folhas de trapaça do Cheat Slips",
+    "cheats_label": "◆ Baixar códigos de trapaça individuais do banco de dados GBAtemp.net ou folhas de trapaça do Cheat Slips",
     "cheatslips_dl": "Baixar uma seleção de folhas de trapaça do Cheat Slips. Esses códigos de trapaça serão adicionados ao final do seu arquivo de trapaça existente.",
     "delete_file": "Excluir arquivo de trapaça existente",
     "cheatslips_error": "Não foi possível obter os códigos de trapaça selecionados/token inválido.",
@@ -106,8 +106,8 @@
   },
   "main": {
     "getting": "Obtendo {}",
-    "firmware_text": "\u25c6 Dumps de firmware de 'https://github.com/THZoria/NX_Firmware'. Uma vez baixados, serão extraídos em '/firmware'. Em seguida, você pode instalar a atualização através do Daybreak.\n\u25c6 FW atual: ",
-    "cheats_text": "\u25c6 Isso irá baixar um arquivo de códigos de trapaça atualizado diariamente de 'gbatemp.net'. Os códigos de trapaça para jogos que você não possui instalados não serão extraídos para o seu cartão SD. Você pode desativar as atualizações de trapaça para jogos específicos em 'Ferramentas→Menu de trapaças'.\n\u25c6 Versão atual dos códigos de trapaça: ",
+    "firmware_text": "◆ Dumps de firmware de 'https://github.com/THZoria/NX_Firmware'. Uma vez baixados, serão extraídos em '/firmware'. Em seguida, você pode instalar a atualização através do Daybreak.\n◆ FW atual: ",
+    "cheats_text": "◆ Isso irá baixar um arquivo de códigos de trapaça atualizado diariamente de 'gbatemp.net'. Os códigos de trapaça para jogos que você não possui instalados não serão extraídos para o seu cartão SD. Você pode desativar as atualizações de trapaça para jogos específicos em 'Ferramentas→Menu de trapaças'.\n◆ Versão atual dos códigos de trapaça: ",
     "get_cheats": "Baixar arquivo de códigos de trapaça do GBAtemp.net (ver {})",
     "get_cheats_gfx": "Baixar códigos de trapaça para aprimoramento gráfico",
     "get_all_cheats:": "Baixar arquivo de códigos de trapaça do GBAtemp.net",
@@ -118,8 +118,8 @@
     "cfw": "CFW",
     "ams": "Atmosphère",
     "ams_text": "◆ Este pacote contem apenas os arquivos que vao no SD para atualizar o CFW.\nSe ja instalou a versao mais recente do CFW e quer atualizar o Firmware do console, va para a aba Baixar Firmwares",
-    "cfw_text": "\u25c6 CFWs alternativos, bootloaders.",
-    "bootloaders_text": "\u25c6 Baixar e atualizar bootloaders.",
+    "cfw_text": "◆ CFWs alternativos, bootloaders.",
+    "bootloaders_text": "◆ Baixar e atualizar bootloaders.",
     "cheats": "códigos de trapaça",
     "links_not_found": "Não foi possível encontrar um link de download, verifique se o Switch tem acesso à internet.\nSe esse problema persistir, abra uma issue no Github.",
     "new_update": "- Nova atualização do aplicativo disponível",
@@ -131,11 +131,11 @@
     "download_firmware": "Baixar firmwares",
     "download_cheats": "Baixar códigos de trapaça",
     "tools": "Ferramentas",
-    "launch_warning": "Por favor, preste atenção nos seguintes pontos antes de usar o aplicativo:\n\n\u25c6 Leia sobre como atualizar manualmente seu Switch primeiro. Isso ajudará você a entender melhor o aplicativo e voc^e saberá o que fazer caso algo dê errado.\n\u25c6 Para evitar qualquer risco de corrupção de dados, é FORTEMENTE desencorajado usar este aplicativo em um cartão SD formatado como exFAT.\n\n\u25c6 As informações mais recentes sobre recursos que foram introduzidos e/ou alterados estão disponíveis no menu Ferramentas→Histórico de alterações.\n\nEsta tela não será exibida novamente.",
+    "launch_warning": "Por favor, preste atenção nos seguintes pontos antes de usar o aplicativo:\n\n◆ Leia sobre como atualizar manualmente seu Switch primeiro. Isso ajudará você a entender melhor o aplicativo e voc^e saberá o que fazer caso algo dê errado.\n◆ Para evitar qualquer risco de corrupção de dados, é FORTEMENTE desencorajado usar este aplicativo em um cartão SD formatado como exFAT.\n\n◆ As informações mais recentes sobre recursos que foram introduzidos e/ou alterados estão disponíveis no menu Ferramentas→Histórico de alterações.\n\nEsta tela não será exibida novamente.",
     "footer_text": "v{} | {:.1f}GB disponíveis",
     "theme_warning": "Parece que você tem um tema personalizado instalado, isso pode fazer com que seu sistema falhe ao inicializar após atualizar seu firmware.\nPor favor, considere excluí-lo antes de fazer a atualização.\n\nDo you wish to proceed regardless?",
-    "payloads_label": "\u25c6 Baixar payloads RCM para {}",
-    "hekate_ipl_label": "\u25c6 Baixar um arquivo de configuração hekate_ipl.ini simplificado. Isso substituirá o seu hekate_ipl.ini atual."
+    "payloads_label": "◆ Baixar payloads RCM para {}",
+    "hekate_ipl_label": "◆ Baixar um arquivo de configuração hekate_ipl.ini simplificado. Isso substituirá o seu hekate_ipl.ini atual."
   },
   "hide": {
     "title": "Ocultar abas",
@@ -171,29 +171,29 @@
     "not_an_archive": "O arquivo baixado não é um arquivo zip. Isso provavelmente se deve a um link quebrado. Se o problema persistir após mais de 30 minutos, por favor, abra uma issue no Github.",
     "overwrite_inis": "Deseja substituir os arquivos de configuração .ini existentes?",
     "set_hekate_reboot_payload": "Deseja copiar o payload do Hekate `{}` para `{}`?",
-    "applet_webbrowser": "Executando no modo applet/por meio de um encaminhador.\n\uE016 Por favor, inicie o hbmenu segurando [R] em um jogo"
+    "applet_webbrowser": "Executando no modo applet/por meio de um encaminhador.\n Por favor, inicie o hbmenu segurando [R] em um jogo"
   },
   "ams_update": {
     "reboot_rcm": "O Switch irá reiniciar para um payload especial para finalizar a instalação.",
     "install_hekate": "Deseja também baixar o Hekate?\nSe não, o Switch irá reiniciar para um payload especial para finalizar a instalação.",
     "delete_contents": "Deseja remover o diretório '/atmosphere/contents/' existente? Isso evitará travamentos se você tiver sysmodules que não suportam o Atmosphère mais recente. Por favor, note que isso irá excluir todos os seus sysmodules, mods e códigos de trapaça existentes.",
     "delete_sysmodules_flags": "Deseja excluir todas as flags de inicialização personalizadas dos sysmodules? Isso desativará todos os sysmodules e evitará travamentos se você tiver sysmodules que não suportam o Atmosphère mais recente.",
-    "current_ams": "\u25c6 Atmosphère atual:",
-    "erista_rev": "\u25c6 Revisão do Erista",
-    "mariko_rev": "\u25c6 Revisão do Mariko",
+    "current_ams": "◆ Atmosphère atual:",
+    "erista_rev": "◆ Revisão do Erista",
+    "mariko_rev": "◆ Revisão do Mariko",
     "deepsea_builder": "DeepSea builder",
     "show_module_description": "Mostrar descrição do módulo",
     "depends_on": "Os seguintes módulos também serão instalados:",
     "download_custom_deepsea": "Baixar este pacote personalizado do DeepSea",
     "get_custom_deepsea": "Obter pacote personalizado do DeepSea",
-    "deepsea_label": "\u25c6 O DeepSea, da equipe Neptune, é um pacote CFW que inclui o Atmosphère, Hekate e vários aplicativos homebrew.",
+    "deepsea_label": "◆ O DeepSea, da equipe Neptune, é um pacote CFW que inclui o Atmosphère, Hekate e vários aplicativos homebrew.",
     "download_deepsea_package": "Compilar e baixar",
     "cant_fetch_deepsea": "Não foi possível obter os pacotes. Abra uma issue no Github se isso persistir.",
     "build_your_deepsea": "Crie seu próprio pacote personalizado do DeepSea selecionando os pacotes",
     "getting_ams": "Obtendo o Atmosphère",
-    "custom_packs_label": "\u25c6 Aqui estão os pacotes listados no arquivo {}. Esteja ciente de que eles não são endossados pelo AIO-Switch-Updater, então certifique-se de confiar na fonte deles.",
-    "custom_packs_ams": "\u25c6 Downloads contendo o custom firmware Atmosphère.",
-    "custom_packs_misc": "\u25c6 Downloads contendo homebrew e ferramentas.",
+    "custom_packs_label": "◆ Aqui estão os pacotes listados no arquivo {}. Esteja ciente de que eles não são endossados pelo AIO-Switch-Updater, então certifique-se de confiar na fonte deles.",
+    "custom_packs_ams": "◆ Downloads contendo o custom firmware Atmosphère.",
+    "custom_packs_misc": "◆ Downloads contendo homebrew e ferramentas.",
     "custom_download": "Download personalizado",
     "add_custom_link": "Adicionar um link personalizado",
     "delete_custom_link": "Excluir"
@@ -208,5 +208,10 @@
     "insufficient_storage": "Não há espaço suficiente disponível no seu cartão SD para realizar esta operação.",
     "error_message": "{}\nPor favor, tente novamente em breve. Se o problema persistir, abra uma issue no GitHub.",
     "mariko_payload_missing": "Para atualizar o Atmosphère em Switches modificados, o seu payload precisa ter o nome de \"payload.bin\" e deve estar na raiz do seu cartão SD."
+  },
+  "apps": {
+    "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
+    "forwarder_creating": "Creating shortcut...",
+    "forwarder_error": "The shortcut could not be created: {}"
   }
 }

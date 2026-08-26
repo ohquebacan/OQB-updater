@@ -2,8 +2,8 @@
   "about": {
     "title": "All-in-One Nintendo Switch Updater",
     "copyright": "AIO-Switch-UpdaterはGPL-3.0の下でライセンスされています",
-    "disclaimers": "\u25c6 メインのGBAtemp.netのスレッドからミラーリングされたチートコードを除いて、HamletDuFromageは何もホストしていません。すべてのクレジットはそれぞれの所有者に送られます。\n\u25c6 リンクは3時間ごとに更新されます。 3時間経過してもリンクが壊れたままの場合は、GitHubの問題を開いてください。\n",
-    "donate": "\u25c6 アプリを気に入ってもらえましたか?作者に貢献をしたいと思った場合は、寄付をお願いします: 'https://git.io/donate_homlet'"
+    "disclaimers": "◆ メインのGBAtemp.netのスレッドからミラーリングされたチートコードを除いて、HamletDuFromageは何もホストしていません。すべてのクレジットはそれぞれの所有者に送られます。\n◆ リンクは3時間ごとに更新されます。 3時間経過してもリンクが壊れたままの場合は、GitHubの問題を開いてください。\n",
+    "donate": "◆ アプリを気に入ってもらえましたか?作者に貢献をしたいと思った場合は、寄付をお願いします: 'https://git.io/donate_homlet'"
   },
   "cheats": {
     "installed": "インストールされたチートコード",
@@ -20,7 +20,7 @@
     "cheatslips_title": "Cheat Slipsのチート",
     "gbatemp_title": "GBAtemp.netのチート",
     "get_cheatslips": "Cheat Slipsのチートシートをダウンロードする",
-    "cheats_label": "\u25c6 GBAtemp.netのデータベースから個々のチートコードをダウンロードまたは、Cheat Slipsからチートシートをダウンロードします。",
+    "cheats_label": "◆ GBAtemp.netのデータベースから個々のチートコードをダウンロードまたは、Cheat Slipsからチートシートをダウンロードします。",
     "cheatslips_dl": "Cheat Slipsから選択したチートシートをダウンロードします。\nこれらのチートコードは、既存のチートファイルの最後に追加されます。",
     "delete_file": "既存のチートファイルを削除する",
     "cheatslips_error": "選択したチートコード/無効なトークンをフェッチできませんでした。",
@@ -102,8 +102,8 @@
   },
   "main": {
     "getting": "取得中 {}",
-    "firmware_text": "\u25c6 ファームウェアは'https://darthsternie.net/switch-firmwares/'からダンプされます。\nダウンロードすると、「/firmware」に抽出されます。その後、Daybreakを介してアップデートをインストールする事ができます。\n\u25c6 現在のファームウェア: ",
-    "cheats_text": "\u25c6 これにより、毎日更新されるチートコードのアーカイブが「gbatemp.net」からダウンロードされます。インストールをしていないゲームのチートコードはSDカードに抽出されません。「ツール→チートメニュー」で特定のゲームのチートのアップデートをオフにする事ができます。\n\u25c6 現在のチートバージョン: ",
+    "firmware_text": "◆ ファームウェアは'https://darthsternie.net/switch-firmwares/'からダンプされます。\nダウンロードすると、「/firmware」に抽出されます。その後、Daybreakを介してアップデートをインストールする事ができます。\n◆ 現在のファームウェア: ",
+    "cheats_text": "◆ これにより、毎日更新されるチートコードのアーカイブが「gbatemp.net」からダウンロードされます。インストールをしていないゲームのチートコードはSDカードに抽出されません。「ツール→チートメニュー」で特定のゲームのチートのアップデートをオフにする事ができます。\n◆ 現在のチートバージョン: ",
     "get_cheats": "GBAtemp.net チートアーカイブをダウンロード (ver {})",
     "get_all_cheats:": "GBAtemp.net チートアーカイブをダウンロードする",
     "firmware": "FW",
@@ -112,9 +112,9 @@
     "app": "アプリ",
     "cfw": "CFW",
     "ams": "Atmosphère",
-    "ams_text": "\u25c6 このメニューから、自作アプリの実行に必要なAtmosphère CFWをダウンロードして更新できます。\n\u25c6 DeepSea by Team Neptuneは、Atmosphère、Hekateや様々な自作アプリを含むCFWパックです。",
-    "cfw_text": "\u25c6 AtmosphèreをHekateで使用する場合は、Atmosphèreをダウンロードしてから、Hekateをダウンロードしてください。",
-    "bootloaders_text": "\u25c6 ブートローダーをダウンロードして更新します。",
+    "ams_text": "◆ このメニューから、自作アプリの実行に必要なAtmosphère CFWをダウンロードして更新できます。\n◆ DeepSea by Team Neptuneは、Atmosphère、Hekateや様々な自作アプリを含むCFWパックです。",
+    "cfw_text": "◆ AtmosphèreをHekateで使用する場合は、Atmosphèreをダウンロードしてから、Hekateをダウンロードしてください。",
+    "bootloaders_text": "◆ ブートローダーをダウンロードして更新します。",
     "cheats": "チート",
     "links_not_found": "ダウンロードリンクが見つかりませんでした。Switchがインターネットにアクセスできる事を確認してください。\nこの問題が解決しない場合は、GitHubで問題を開いてください。",
     "new_update": "- 新しいアプリのアップデートが利用可能です",
@@ -125,11 +125,11 @@
     "download_firmware": "FWをダウンロード",
     "download_cheats": "チートをダウンロード",
     "tools": "ツール",
-    "launch_warning": "アプリを使用する前に、次の点に注意をしてください:\n\n\u25c6 始めにSwitchを手動で更新する方法を読んでください。それでアプリをしっかりと理解し、問題が発生した場合の対処方法を知る事ができます。\n\u25c6 exFATのSDカードでこのアプリの使用は推奨しません。理由はデータが破損をする可能性が高いためです。\n\n\u25c6 現在の機能に関するいくつかの新しい機能および変更が導入されている可能性があります。 「ツール」→「変更履歴」から確認をしてください。\n\nこの画面は再度表示されません。",
+    "launch_warning": "アプリを使用する前に、次の点に注意をしてください:\n\n◆ 始めにSwitchを手動で更新する方法を読んでください。それでアプリをしっかりと理解し、問題が発生した場合の対処方法を知る事ができます。\n◆ exFATのSDカードでこのアプリの使用は推奨しません。理由はデータが破損をする可能性が高いためです。\n\n◆ 現在の機能に関するいくつかの新しい機能および変更が導入されている可能性があります。 「ツール」→「変更履歴」から確認をしてください。\n\nこの画面は再度表示されません。",
     "footer_text": "v{} | {:.1f}GB 利用可能",
     "theme_warning": "カスタムテーマがインストールされているようです。これにより、ファームウェアのアップグレード後にシステムの起動に失敗をする可能性があります。\nアップグレード前に削除を検討してください。\n\nDo you wish to proceed regardless?",
-    "payloads_label": "\u25c6 RCMペイロードを{}にダウンロードします。",
-    "hekate_ipl_label": "\u25c6 換のhekate_ipl.iniの設定ファイルをダウンロード。 これにより、現在のhekate_ipl.iniが上書きされます。"
+    "payloads_label": "◆ RCMペイロードを{}にダウンロードします。",
+    "hekate_ipl_label": "◆ 換のhekate_ipl.iniの設定ファイルをダウンロード。 これにより、現在のhekate_ipl.iniが上書きされます。"
   },
   "hide": {
     "title": "タブを非表示",
@@ -170,20 +170,20 @@
     "install_hekate": "Hekateもダウンロードをしますか?\nダウンロードをしない場合、Switchはインストールを完了するために特別なペイロードに対して再起動を開始します。",
     "delete_contents": "既存の '/atmosphere/contents/' のディレクトリを削除しますか? 削除を行なう事で、最新のAtmosphèreをサポートしていないsysmoduleがある場合のクラッシュを防ぐ事ができます。既存のsysmodule、mod、およびチートがすべて削除される事に注意をしてください。",
     "delete_sysmodules_flags": "すべてのカスタムsysmodulesの起動フラグを削除しますか? 起動フラグの削除を行なう事で、すべてのsysmoduleがオフになり最新のAtmosphèreをサポートしていないsysmoduleがある場合のクラッシュを防ぐ事ができます。",
-    "current_ams": "\u25c6 現在のAtmosphère: ",
-    "erista_rev": "\u25c6 Eristaチップ(未対策機)",
-    "mariko_rev": "\u25c6 Marikoチップ(対策機)",
+    "current_ams": "◆ 現在のAtmosphère: ",
+    "erista_rev": "◆ Eristaチップ(未対策機)",
+    "mariko_rev": "◆ Marikoチップ(対策機)",
     "deepsea_builder": "DeepSeaビルダー",
     "show_module_description": "モジュールの説明を表示",
     "depends_on": "以下のモジュールもインストールされます:",
     "download_custom_deepsea": "このカスタムDeepSeaパッケージをダウンロードする",
     "get_custom_deepsea": "カスタムDeepSeaパッケージを入手",
-    "deepsea_label": "\u25c6 Team NeptuneによるDeepSeaは、Atmosphère、Hekateや様々な自作アプリを含むCFWパックです。",
+    "deepsea_label": "◆ Team NeptuneによるDeepSeaは、Atmosphère、Hekateや様々な自作アプリを含むCFWパックです。",
     "download_deepsea_package": "コンパイルをしてダウンロード",
     "cant_fetch_deepsea": "パッケージをフェッチできませんでした。これが続く場合は、GitHubの問題を開きます。",
     "build_your_deepsea": "パッケージを選択して、独自のカスタムDeepSeaパッケージを作成します",
     "getting_ams": "Atmosphèreを取得中です",
-    "custom_packs_label": "\u25c6 {} ファイルにリストされているパックは次の通りです。 それらはAIO-Switch-Updaterによって承認されていない事に注意をしてください。そのため、それらのソースを信頼している事を確認してください。"
+    "custom_packs_label": "◆ {} ファイルにリストされているパックは次の通りです。 それらはAIO-Switch-Updaterによって承認されていない事に注意をしてください。そのため、それらのソースを信頼している事を確認してください。"
   },
   "firmware": {
     "launch_daybreak": "ダウンロードをしたsysupdateをインストールするためにDaybreakを起動しますか?"
@@ -195,5 +195,10 @@
     "insufficient_storage": "この操作を実行するために必要なSDカードの空き容量がありません。",
     "error_message": "{}\nしばらくしてからもう一度お試しください。問題が解決しない場合は、GitHubで問題を開きます",
     "mariko_payload_missing": "対策機の本体でAtmosphèreを更新するには、ペイロードに \"payload.bin\" というファイル名を付けて、SDカードの直下に配置をする必要があります。"
+  },
+  "apps": {
+    "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
+    "forwarder_creating": "Creating shortcut...",
+    "forwarder_error": "The shortcut could not be created: {}"
   }
 }

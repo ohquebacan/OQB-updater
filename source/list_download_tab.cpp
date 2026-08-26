@@ -10,6 +10,7 @@
 #include "dialogue_page.hpp"
 #include "download.hpp"
 #include "extract.hpp"
+#include "forwarder.hpp"
 #include "fs.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
@@ -81,6 +82,22 @@ void ListDownloadTab::createList(contentType type)
                     std::string dest = std::string("/switch/") + filename;
                     fs::createTree("/switch/");
                     stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest]() { download::downloadFile(url, dest, OFF); }));
+
+                    // Tras bajar el NRO, ofrecer crear el acceso directo en el menú HOME.
+                    auto makeForwarder = std::make_shared<bool>(false);
+                    stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/apps/forwarder_ask"_i18n, makeForwarder));
+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/apps/forwarder_creating"_i18n, [dest, makeForwarder]() {
+                        if (!*makeForwarder) return;
+
+                        fwd::Config config;
+                        Result rc = fwd::configFromNro(dest, config);
+                        if (R_SUCCEEDED(rc)) {
+                            rc = fwd::install(config);
+                        }
+                        if (R_FAILED(rc)) {
+                            util::showDialogBoxInfo(fmt::format("menus/apps/forwarder_error"_i18n, fwd::resultToString(rc)));
+                        }
+                    }));
                 }
                 else if (type != contentType::payloads && type != contentType::hekate_ipl) {
                     if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline")) {

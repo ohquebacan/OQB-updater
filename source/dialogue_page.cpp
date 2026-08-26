@@ -162,3 +162,20 @@ void DialoguePage_confirm::instantiateButtons()
 
     this->label = new brls::Label(brls::LabelStyle::DIALOG, this->text, true);
 }
+
+void DialoguePage_optional::instantiateButtons()
+{
+    const auto advance = [this](bool answer) {
+        *this->result = answer;
+        if (!frame->isLastStage())
+            frame->nextStage();
+        else {
+            brls::Application::pushView(new MainFrame());
+        }
+    };
+
+    this->button1->getClickEvent()->subscribe([advance](View* view) { advance(true); });
+    this->button2->getClickEvent()->subscribe([advance](View* view) { advance(false); });
+
+    this->label = new brls::Label(brls::LabelStyle::DIALOG, this->text, true);
+}

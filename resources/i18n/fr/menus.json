@@ -108,7 +108,7 @@
   },
   "main": {
     "getting": "Téléchargement de {}",
-    "firmware_text": "◆ Firmware archivé sur 'https://darthsternie.net/switch-firmwares/'. Une fois téléchargé, ils sera extrait dans '/firmware'. Vous pouvez ensuite installer la mise à jour avec Daybreak.\n\u25c6 FW installé : ",
+    "firmware_text": "◆ Firmware archivé sur 'https://darthsternie.net/switch-firmwares/'. Une fois téléchargé, ils sera extrait dans '/firmware'. Vous pouvez ensuite installer la mise à jour avec Daybreak.\n◆ FW installé : ",
     "cheats_text": "◆ Ceci téléchargera une archive de codes de triche mise à jour quotidiennement depuis 'gbatemp.net'. Les codes de triche pour les jeux non installés pas ne seront pas extraits sur la carte SD. Vous pouvez désactiver la mises à jour des codes de triche pour les jeux de votre choix dans le menu 'Outils→Menu de triche'.\n Version des codes de triche installés : ",
     "get_cheats": "Télécharger l'archive de codes de triche de GBAtemp.net (ver {})",
     "get_all_cheats:": "Télécharger l'archive de codes de triche de GBAtemp.net",
@@ -214,5 +214,10 @@
     "of": "de",
     "download_progress": "({:.1f} MB de {:.1f} MB - {:.1f} MB/s)",
     "time_left": "(Temps restant : {})"
+  },
+  "apps": {
+    "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
+    "forwarder_creating": "Creating shortcut...",
+    "forwarder_error": "The shortcut could not be created: {}"
   }
 }

@@ -3,8 +3,8 @@
     "title": "Utilizator Nintendo Switch All-in-One",
     "copyright": "AIO-Switch-Updater este licențiat conform GPL-3.0",
     "disclaimers_title": "Declinări de răspundere",
-    "disclaimers": "\u25c6 În afară de codurile de înșelăciune care sunt reflectate din firul principal GBAtemp, HamletDuFromage nu găzduiește nimic. Toate creditele revin proprietarilor respectivi.\n\u25c6 Linkurile sunt reîmprospătate la fiecare 30 de minute. Dacă un link rămâne întrerupt. după ce au trecut 30 de minute, vă rugăm să deschideți o problemă Github.",
-    "donate": "\u25c6 Îți place aplicația? Luați în considerare donarea pentru a-mi sprijini eforturile: 'https://git.io/donate_homlet'"
+    "disclaimers": "◆ În afară de codurile de înșelăciune care sunt reflectate din firul principal GBAtemp, HamletDuFromage nu găzduiește nimic. Toate creditele revin proprietarilor respectivi.\n◆ Linkurile sunt reîmprospătate la fiecare 30 de minute. Dacă un link rămâne întrerupt. după ce au trecut 30 de minute, vă rugăm să deschideți o problemă Github.",
+    "donate": "◆ Îți place aplicația? Luați în considerare donarea pentru a-mi sprijini eforturile: 'https://git.io/donate_homlet'"
   },
   "cheats": {
     "installed": "Trucuri instalate",
@@ -22,7 +22,7 @@
     "gbatemp_title": "Trișări GBAtemp.net",
     "get_gbatemp": "Descărcați coduri individuale de trișări",
     "get_cheatslips": "Descărcați cheat sheets pentru Cheat Slips",
-    "cheats_label": "\u25c6 Descărcați coduri individuale de înșelăciune din baza de date GBAtemp.net sau fișe de cheat din Cheat Slips",
+    "cheats_label": "◆ Descărcați coduri individuale de înșelăciune din baza de date GBAtemp.net sau fișe de cheat din Cheat Slips",
     "cheatslips_dl": "Descărcați o selecție de fișe de cheat din Cheat Slips.\nAceste coduri de cheat vor fi adăugate la sfârșitul fișierului de cheat existent.",
     "delete_file": "Ștergeți fișierul cheat existent",
     "cheatslips_error": "Nu s-au putut prelua codurile de cheat selectate/indicativul nevalid.",
@@ -88,7 +88,7 @@
     "set_update_bin": "Setat ca /bootloader/update.bin",
     "copy_success": "S-a copiat cu succes `{}` în `{}`."
   },
-  "joy_con":{
+  "joy_con": {
     "title": "Schimbator de culori Joy-Con",
     "description": "Puteți schimba culoarea internă a Joy-Cons. Asigurați-vă că sunt andocate.\nProfilurile de culoare sunt stocate în '{}'. Accesați '{}' pentru a vă genera propriile profiluri personalizate.",
     "backup": "Fă backup profilului de culoare curent",
@@ -108,8 +108,8 @@
   },
   "main": {
     "getting": "Se obține {}",
-    "firmware_text": "\u25c6 Firmware-ul descarcă de la 'https://darthsternie.net/switch-firmwares/'. Odată descărcat, acesta va fi extras în '/firmware'. Apoi puteți instala actualizarea prin Daybreak.\n\u25c6 FW curent: ",
-    "cheats_text": "\u25c6 Aceasta va descărca o arhivă actualizată zilnic de coduri de cheat de pe 'gbatemp.net'. Codurile de cheat pentru jocurile pe care nu le-ați instalat nu vor fi extrase pe cardul SD. Puteți dezactiva actualizările de cheat. pentru anumite jocuri în 'Instrumente→>Meniul cheat'.\n\u25c6 Versiunea actuală a cheaturilor: ",
+    "firmware_text": "◆ Firmware-ul descarcă de la 'https://darthsternie.net/switch-firmwares/'. Odată descărcat, acesta va fi extras în '/firmware'. Apoi puteți instala actualizarea prin Daybreak.\n◆ FW curent: ",
+    "cheats_text": "◆ Aceasta va descărca o arhivă actualizată zilnic de coduri de cheat de pe 'gbatemp.net'. Codurile de cheat pentru jocurile pe care nu le-ați instalat nu vor fi extrase pe cardul SD. Puteți dezactiva actualizările de cheat. pentru anumite jocuri în 'Instrumente→>Meniul cheat'.\n◆ Versiunea actuală a cheaturilor: ",
     "get_cheats": "Descărcați arhiva cheat GBAtemp.net (ver {})",
     "get_cheats_gfx": "Descărcați trișări de îmbunătățire a graficelor",
     "get_all_cheats:": "Descărcați arhiva cheat GBAtemp.net",
@@ -119,9 +119,9 @@
     "app": "aplicație",
     "cfw": "CFW",
     "ams": "Atmosphère",
-    "ams_text": "\u25c6 Din acest meniu, puteți descărca și actualiza firmware-ul personalizat Atmosphère necesar pentru a rula software-ul homebrew.",
-    "cfw_text": "\u25c6 CFW-uri alternative, încărcătoare de pornire.",
-    "bootloaders_text": "\u25c6 Descărcați și actualizați bootloaders.",
+    "ams_text": "◆ Din acest meniu, puteți descărca și actualiza firmware-ul personalizat Atmosphère necesar pentru a rula software-ul homebrew.",
+    "cfw_text": "◆ CFW-uri alternative, încărcătoare de pornire.",
+    "bootloaders_text": "◆ Descărcați și actualizați bootloaders.",
     "cheats": "cheats",
     "links_not_found": "Nu s-a putut găsi un link de descărcare, asigurați-vă că Switch-ul are acces la internet.\nDacă această problemă persistă, deschideți o problemă pe Github.",
     "new_update": "- Noua actualizare a aplicației disponibilă",
@@ -133,11 +133,11 @@
     "download_firmware": "Descărcați firmware-uri",
     "download_cheats": "Descărcați trișări",
     "tools": "Unelte",
-    "launch_warning": "Vă rugăm să acordați atenție următoarelor puncte înainte de a utiliza aplicația:\n\n\u25c6 Citiți mai întâi cum să actualizați manual Switch. Acest lucru vă va ajuta să înțelegeți mai bine aplicația și veți ști ce să faceți în cazul în care ceva nu merge bine.\n\u25c6 Pentru a evita orice risc de corupere a datelor, folosirea acestei aplicații pe un card SD exFAT este FORT descurajată.\n\n\u25c6 Cele mai recente informații despre funcțiile care au fost introduse și/sau modificat este disponibil în meniul Tools→Changelog.\n\nAcest ecran nu se va afișa din nou.",
+    "launch_warning": "Vă rugăm să acordați atenție următoarelor puncte înainte de a utiliza aplicația:\n\n◆ Citiți mai întâi cum să actualizați manual Switch. Acest lucru vă va ajuta să înțelegeți mai bine aplicația și veți ști ce să faceți în cazul în care ceva nu merge bine.\n◆ Pentru a evita orice risc de corupere a datelor, folosirea acestei aplicații pe un card SD exFAT este FORT descurajată.\n\n◆ Cele mai recente informații despre funcțiile care au fost introduse și/sau modificat este disponibil în meniul Tools→Changelog.\n\nAcest ecran nu se va afișa din nou.",
     "footer_text": "v{} | {:.1f}GB disponibil",
     "theme_warning": "Se pare că aveți o temă personalizată instalată, acest lucru poate duce la eșecul sistemului dvs. de pornire după actualizarea firmware-ului.\nVă rugăm să o ștergeți înainte de a actualiza.\n\nDo you wish to proceed regardless?",
-    "payloads_label": "\u25c6 Descărcați încărcăturile utile RCM pe {}",
-    "hekate_ipl_label": "\u25c6 Descărcați un fișier de configurare hekate_ipl.ini redus \"just works\". Aceasta va suprascrie actualul dvs. hekate_ipl.ini."
+    "payloads_label": "◆ Descărcați încărcăturile utile RCM pe {}",
+    "hekate_ipl_label": "◆ Descărcați un fișier de configurare hekate_ipl.ini redus \"just works\". Aceasta va suprascrie actualul dvs. hekate_ipl.ini."
   },
   "hide": {
     "title": "Ascunde file/tabs",
@@ -172,29 +172,29 @@
     "not_an_archive": "Fișierul descărcat nu este o arhivă zip. Acest lucru se datorează cel mai probabil unui link întrerupt. Dacă problema persistă după mai mult de 30 de minute, deschideți o problemă pe Github.",
     "overwrite_inis": "Doriți să suprascrieți fișierele de configurare .ini existente?",
     "set_hekate_reboot_payload": "Doriți să copiați sarcina utilă Hekate `{}` în `{}`?",
-    "applet_webbrowser": "Rulează în modul applet/printr-un forwarder.\n\uE016 Lansați hbmenu ținând apăsat pe [R] pe un joc"
+    "applet_webbrowser": "Rulează în modul applet/printr-un forwarder.\n Lansați hbmenu ținând apăsat pe [R] pe un joc"
   },
   "ams_update": {
     "reboot_rcm": "Switch-ul va reporni acum la o sarcină utilă specială pentru a finaliza instalarea.",
     "install_hekate": "Doriți să descărcați și Hekate?\nDacă nu, Switch-ul va reporni acum la o sarcină utilă specială pentru a finaliza instalarea.",
     "delete_contents": "Doriți să eliminați directorul '/atmosphere/contents/' existent? Acest lucru va preveni blocările dacă aveți sysmodules care nu acceptă cel mai recent Atmosphère. Vă rugăm să rețineți că va șterge toate sysmodules, modurile și trișări.",
     "delete_sysmodules_flags": "Doriți să ștergeți toate semnalizatoarele personalizate de pornire sysmodules? Acest lucru va dezactiva toate sysmodules și va preveni blocările dacă aveți sysmodules care nu acceptă cel mai recent Atmosphère.",
-    "current_ams": "\u25c6 Versiuine Atmosphère actuală:",
-    "erista_rev": "\u25c6 Revizie Erista",
-    "mariko_rev": "\u25c6 Revizie Mariko",
+    "current_ams": "◆ Versiuine Atmosphère actuală:",
+    "erista_rev": "◆ Revizie Erista",
+    "mariko_rev": "◆ Revizie Mariko",
     "deepsea_builder": "Constructor DeepSea",
     "show_module_description": "Afișați descrierea modulului",
     "depends_on": "Vor fi instalate și următoarele module:",
     "download_custom_deepsea": "Descărcați acest pachet personalizat DeepSea",
     "get_custom_deepsea": "Obțineți pachetul personalizat DeepSea",
-    "deepsea_label": "\u25c6 DeepSea by Team Neptune este un pachet CFW care include Atmosphère, hekate și diverse aplicații homebrew.",
+    "deepsea_label": "◆ DeepSea by Team Neptune este un pachet CFW care include Atmosphère, hekate și diverse aplicații homebrew.",
     "download_deepsea_package": "Compilați și descărcați",
     "cant_fetch_deepsea": "Nu s-au putut prelua pachetele. Deschideți o problemă Github dacă aceasta persistă.",
     "build_your_deepsea": "Construiți-vă propriul pachet personalizat DeepSea selectând pachete",
     "getting_ams": "Preluare Atmosphère",
-    "custom_packs_label": "\u25c6 Aici sunt pachete listate în fișierul {}. Rețineți că acestea nu sunt aprobate de AIO-Switch-Updater, așa că asigurați-vă că aveți încredere în sursa lor.",
-    "custom_packs_ams": "\u25c6 Descărcări care conțin firmware-ul personalizat Atmosphère.",
-    "custom_packs_misc": "\u25c6 Descărcări care conțin homebrew și instrumente.",
+    "custom_packs_label": "◆ Aici sunt pachete listate în fișierul {}. Rețineți că acestea nu sunt aprobate de AIO-Switch-Updater, așa că asigurați-vă că aveți încredere în sursa lor.",
+    "custom_packs_ams": "◆ Descărcări care conțin firmware-ul personalizat Atmosphère.",
+    "custom_packs_misc": "◆ Descărcări care conțin homebrew și instrumente.",
     "custom_download": "Descărcare personalizată",
     "add_custom_link": "Adăugați un link personalizat",
     "delete_custom_link": "Ștergeți"
@@ -209,5 +209,10 @@
     "insufficient_storage": "Nu este suficient spațiu disponibil pe cardul SD pentru a efectua această operațiune.",
     "error_message": "{}\nVă rugăm să încercați din nou peste puțin timp. Dacă problema persistă, deschideți o problemă pe GitHub.",
     "mariko_payload_missing": "Pentru a actualiza Atmosphère pe comutatoarele corecţionate, sarcina dvs. utilă trebuie să fie numită \"payload.bin\" şi ar trebui să fie la rădăcina cardului SD."
+  },
+  "apps": {
+    "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
+    "forwarder_creating": "Creating shortcut...",
+    "forwarder_error": "The shortcut could not be created: {}"
   }
 }
