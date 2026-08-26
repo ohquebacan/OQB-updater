@@ -987,6 +987,14 @@ Result install(Config& config, const ProgressFn& progress, NcmStorageId storage_
     const auto full_args = build_full_args(config.nro_path, config.args);
     const auto tid = derive_tid(config.nro_path, full_args);
 
+    // Si ya había un forwarder para este NRO hay que borrarlo ANTES de escribir
+    // nada. Los content id son el sha256 del propio NCA, así que reinstalar el
+    // mismo NRO produce ids idénticos: si se borrara después de registrarlos,
+    // se estarían borrando los que se acaban de escribir y el menú HOME
+    // mostraría el título con el ícono de nube, como si faltara descargarlo.
+    // Es limpieza best-effort: si no existía, falla y no pasa nada.
+    nsDeleteApplicationCompletely(tid);
+
     std::vector<NcaEntry> nca_entries;
 
     // NCA de programa: hbl + la ruta del NRO destino en su romfs.
@@ -1071,10 +1079,6 @@ Result install(Config& config, const ProgressFn& progress, NcmStorageId storage_
 
     // Publicarlo en el menú HOME.
     {
-        // Si ya existía un forwarder para este NRO, quitar sus NCAs viejos
-        // antes de volver a registrarlo.
-        nsDeleteApplicationEntity(tid);
-
         FWD_TRY(ns_ex::PushApplicationRecord(tid, &content_storage_record, 1));
         ns_ex::InvalidateApplicationControlCache(tid);
     }
