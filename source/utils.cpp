@@ -194,9 +194,17 @@ namespace util {
                 int deleteContents = showDialogBoxBlocking("menus/ams_update/delete_sysmodules_flags"_i18n, "menus/common/no"_i18n, "menus/common/yes"_i18n);
                 if (deleteContents == 1)
                     removeSysmodulesFlags(AMS_CONTENTS);
-                // Limpiar antes de extraer el HATS pack para evitar conflictos de arranque
-                fs::removeDir("/SaltySD");
-                fs::removeDir(AMS_CONTENTS);
+                // Limpiar antes de extraer el HATS pack para evitar conflictos de arranque.
+                // preserve.txt ya se respetaba al extraer, pero no acá: lo que
+                // estuviera listado se borraba igual antes de llegar a esa parte.
+                {
+                    auto preserved = fs::readLineByLine(FILES_IGNORE);
+                    for (const auto& folder : AMS_CONTENTS_KEEP) {
+                        preserved.insert(std::string(AMS_CONTENTS) + folder);
+                    }
+                    fs::removeDirContentsExcept("/SaltySD", preserved);
+                    fs::removeDirContentsExcept(AMS_CONTENTS, preserved);
+                }
                 extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
                 break;
             }

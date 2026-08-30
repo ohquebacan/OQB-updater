@@ -44,6 +44,17 @@ Copy the `aio-switch-updater/` directory to `/switch/` on your sdcard.
 - Download cheat sheets from [Cheat Slips](https://www.cheatslips.com/). 
 - Download individual cheat codes from the `GBAtemp.net` database.
 
+### ⬦ Keeping folders when installing a HATS pack
+Installing a HATS pack wipes `/atmosphere/contents/` and `/SaltySD/` first, to avoid boot conflicts from incompatible leftovers. Anything listed in `/config/aio-switch-updater/preserve.txt` (one path per line, from the root of the SD card) is now kept instead of deleted — for example:
+
+```
+/atmosphere/contents/0100000000001000
+```
+
+The same file already prevented those paths from being overwritten during extraction; it now also protects them from the pre-install cleanup.
+
+Some folders are kept by default without needing `preserve.txt` at all — see `AMS_CONTENTS_KEEP` in `include/constants.hpp`. Matching is case-insensitive, since the SD card's filesystem is.
+
 ### ⬦ Apps
 - Download homebrew apps straight to `/switch/`.
 - After downloading a `.nro`, the app offers to create a **forwarder**: a shortcut on the HOME menu that launches the app directly, with its own icon and name taken from the NRO itself.

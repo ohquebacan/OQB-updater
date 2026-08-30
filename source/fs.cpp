@@ -3,6 +3,8 @@
 #include <borealis.hpp>
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
+#include <cctype>
 
 #include "constants.hpp"
 
@@ -28,6 +30,59 @@ namespace fs {
         if (R_FAILED(ret = fsFsDeleteDirectoryRecursively(fs, path.c_str())))
             return false;
         return true;
+    }
+
+    bool removeDirContentsExcept(const std::string& path, const std::set<std::string>& keep)
+    {
+        if (keep.empty()) {
+            return removeDir(path);
+        }
+
+        std::error_code ec;
+        if (!std::filesystem::exists(path, ec)) {
+            return true;
+        }
+
+        // La SD es FAT/exFAT, que no distingue mayúsculas: el title id puede
+        // estar escrito de cualquier forma tanto en preserve.txt como en disco.
+        const auto startsWithNoCase = [](const std::string& s, const std::string& prefix) {
+            if (prefix.size() > s.size()) return false;
+            return std::equal(prefix.begin(), prefix.end(), s.begin(), [](char a, char b) {
+                return std::tolower((unsigned char)a) == std::tolower((unsigned char)b);
+            });
+        };
+
+        // Se conserva una entrada tanto si está listada como si contiene algo
+        // listado: preservar /atmosphere/contents/ABC/flags/boot2.flag tiene
+        // que mantener en pie los directorios intermedios.
+        const auto preserved = [&keep, &startsWithNoCase](const std::string& entry) {
+            for (const auto& k : keep) {
+                if (k.empty()) continue;
+                if (startsWithNoCase(entry, k) || startsWithNoCase(k, entry)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        bool ok = true;
+        for (const auto& entry : std::filesystem::directory_iterator(path, ec)) {
+            if (ec) break;
+
+            const std::string entryPath = entry.path().string();
+            if (preserved(entryPath)) continue;
+
+            std::error_code removeEc;
+            if (entry.is_directory(removeEc)) {
+                if (!removeDir(entryPath)) ok = false;
+            }
+            else {
+                std::filesystem::remove(entryPath, removeEc);
+                if (removeEc) ok = false;
+            }
+        }
+
+        return ok;
     }
 
     nlohmann::ordered_json parseJsonFile(const std::string& path)

@@ -68,6 +68,13 @@ constexpr const char INTERNET_JSON[] = "/config/aio-switch-updater/internet.json
 constexpr const char UPDATED_TITLES_PATH[] = "/config/aio-switch-updater/updated.dat";
 constexpr const char CHEATS_VERSION[] = "/config/aio-switch-updater/cheats_version.dat";
 constexpr const char AMS_CONTENTS[] = "/atmosphere/contents/";
+
+// Carpetas de /atmosphere/contents/ que sobreviven al borrado previo a instalar
+// un HATS pack, además de lo que el usuario liste en preserve.txt. Van acá para
+// que valgan de fábrica, sin que cada usuario tenga que crear ese archivo.
+constexpr const char* AMS_CONTENTS_KEEP[] = {
+    "0100B00B51230000",
+};
 constexpr const char REINX_CONTENTS[] = "/ReiNX/contents/";
 constexpr const char SXOS_TITLES[] = "/sxos/titles/";
 constexpr const char AMS_PATH[] = "/atmosphere/";
