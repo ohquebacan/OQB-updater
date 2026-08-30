@@ -1,0 +1,19 @@
+# tests
+
+Pruebas que corren en la máquina de desarrollo, no en la consola.
+
+## preserve_matching_test.cpp
+
+Copia de la lógica de decisión de `fs::removeDirContentsExcept()`: qué se
+conserva y qué se borra al limpiar `/atmosphere/contents/` antes de instalar
+un HATS pack.
+
+Está separada porque un falso negativo acá **borra datos del usuario** —
+puede ser una carpeta de decenas de GB— y esa decisión no debería depender
+sólo de leer el código con atención.
+
+Si tocás el matching en `source/fs.cpp`, actualizá la copia y corré:
+
+```bash
+c++ -std=c++17 -o /tmp/t tests/preserve_matching_test.cpp && /tmp/t
+```

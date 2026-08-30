@@ -43,22 +43,50 @@ namespace fs {
             return true;
         }
 
-        // La SD es FAT/exFAT, que no distingue mayúsculas: el title id puede
-        // estar escrito de cualquier forma tanto en preserve.txt como en disco.
-        const auto startsWithNoCase = [](const std::string& s, const std::string& prefix) {
-            if (prefix.size() > s.size()) return false;
-            return std::equal(prefix.begin(), prefix.end(), s.begin(), [](char a, char b) {
-                return std::tolower((unsigned char)a) == std::tolower((unsigned char)b);
-            });
+        // Acá se borra a lo bruto, así que la comparación tiene que ser exacta:
+        // un falso negativo se lleva puesta la carpeta que el usuario quería
+        // salvar, y puede ser un juego de decenas de GB.
+        const auto normalize = [](const std::string& p) {
+            std::string out;
+            out.reserve(p.size());
+            for (char c : p) {
+                if (c == '\\') c = '/';
+                if (c == '/' && !out.empty() && out.back() == '/') continue;
+                out.push_back(c);
+            }
+            while (out.size() > 1 && out.back() == '/') {
+                out.pop_back();
+            }
+            return out;
+        };
+
+        // Prefijo de ruta, no de texto: sin exigir que corte en un separador,
+        // preservar ".../0100B0" salvaría también ".../0100B0FF...", y al revés
+        // un id listado de más podría tapar carpetas ajenas.
+        // La SD es FAT/exFAT y no distingue mayúsculas, así que el id puede
+        // venir escrito de cualquier forma tanto en disco como en preserve.txt.
+        const auto isPathPrefix = [](const std::string& prefix, const std::string& p) {
+            if (prefix.empty() || prefix.size() > p.size()) return false;
+            if (!std::equal(prefix.begin(), prefix.end(), p.begin(), [](char a, char b) {
+                    return std::tolower((unsigned char)a) == std::tolower((unsigned char)b);
+                })) {
+                return false;
+            }
+            return prefix.size() == p.size() || p[prefix.size()] == '/';
         };
 
         // Se conserva una entrada tanto si está listada como si contiene algo
         // listado: preservar /atmosphere/contents/ABC/flags/boot2.flag tiene
         // que mantener en pie los directorios intermedios.
-        const auto preserved = [&keep, &startsWithNoCase](const std::string& entry) {
-            for (const auto& k : keep) {
-                if (k.empty()) continue;
-                if (startsWithNoCase(entry, k) || startsWithNoCase(k, entry)) {
+        std::set<std::string> keepNormalized;
+        for (const auto& k : keep) {
+            if (!k.empty()) keepNormalized.insert(normalize(k));
+        }
+
+        const auto preserved = [&keepNormalized, &isPathPrefix, &normalize](const std::string& entry) {
+            const std::string e = normalize(entry);
+            for (const auto& k : keepNormalized) {
+                if (isPathPrefix(k, e) || isPathPrefix(e, k)) {
                     return true;
                 }
             }
