@@ -49,6 +49,8 @@ namespace util {
     std::string getErrorMessage(long status_code);
     bool isApplet();
     std::string getContentsPath();
+    // Dónde guardar (o actualizar) un .nro: respeta la carpeta propia de la app si ya existe.
+    std::string resolveNroDestination(const std::string& filename);
     bool getBoolValue(const nlohmann::ordered_json& jsonFile, const std::string& key);
     const nlohmann::ordered_json getValueFromKey(const nlohmann::ordered_json& jsonFile, const std::string& key);
     int openWebBrowser(const std::string url);

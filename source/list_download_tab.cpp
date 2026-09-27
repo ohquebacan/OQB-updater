@@ -69,7 +69,7 @@ void ListDownloadTab::createList(contentType type)
             // Marcar las apps que ya están en la SD. Sólo se puede saber para
             // los .nro: los .zip no dicen dónde terminan sus archivos.
             if (type == contentType::apps && url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
-                if (std::filesystem::exists(std::string(APP_PATH) + url.substr(url.rfind('/') + 1))) {
+                if (std::filesystem::exists(util::resolveNroDestination(url.substr(url.rfind('/') + 1)))) {
                     listItem->setValue("menus/apps/installed"_i18n, true);
                 }
             }
@@ -91,9 +91,9 @@ void ListDownloadTab::createList(contentType type)
                     auto nroPath = std::make_shared<std::string>();
 
                     if (url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
-                        const std::string dest = std::string(APP_PATH) + url.substr(url.rfind('/') + 1);
+                        const std::string dest = util::resolveNroDestination(url.substr(url.rfind('/') + 1));
                         *nroPath = dest;
-                        fs::createTree(APP_PATH);
+                        fs::createTree(dest.substr(0, dest.rfind('/') + 1));
                         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest]() { download::downloadFile(url, dest, OFF); }));
                     }
                     else {

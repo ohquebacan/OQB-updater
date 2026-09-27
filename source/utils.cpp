@@ -405,6 +405,42 @@ namespace util {
         return res;
     }
 
+    // Muchas apps viven en /switch/<app>/<app>.nro y guardan su configuración y
+    // sus datos al lado. Si bajáramos siempre a /switch/<app>.nro quedarían dos
+    // copias: la suelta se abre sin sus datos y el acceso directo apunta a ella.
+    std::string resolveNroDestination(const std::string& filename)
+    {
+        std::error_code ec;
+        const std::string stem = filename.substr(0, filename.rfind(".nro"));
+
+        // 1. Su carpeta propia, la convención de hbmenu.
+        const std::string inOwnDir = std::string(APP_PATH) + stem + "/" + filename;
+        if (std::filesystem::exists(inOwnDir, ec)) {
+            return inOwnDir;
+        }
+
+        // 2. Ya estaba suelto en /switch/.
+        const std::string flat = std::string(APP_PATH) + filename;
+        if (std::filesystem::exists(flat, ec)) {
+            return flat;
+        }
+
+        // 3. En una carpeta con otro nombre (p. ej. /switch/thegoonies/TheGooniesInstaller.nro).
+        if (std::filesystem::exists(APP_PATH, ec)) {
+            for (const auto& entry : std::filesystem::directory_iterator(APP_PATH, ec)) {
+                if (ec) break;
+                if (!entry.is_directory(ec)) continue;
+                const std::string candidate = entry.path().string() + "/" + filename;
+                if (std::filesystem::exists(candidate, ec)) {
+                    return candidate;
+                }
+            }
+        }
+
+        // 4. Instalación nueva: suelto en /switch/.
+        return flat;
+    }
+
     std::string getContentsPath()
     {
         std::string path;
