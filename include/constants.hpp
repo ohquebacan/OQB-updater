@@ -72,6 +72,16 @@ constexpr const char AMS_CONTENTS[] = "/atmosphere/contents/";
 // Carpetas de /atmosphere/contents/ que sobreviven al borrado previo a instalar
 // un HATS pack, además de lo que el usuario liste en preserve.txt. Van acá para
 // que valgan de fábrica, sin que cada usuario tenga que crear ese archivo.
+// Archivos de configuración que SIEMPRE se sobrescriben al instalar un pack,
+// aunque el usuario pida preservar los .ini. De ellos dependen las protecciones
+// del pack y conservar una copia vieja deja la consola desprotegida sin avisar:
+//   exosphere.ini  -> blank_prodinfo_sysmmc / blank_prodinfo_emummc
+//   system_settings.ini -> enable_dns_mitm y el bloque [ns.notification]
+constexpr const char* ALWAYS_OVERWRITE_INIS[] = {
+    "/exosphere.ini",
+    "/atmosphere/config/system_settings.ini",
+};
+
 constexpr const char* AMS_CONTENTS_KEEP[] = {
     "0100B00B51230000",
 };

@@ -114,10 +114,16 @@ namespace extract {
                 unzCloseCurrentFile(zfile);
                 break;
             }
+            // De estos dos archivos dependen las protecciones del pack (prodinfo en
+            // blanco, dns_mitm, telemetría). Conservar una copia vieja deja la consola
+            // desprotegida sin que el usuario se entere, así que se sobrescriben siempre.
+            const bool alwaysOverwrite = std::any_of(std::begin(ALWAYS_OVERWRITE_INIS), std::end(ALWAYS_OVERWRITE_INIS),
+                                                     [&filename](const char* critical) { return filename == critical; });
+
             if (appPath != filename) {
-                if ((preserveInis == true && filename.substr(filename.length() - 4) == ".ini") || std::find_if(ignoreList.begin(), ignoreList.end(), [&filename](std::string ignored) {
+                if (!alwaysOverwrite && ((preserveInis == true && filename.substr(filename.length() - 4) == ".ini") || std::find_if(ignoreList.begin(), ignoreList.end(), [&filename](std::string ignored) {
                                                                                                                     u8 res = filename.find(ignored);
-                                                                                                                    return (res == 0 || res == 1); }) != ignoreList.end()) {
+                                                                                                                    return (res == 0 || res == 1); }) != ignoreList.end())) {
                     if (!std::filesystem::exists(filename)) {
                         extractEntry(filename, zfile);
                     }
