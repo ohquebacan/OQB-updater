@@ -163,6 +163,21 @@ void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, s
                     ProgressEvent::instance().setStep(step);
                 });
             }
+
+            // El tid de un forwarder es el hash de la ruta del NRO, y esa ruta
+            // cambia si la app pasa de /switch/x.nro a /switch/x/x.nro o al
+            // revés. Reinstalar entonces NO sobrescribe el forwarder viejo:
+            // quedan dos en el menú HOME y el viejo apunta a un archivo que ya
+            // no está, así que da error al abrirlo. Borramos los de las demás
+            // ubicaciones posibles de este mismo .nro.
+            if (R_SUCCEEDED(rc)) {
+                const std::string filename = nroPath->substr(nroPath->rfind('/') + 1);
+                for (const auto& candidate : util::nroCandidatePaths(filename)) {
+                    if (candidate != *nroPath) {
+                        fwd::remove(candidate);
+                    }
+                }
+            }
             // El diálogo no se puede abrir desde este hilo, así que el mensaje
             // se deja acá y lo muestra la página siguiente.
             *forwarderResult = R_SUCCEEDED(rc)

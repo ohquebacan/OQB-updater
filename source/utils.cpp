@@ -2,6 +2,7 @@
 
 #include <switch.h>
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -437,8 +438,46 @@ namespace util {
             }
         }
 
-        // 4. Instalación nueva: suelto en /switch/.
-        return flat;
+        // 4. Instalación nueva: su carpeta propia, no suelto en /switch/.
+        //
+        // Va acá a propósito. Hay apps que se reubican solas en el primer
+        // arranque: pipenSX se mueve de /switch/pipensx.nro a
+        // /switch/pipensx/pipensx.nro y se reinicia. Si la dejáramos suelta, el
+        // acceso directo que se crea al descargarla apuntaría a una ruta que la
+        // app abandona acto seguido, y al abrirlo hbl aborta con "ruta no
+        // encontrada". Instalándola ya en su carpeta no hay nada que mover y el
+        // acceso directo sigue siendo válido. Además es la convención de hbmenu,
+        // la misma que prefiere la regla 1.
+        return inOwnDir;
+    }
+
+    std::vector<std::string> nroCandidatePaths(const std::string& filename)
+    {
+        std::error_code ec;
+        const std::string stem = filename.substr(0, filename.rfind(".nro"));
+        std::vector<std::string> out;
+
+        const auto push = [&out](const std::string& p) {
+            if (std::find(out.begin(), out.end(), p) == out.end()) {
+                out.push_back(p);
+            }
+        };
+
+        // Mismo orden que resolveNroDestination. Las dos primeras se construyen
+        // aunque no existan: la ubicación que la app ya abandonó es justo la que
+        // deja el acceso directo apuntando a la nada.
+        push(std::string(APP_PATH) + stem + "/" + filename);
+        push(std::string(APP_PATH) + filename);
+
+        if (std::filesystem::exists(APP_PATH, ec)) {
+            for (const auto& entry : std::filesystem::directory_iterator(APP_PATH, ec)) {
+                if (ec) break;
+                if (!entry.is_directory(ec)) continue;
+                push(entry.path().string() + "/" + filename);
+            }
+        }
+
+        return out;
     }
 
     std::string getContentsPath()

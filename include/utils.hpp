@@ -6,6 +6,7 @@
 #include <json.hpp>
 #include <regex>
 #include <set>
+#include <vector>
 
 #include "constants.hpp"
 
@@ -51,6 +52,11 @@ namespace util {
     std::string getContentsPath();
     // Dónde guardar (o actualizar) un .nro: respeta la carpeta propia de la app si ya existe.
     std::string resolveNroDestination(const std::string& filename);
+    // Todas las ubicaciones donde ese .nro pudo haber vivido alguna vez, en el
+    // mismo orden que mira resolveNroDestination. Se construyen, no se
+    // descubren: la ubicación vieja puede ya no existir en disco y es
+    // justamente la que deja un acceso directo huérfano.
+    std::vector<std::string> nroCandidatePaths(const std::string& filename);
     bool getBoolValue(const nlohmann::ordered_json& jsonFile, const std::string& key);
     const nlohmann::ordered_json getValueFromKey(const nlohmann::ordered_json& jsonFile, const std::string& key);
     int openWebBrowser(const std::string url);
