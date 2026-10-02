@@ -1,5 +1,7 @@
 #include "tools_tab.hpp"
 
+#include "protection_page.hpp"
+
 #include <filesystem>
 #include <fstream>
 
@@ -29,6 +31,15 @@ namespace {
 
 ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus) : brls::List()
 {
+    /* OQB: primero de la lista a proposito. Es lo que hay que mirar despues de
+       actualizar el pack o de cambiar el package3, que es justo cuando se puede
+       perder el bloqueo DNS sin que nada avise. */
+    brls::ListItem* protectionCheck = new brls::ListItem("menus/tools/protection"_i18n);
+    protectionCheck->getClickEvent()->subscribe([](brls::View* view) {
+        brls::PopupFrame::open("menus/tools/protection"_i18n, new ProtectionPage(), "menus/tools/protection_desc"_i18n, "");
+    });
+    protectionCheck->setHeight(LISTITEM_HEIGHT);
+
     brls::ListItem* cheats = new brls::ListItem("menus/tools/cheats"_i18n);
     cheats->getClickEvent()->subscribe([](brls::View* view) {
         brls::PopupFrame::open("menus/cheats/menu"_i18n, new CheatsPage(), "", "");
@@ -209,6 +220,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         this->addView(updateApp);
     }
 
+    if (!util::getBoolValue(hideStatus, "protection")) this->addView(protectionCheck);
     if (!util::getBoolValue(hideStatus, "createforwarder")) this->addView(createForwarder);
     if (!util::getBoolValue(hideStatus, "manageforwarders")) this->addView(manageForwarders);
     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
