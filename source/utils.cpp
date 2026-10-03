@@ -209,9 +209,14 @@ namespace util {
                 extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
                 break;
             }
-            case contentType::apps:
-                extract::extract(CUSTOM_FILENAME, ROOT_PATH);
+            case contentType::apps: {
+                // Hay zips de homebrew envueltos en una carpeta unica (SwitchU usa
+                // "sd_out/"). Sin quitarla, el override de atmosphere acaba en
+                // /sd_out/atmosphere/... y la app no lo encuentra.
+                const std::string wrapper = extract::detectWrapperDir(CUSTOM_FILENAME);
+                extract::extract(CUSTOM_FILENAME, ROOT_PATH, false, []() { return; }, wrapper);
                 break;
+            }
             default:
                 break;
         }

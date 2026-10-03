@@ -90,7 +90,60 @@ namespace extract {
         }
     }  // namespace
 
-    void extract(const std::string& archivePath, const std::string& workingPath, bool preserveInis, std::function<void()> func)
+    std::string detectWrapperDir(const std::string& archivePath)
+    {
+        // Carpetas que de verdad viven en la raiz de la SD: si el zip trae solo
+        // una de estas arriba, NO es un envoltorio y hay que dejarla.
+        static const std::set<std::string> sdRoot = {
+            "atmosphere", "bootloader", "switch", "config", "Nintendo", "emuMMC",
+            "sept", "warmboot_mariko", "payloads", "themes", "games", "ReiNX", "sxos",
+        };
+
+        unzFile zfile = unzOpen(archivePath.c_str());
+        if (!zfile) return "";
+
+        unz_global_info gi;
+        if (unzGetGlobalInfo(zfile, &gi) != UNZ_OK) {
+            unzClose(zfile);
+            return "";
+        }
+
+        std::string candidate;
+        bool ok = (gi.number_entry > 0);
+
+        for (uLong i = 0; ok && i < gi.number_entry; ++i) {
+            char szFilename[0x301] = "";
+            unzGetCurrentFileInfo(zfile, NULL, szFilename, sizeof(szFilename), NULL, 0, NULL, 0);
+
+            const std::string entry = szFilename;
+            const auto slash = entry.find('/');
+            if (slash == std::string::npos || slash == 0) {
+                // Hay algo suelto en la raiz del zip: no es un envoltorio.
+                ok = false;
+                break;
+            }
+
+            const std::string top = entry.substr(0, slash);
+            if (candidate.empty()) {
+                candidate = top;
+            }
+            else if (candidate != top) {
+                ok = false;
+                break;
+            }
+
+            unzGoToNextFile(zfile);
+        }
+
+        unzClose(zfile);
+
+        if (!ok || candidate.empty() || sdRoot.count(candidate)) {
+            return "";
+        }
+        return candidate + "/";
+    }
+
+    void extract(const std::string& archivePath, const std::string& workingPath, bool preserveInis, std::function<void()> func, const std::string& stripPrefix)
     {
         ensureAvailableStorage(archivePath);
 
@@ -108,7 +161,18 @@ namespace extract {
             char szFilename[0x301] = "";
             unzOpenCurrentFile(zfile);
             unzGetCurrentFileInfo(zfile, NULL, szFilename, sizeof(szFilename), NULL, 0, NULL, 0);
-            std::string filename = workingPath + szFilename;
+            std::string entryName = szFilename;
+            if (!stripPrefix.empty() && entryName.rfind(stripPrefix, 0) == 0) {
+                entryName = entryName.substr(stripPrefix.length());
+            }
+            if (entryName.empty()) {
+                // Era la propia carpeta envoltorio.
+                unzCloseCurrentFile(zfile);
+                unzGoToNextFile(zfile);
+                ProgressEvent::instance().incrementStep(1);
+                continue;
+            }
+            std::string filename = workingPath + entryName;
 
             if (ProgressEvent::instance().getInterupt()) {
                 unzCloseCurrentFile(zfile);
@@ -151,7 +215,7 @@ namespace extract {
         ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
     }
 
-    std::string findNroInArchive(const std::string& archivePath, const std::string& workingPath)
+    std::string findNroInArchive(const std::string& archivePath, const std::string& workingPath, const std::string& stripPrefix)
     {
         unzFile zfile = unzOpen(archivePath.c_str());
         if (!zfile) return "";
@@ -170,6 +234,9 @@ namespace extract {
             unzGetCurrentFileInfo(zfile, NULL, szFilename, sizeof(szFilename), NULL, 0, NULL, 0);
 
             std::string entry = szFilename;
+            if (!stripPrefix.empty() && entry.rfind(stripPrefix, 0) == 0) {
+                entry = entry.substr(stripPrefix.length());
+            }
             if (entry.length() > 4 && entry.substr(entry.length() - 4) == ".nro") {
                 const std::string full = workingPath + entry;
                 if (firstMatch.empty()) {

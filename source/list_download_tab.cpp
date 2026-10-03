@@ -100,7 +100,7 @@ void ListDownloadTab::createList(contentType type)
                         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() { util::downloadArchive(url, contentType::apps); }));
                         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [nroPath]() {
                             // Se anota antes de extraer, mientras el zip sigue en disco.
-                            *nroPath = extract::findNroInArchive(CUSTOM_FILENAME);
+                            *nroPath = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, extract::detectWrapperDir(CUSTOM_FILENAME));
                             util::extractArchive(contentType::apps);
                         }));
                     }
