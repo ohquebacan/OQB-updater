@@ -19,7 +19,7 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
-ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks) : brls::List(), type(type), nxlinks(nxlinks)
+ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey) : brls::List(), type(type), nxlinks(nxlinks)
 {
     this->setDescription();
 
@@ -56,8 +56,17 @@ void ListDownloadTab::createList(contentType type)
         links.push_back(std::make_pair(fmt::format("menus/main/get_cheats"_i18n, this->newCheatsVer), CurrentCfw::running_cfw == CFW::sxos ? CHEATS_URL_TITLES : CHEATS_URL_CONTENTS));
         links.push_back(std::make_pair("menus/main/get_cheats_gfx"_i18n, CurrentCfw::running_cfw == CFW::sxos ? GFX_CHEATS_URL_TITLES : GFX_CHEATS_URL_CONTENTS));
     }
-    else
-        links = download::getLinksFromJson(util::getValueFromKey(this->nxlinks, contentTypeNames[(int)type].data()));
+    else {
+        /* Si la seccion pedida no existe en el json -- por ejemplo un pack viejo
+           que todavia no trae las claves nuevas -- se cae a la lista completa en
+           lugar de mostrar una seccion vacia. */
+        const std::string key = this->jsonKey.empty() ? std::string(contentTypeNames[(int)type].data()) : this->jsonKey;
+        auto section = util::getValueFromKey(this->nxlinks, key);
+        if (section.empty() && !this->jsonKey.empty()) {
+            section = util::getValueFromKey(this->nxlinks, contentTypeNames[(int)type].data());
+        }
+        links = download::getLinksFromJson(section);
+    }
 
     if (links.size()) {
         for (const auto& link : links) {

@@ -1,5 +1,7 @@
 #include "main_frame.hpp"
 
+#include "apps_tab.hpp"
+
 #include <fstream>
 #include <json.hpp>
 
@@ -51,7 +53,7 @@ MainFrame::MainFrame() : TabFrame()
         this->addTab("menus/main/download_cheats"_i18n, new ListDownloadTab(contentType::cheats));
 
     if (!util::getBoolValue(hideStatus, "apps"))
-        this->addTab("menus/main/apps"_i18n, new ListDownloadTab(contentType::apps, nxlinks));
+        this->addTab("menus/main/apps"_i18n, new AppsTab(nxlinks));
 
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));

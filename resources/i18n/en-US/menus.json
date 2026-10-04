@@ -225,7 +225,19 @@
         "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
         "forwarder_creating": "Creating shortcut...",
         "forwarder_error": "The shortcut could not be created: {}",
-        "installed": "Installed"
+        "installed": "Installed",
+        "sec_emuladores": "Emulators and ports",
+        "sec_emuladores_desc": "Tico, VITA 3K and ported games",
+        "sec_mods": "Mods, themes and icons",
+        "sec_mods_desc": "Mods, HOME menu themes and game icons",
+        "sec_sysmodules": "Sysmodules and performance",
+        "sec_sysmodules_desc": "Loaded at boot: overclock, capture, colour",
+        "sec_instaladores": "Installers and managers",
+        "sec_instaladores_desc": "Install content and manage save data",
+        "sec_sistema": "System and utilities",
+        "sec_sistema_desc": "DNS blocking, media and misc tools",
+        "sec_todas": "All applications",
+        "sec_todas_desc": "The full catalogue, not split into sections"
     },
     "forwarders": {
         "create_title": "Create HOME menu shortcut",

@@ -246,7 +246,19 @@
         "forwarder_ask": "¿Quieres crear un acceso directo de esta app en el menú HOME?",
         "forwarder_creating": "Creando acceso directo...",
         "forwarder_error": "No se pudo crear el acceso directo: {}",
-        "installed": "Instalada"
+        "installed": "Instalada",
+        "sec_emuladores": "Emuladores y ports",
+        "sec_emuladores_desc": "Tico, VITA 3K y juegos portados",
+        "sec_mods": "Mods, temas e iconos",
+        "sec_mods_desc": "Mods, temas del menu HOME e iconos de juegos",
+        "sec_sysmodules": "Sysmodules y rendimiento",
+        "sec_sysmodules_desc": "Se cargan al arrancar: overclock, grabacion, color",
+        "sec_instaladores": "Instaladores y gestores",
+        "sec_instaladores_desc": "Instalar contenido y gestionar partidas guardadas",
+        "sec_sistema": "Sistema y utilidades",
+        "sec_sistema_desc": "Bloqueo DNS, multimedia y herramientas varias",
+        "sec_todas": "Todas las aplicaciones",
+        "sec_todas_desc": "El catalogo completo, sin separar por seccion"
     },
     "forwarders": {
         "create_title": "Crear acceso directo en el menú HOME",
