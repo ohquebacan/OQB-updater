@@ -40,13 +40,18 @@ jobs:
       id: version
       run: echo "version=$(grep 'APP_VERSION' Makefile | head -1 | awk '{print $NF}')" >> $GITHUB_OUTPUT
 
-    # Solo las ramas de las que se publica de verdad. Antes se publicaba en
-    # cada push de cualquier rama, asi que un push de desarrollo le llegaba a
-    # los usuarios como release. El .nro de cualquier rama sigue disponible
-    # como artifact de la propia ejecucion, que es lo que hace falta para
-    # probar sin publicar.
+    # Solo feat/forwarders, que es la rama de la que se publica. Antes se
+    # publicaba en cada push de cualquier rama, asi que un push de desarrollo le
+    # llegaba a los usuarios como release.
+    #
+    # master queda fuera a proposito: es un espejo de lo ya publicado, asi que
+    # ponerlo al dia volveria a publicar una version que ya salio, re-subiendo
+    # sus archivos sin que nada haya cambiado.
+    #
+    # El .nro de cualquier rama sigue disponible como artifact de la propia
+    # ejecucion, que es lo que hace falta para probar sin publicar.
     - name: Publicar Release
-      if: github.ref == 'refs/heads/feat/forwarders' || github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/feat/forwarders'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.version.outputs.version }}
