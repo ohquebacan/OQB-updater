@@ -6,7 +6,7 @@
         "disclaimers": "◆ Esta aplicación utiliza herramientas y apps de terceros. Todos los derechos y créditos corresponden a sus respectivos desarrolladores.\n◆ Síguenos en YouTube para más tutoriales",
         "status_title": "Estado de la consola",
         "status_version": "OQB-updater",
-        "status_version_new": "Hay una versión nueva. Pulsá A para actualizar.",
+        "status_version_new": "Hay una versión nueva. Presiona A para actualizar.",
         "status_cfw": "Custom firmware",
         "status_firmware": "Firmware del sistema",
         "status_model": "Modelo de consola",
@@ -14,9 +14,9 @@
         "status_protection": "Protecciones",
         "status_protection_ok": "Activas",
         "status_protection_fail": "Revisar",
-        "status_protection_ok_sub": "El bloqueo DNS y el PRODINFO están puestos. Pulsá A para ver el detalle.",
-        "status_protection_fail_one": "Falló una comprobación. Pulsá A para ver cuál.",
-        "status_protection_fail_many": "Fallaron {} comprobaciones. Pulsá A para ver cuáles.",
+        "status_protection_ok_sub": "El bloqueo DNS y el PRODINFO están puestos. Presiona A para ver el detalle.",
+        "status_protection_fail_one": "Falló una comprobación. Presiona A para ver cuál.",
+        "status_protection_fail_many": "Fallaron {} comprobaciones. Presiona A para ver cuáles.",
         "status_unknown": "No se pudo leer"
     },
     "cheats": {
@@ -42,7 +42,7 @@
         "quota": "¡Cuota excedida por hoy!\nDirígete a 'https://www.cheatslips.com/subscriptions' para saber cómo aumentarla.",
         "sheet_content": "Lista de trucos",
         "cheatslips_select": "Selecciona el juego para descargar sus trucos.",
-        "cheatslips_wrong_id": "No se puede obtener el token, Asegurate de introducir el nombre de usuario correctamente.",
+        "cheatslips_wrong_id": "No se puede obtener el token, Asegúrate de introducir el nombre de usuario correctamente.",
         "kb_error": "Si el teclado no se muestra prueba ejecutando la app con acceso completo a la RAM (desde un juego)",
         "cheatslips_see_more": "Ver más",
         "cheatslips_dl_cheats": "Descargar trucos y volver",
@@ -118,7 +118,7 @@
         "label": "Cambiar color del Pro controller",
         "backing_up": "Creando copia del perfil de color.",
         "all_done": "¡Finalizado! Puede que necesites apagar y encender el Pro Controller para que el cambio surta efecto.",
-        "changing": "Cambiando el color. Asegurate que el Pro Controller esté asignado al jugador 1."
+        "changing": "Cambiando el color. Asegúrate de que el Pro Controller esté asignado al jugador 1."
     },
     "main": {
         "getting": "Obteniendo {}",
@@ -212,7 +212,7 @@
         "cant_fetch_deepsea": "No se pudieron obtener los paquetes. Abre una incidencia en GitHub si el problema persiste.",
         "build_your_deepsea": "Construye tu propia versión de DeepSea seleccionando paquetes",
         "getting_ams": "Obteniendo Atmosphère",
-        "custom_packs_label": "◆ Aquí están los paquetes {}. Ten en cuenta que no están respaldados por AIO-Switch-Updater así que asegurate de que confías en la fuente.",
+        "custom_packs_label": "◆ Aquí están los paquetes {}. Ten en cuenta que no están respaldados por AIO-Switch-Updater así que asegúrate de que confías en la fuente.",
         "custom_packs_ams": "◆ Descargas que contienen el firmware personalizdo Atmosphère.",
         "custom_packs_misc": "◆ Descargas que contienen homebrew y herramientas.",
         "custom_download": "Descarga personalizada",
@@ -294,7 +294,7 @@
         "staged_title_again": "Volver a descargar {}",
         "confirm": "¿Descargar e instalar OQB-updater {}?",
         "confirm_again": "¿Volver a descargar e instalar OQB-updater {}?",
-        "notice": "Tenés OQB-updater {} y está disponible la {}.\n\nActualizar cambia solo la app. No toca nada más de la SD.",
+        "notice": "Tienes OQB-updater {} y está disponible la {}.\n\nActualizar cambia solo la app. No toca nada más de la SD.",
         "notice_now": "Actualizar ahora",
         "notice_later": "Más tarde"
     },
@@ -313,17 +313,17 @@
         "failed": "No se pudo sincronizar la hora.\n\n{}",
         "behind": "atrasado",
         "ahead": "adelantado",
-        "needs_auto": "La consola solo muestra la hora nueva si tenés puesta «Sincronizar reloj por internet», en Configuración → Consola → Fecha y hora. La hora ya quedó guardada, así que al activarla se aplica sola — activarla no hace que la consola salga a internet.",
+        "needs_auto": "La consola solo muestra la hora nueva si tienes activada «Sincronizar reloj por internet», en Configuración → Consola → Fecha y hora. La hora ya quedó guardada, así que al activarla se aplica sola — activarla no hace que la consola salga a internet.",
         "system_sync": "Sincronización de hora de la consola",
         "system_sync_on": "Activada",
         "system_sync_off": "Desactivada",
         "system_sync_unreadable": "No se pudo leer el ajuste de la consola.",
-        "system_sync_ask_on": "¿Activar «Sincronizar reloj por internet»?\n\nEs lo que hace que la consola muestre la hora que pone esta app. La hora ya está guardada, así que al activarlo se aplica.\n\nLa consola también va a intentar su propio servidor de hora cada tanto. Tu bloqueo DNS los manda a ninguna parte, así que no sale nada de la consola.",
-        "system_sync_ask_off": "¿Desactivar «Sincronizar reloj por internet»?\n\nLa app va a seguir guardando la hora correcta, pero la consola dejará de mostrarla. Vas a tener que poner el reloj a mano.",
+        "system_sync_ask_on": "¿Activar «Sincronizar reloj por internet»?\n\nEs lo que hace que la consola muestre la hora que pone esta app. La hora ya está guardada, así que al activarlo se aplica.\n\nLa consola también va a intentar su propio servidor de hora de vez en cuando. Tu bloqueo DNS los manda a ninguna parte, así que no sale nada de la consola.",
+        "system_sync_ask_off": "¿Desactivar «Sincronizar reloj por internet»?\n\nLa app va a seguir guardando la hora correcta, pero la consola dejará de mostrarla. Tendrás que poner el reloj a mano.",
         "system_sync_now_on": "Activada, y comprobado.\n\nLa consola ya muestra la hora que pone esta app.",
         "system_sync_now_off": "Desactivada, y comprobado.",
         "system_sync_refused": "La consola no aceptó el cambio. El ajuste quedó como estaba.",
-        "system_sync_unprotected": "Cuidado: el bloqueo DNS NO está activo ahora mismo.\n\nActivar esto hace que la consola contacte su propio servidor de hora cada tanto. Sin el bloqueo, esos pedidos sí salen de la consola.\n\nRevisá antes Protecciones, en este mismo menú.",
+        "system_sync_unprotected": "Cuidado: el bloqueo DNS NO está activo ahora mismo.\n\nActivar esto hace que la consola contacte su propio servidor de hora de vez en cuando. Sin el bloqueo, esos pedidos sí salen de la consola.\n\nRevisa antes Protecciones, en este mismo menú.",
         "system_sync_anyway": "Activar igualmente"
     },
     "color_picker": {
@@ -342,6 +342,6 @@
         "pc_buttons": "Pro Controller · Botones",
         "the_joycons": "los Joy-Cons",
         "the_pro_controller": "el Pro Controller",
-        "apply_failed": "No se pudo aplicar el color. Asegurate de que {} estén conectados y volvé a intentarlo.\nError: {}"
+        "apply_failed": "No se pudo aplicar el color. Asegúrate de que {} estén conectados e inténtalo de nuevo.\nError: {}"
     }
 }
