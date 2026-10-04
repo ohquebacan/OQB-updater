@@ -40,10 +40,20 @@ jobs:
       id: version
       run: echo "version=$(grep 'APP_VERSION' Makefile | head -1 | awk '{print $NF}')" >> $GITHUB_OUTPUT
 
+    # Solo las ramas de las que se publica de verdad. Antes se publicaba en
+    # cada push de cualquier rama, asi que un push de desarrollo le llegaba a
+    # los usuarios como release. El .nro de cualquier rama sigue disponible
+    # como artifact de la propia ejecucion, que es lo que hace falta para
+    # probar sin publicar.
     - name: Publicar Release
+      if: github.ref == 'refs/heads/feat/forwarders' || github.ref == 'refs/heads/master'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.version.outputs.version }}
+        # Sin esto el tag se crea desde la rama por defecto, no desde el commit
+        # que se acaba de compilar: por eso los tags 1.6.0 a 1.7.9 apuntan todos
+        # al commit de 1.5.0 y no sirven para saber que se publico.
+        target_commitish: ${{ github.sha }}
         name: OQB-updater ${{ steps.version.outputs.version }}
         files: |
           OQB-updater.zip
