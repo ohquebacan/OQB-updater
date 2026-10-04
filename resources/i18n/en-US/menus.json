@@ -291,7 +291,18 @@
         "failed": "Could not sync the clock.\n\n{}",
         "behind": "behind",
         "ahead": "ahead",
-        "needs_auto": "The console only shows the new time when \"Synchronize Clock via Internet\" is on, in System Settings → System → Date and Time. The time is already stored, so turning that on applies it — it does not make the console reach out to the internet."
+        "needs_auto": "The console only shows the new time when \"Synchronize Clock via Internet\" is on, in System Settings → System → Date and Time. The time is already stored, so turning that on applies it — it does not make the console reach out to the internet.",
+        "system_sync": "Console clock sync",
+        "system_sync_on": "On",
+        "system_sync_off": "Off",
+        "system_sync_unreadable": "Could not read the console setting.",
+        "system_sync_ask_on": "Turn on \"Synchronize Clock via Internet\"?\n\nThis is what makes the console show the time this app sets. The time is already stored, so turning it on applies it.\n\nThe console will also try its own time server every so often. Your DNS blocking sends those nowhere, so nothing leaves the console.",
+        "system_sync_ask_off": "Turn off \"Synchronize Clock via Internet\"?\n\nThe app will keep storing the right time, but the console will stop showing it. You will have to set the clock by hand.",
+        "system_sync_now_on": "Turned on, and checked.\n\nThe console now shows the time this app sets.",
+        "system_sync_now_off": "Turned off, and checked.",
+        "system_sync_refused": "The console did not accept the change. The setting is unchanged.",
+        "system_sync_unprotected": "Careful: the DNS blocking is NOT active right now.\n\nTurning this on makes the console contact its own time server every so often. Without the blocking, those requests really do leave the console.\n\nCheck Protections first, in this same menu.",
+        "system_sync_anyway": "Turn on anyway"
     },
     "color_picker": {
         "entry": "Custom colour (RGB)",

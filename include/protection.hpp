@@ -22,6 +22,11 @@ namespace protection {
         std::string name;  // que se comprobo
         Status status;
         std::string detail;  // por que salio asi
+        /* Si esta comprobacion es parte del bloqueo DNS, que es lo que impide
+           que la consola hable con Nintendo. Se marca para poder preguntar por
+           ese bloqueo concreto sin tener que reconocer comprobaciones por su
+           nombre, que es texto y cambia. */
+        bool dnsRelated = false;
     };
 
     // Ejecuta todas las comprobaciones, en orden de importancia.
@@ -34,5 +39,14 @@ namespace protection {
 
     // true si alguna comprobacion fallo.
     bool anyFailed(const std::vector<Check>& checks);
+
+    /* true si el bloqueo DNS esta activo: el MITM encendido y un fichero de
+       hosts que mande lo de Nintendo a ninguna parte.
+
+       Lo pregunta quien va a hacer algo que solo es seguro con ese bloqueo
+       puesto — activar la sincronizacion de hora del sistema hace que la
+       consola intente contactar el NTP de Nintendo cada tanto, y lo unico que
+       hace que esos intentos no salgan es esto. */
+    bool dnsBlockingOk(const std::vector<Check>& checks);
 
 }  // namespace protection

@@ -124,17 +124,17 @@ namespace protection {
             const std::string ini = readFile(root + SYSTEM_SETTINGS);
             std::string value;
             if (ini.empty()) {
-                checks.push_back({"DNS MITM activado", Status::Fail, "no se pudo leer system_settings.ini"});
+                checks.push_back({"DNS MITM activado", Status::Fail, "no se pudo leer system_settings.ini", true});
             }
             else if (!findIniValue(ini, "enable_dns_mitm", value)) {
                 checks.push_back({"DNS MITM activado", Status::Fail,
-                                  "enable_dns_mitm no aparece: se depende del valor por defecto"});
+                                  "enable_dns_mitm no aparece: se depende del valor por defecto", true});
             }
             else if (value.find("0x1") == std::string::npos) {
-                checks.push_back({"DNS MITM activado", Status::Fail, "enable_dns_mitm = " + value});
+                checks.push_back({"DNS MITM activado", Status::Fail, "enable_dns_mitm = " + value, true});
             }
             else {
-                checks.push_back({"DNS MITM activado", Status::Ok, "enable_dns_mitm = " + value});
+                checks.push_back({"DNS MITM activado", Status::Ok, "enable_dns_mitm = " + value, true});
             }
         }
 
@@ -146,13 +146,13 @@ namespace protection {
         std::string default_detail;
         const bool default_blocks =
             inspectHostsFile(root + HOSTS_DIR + "default.txt", default_detail) == HostsResult::Blocks;
-        checks.push_back({"hosts/default.txt", default_blocks ? Status::Ok : Status::Fail, default_detail});
+        checks.push_back({"hosts/default.txt", default_blocks ? Status::Ok : Status::Fail, default_detail, true});
 
         for (const char* name : {"emummc.txt", "sysmmc.txt"}) {
             std::string detail;
             switch (inspectHostsFile(root + HOSTS_DIR + name, detail)) {
                 case HostsResult::Blocks:
-                    checks.push_back({std::string("hosts/") + name, Status::Ok, detail});
+                    checks.push_back({std::string("hosts/") + name, Status::Ok, detail, true});
                     break;
 
                 case HostsResult::Absent:
@@ -162,14 +162,15 @@ namespace protection {
                     checks.push_back({std::string("hosts/") + name,
                                       default_blocks ? Status::Ok : Status::Fail,
                                       default_blocks ? "no existe: manda default.txt, que si bloquea"
-                                                     : "no existe, y default.txt tampoco bloquea"});
+                                                     : "no existe, y default.txt tampoco bloquea",
+                                      true});
                     break;
 
                 case HostsResult::DoesNotBlock:
                     // El caso peligroso: existe, asi que deja fuera a
                     // default.txt, y no bloquea.
                     checks.push_back({std::string("hosts/") + name, Status::Fail,
-                                      detail + " — reemplaza a default.txt"});
+                                      detail + " — reemplaza a default.txt", true});
                     break;
             }
         }
@@ -203,6 +204,13 @@ namespace protection {
         }
 
         return checks;
+    }
+
+    bool dnsBlockingOk(const std::vector<Check>& checks)
+    {
+        return std::none_of(checks.begin(), checks.end(), [](const Check& c) {
+            return c.dnsRelated && c.status == Status::Fail;
+        });
     }
 
     bool anyFailed(const std::vector<Check>& checks)

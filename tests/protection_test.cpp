@@ -181,6 +181,59 @@ int main()
                "PRODINFO en blanco (emuNAND)", protection::Status::Warning);
     }
 
+    /* dnsBlockingOk decide si la app se atreve a activar la sincronizacion de
+       hora del sistema, que hace que la consola intente contactar el NTP de
+       Nintendo. Si esto dijera que si cuando el bloqueo no esta, esos intentos
+       saldrian de verdad. */
+    {
+        const std::string sd = makeSd();
+        const auto checks = protection::run(sd);
+        if (protection::dnsBlockingOk(checks))
+            std::cout << "ok     con default.txt bloqueando, el bloqueo DNS se da por activo\n";
+        else {
+            std::cout << "FALLA  con default.txt bloqueando deberia darse por activo\n";
+            ++failures;
+        }
+    }
+    {
+        // El MITM apagado deja sin efecto cualquier fichero de hosts.
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/config/system_settings.ini", "[atmosphere]\nenable_dns_mitm = u8!0x0\n");
+        const auto checks = protection::run(sd);
+        if (!protection::dnsBlockingOk(checks))
+            std::cout << "ok     con el MITM apagado, el bloqueo DNS NO se da por activo\n";
+        else {
+            std::cout << "FALLA  con el MITM apagado no deberia darse por activo\n";
+            ++failures;
+        }
+    }
+    {
+        // default.txt sin reglas de nintendo y sin fichero de arranque: no hay
+        // nada bloqueando.
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/default.txt", HOSTS_NO_BLOCK);
+        const auto checks = protection::run(sd);
+        if (!protection::dnsBlockingOk(checks))
+            std::cout << "ok     sin reglas de nintendo, el bloqueo DNS NO se da por activo\n";
+        else {
+            std::cout << "FALLA  sin reglas de nintendo no deberia darse por activo\n";
+            ++failures;
+        }
+    }
+    {
+        // Un PRODINFO en blanco que falla no es asunto del bloqueo DNS: no debe
+        // impedir la decision que depende solo de ese bloqueo.
+        const std::string sd = makeSd();
+        write(sd + "/exosphere.ini", "[exosphere]\nblank_prodinfo_emummc=0\nblank_prodinfo_sysmmc=0\n");
+        const auto checks = protection::run(sd);
+        if (protection::anyFailed(checks) && protection::dnsBlockingOk(checks))
+            std::cout << "ok     un fallo de PRODINFO no cuenta como fallo del bloqueo DNS\n";
+        else {
+            std::cout << "FALLA  el PRODINFO no deberia afectar a dnsBlockingOk\n";
+            ++failures;
+        }
+    }
+
     std::cout << (failures ? "\nHAY FALLAS: " : "\nTODO OK (0 fallas)");
     if (failures) std::cout << failures;
     std::cout << "\n";

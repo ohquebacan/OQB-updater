@@ -17,6 +17,7 @@
 #include "ntp.hpp"
 #include "payload_page.hpp"
 #include "progress_event.hpp"
+#include "protection.hpp"
 #include "protection_page.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
@@ -115,6 +116,78 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::Application::pushView(stagedFrame);
     });
     syncTime->setHeight(LISTITEM_HEIGHT);
+
+    /* El interruptor de la consola, desde aqui. La app escribe el reloj de red
+       pero no el de usuario, asi que la hora solo se ve con esta opcion puesta:
+       tenerla a mano es la diferencia entre que la sincronizacion sirva o no.
+
+       Nada de esto usa showDialogBoxBlocking: hace busy-wait y esto corre en el
+       hilo de la UI, que se trabaria a si mismo. Los dialogos van encadenados
+       por el callback de close(), como en la pagina de forwarders. */
+    bool autoCorrection = false;
+    const bool autoCorrectionRead =
+        R_SUCCEEDED(setsysIsUserSystemClockAutomaticCorrectionEnabled(&autoCorrection));
+
+    brls::ListItem* clockSync = new brls::ListItem("menus/time/system_sync"_i18n);
+    clockSync->setHeight(LISTITEM_HEIGHT);
+    clockSync->setValue(!autoCorrectionRead ? "menus/about/status_unknown"_i18n
+                        : autoCorrection    ? "menus/time/system_sync_on"_i18n
+                                            : "menus/time/system_sync_off"_i18n);
+    clockSync->getClickEvent()->subscribe([autoCorrection, autoCorrectionRead](brls::View* view) {
+        if (!autoCorrectionRead) {
+            util::showDialogBoxInfo("menus/time/system_sync_unreadable"_i18n);
+            return;
+        }
+
+        const bool turningOn = !autoCorrection;
+
+        // Escribe, vuelve a leer y cuenta lo que quedo de verdad. Que la
+        // funcion exista no garantiza que el sistema acepte el cambio, y dar
+        // por bueno lo que no se comprobo es el error que ya cometimos una vez
+        // con el reloj de usuario.
+        auto applyAndReport = [turningOn]() {
+            setsysSetUserSystemClockAutomaticCorrectionEnabled(turningOn);
+
+            bool now = false;
+            if (R_FAILED(setsysIsUserSystemClockAutomaticCorrectionEnabled(&now))) {
+                util::showDialogBoxInfo("menus/time/system_sync_unreadable"_i18n);
+                return;
+            }
+
+            if (now == turningOn) {
+                util::showDialogBoxInfo(turningOn ? "menus/time/system_sync_now_on"_i18n
+                                                  : "menus/time/system_sync_now_off"_i18n);
+            }
+            else {
+                util::showDialogBoxInfo("menus/time/system_sync_refused"_i18n);
+            }
+        };
+
+        /* El seguro. Activar esto hace que la consola intente contactar el NTP
+           de Nintendo cada tanto, y lo unico que impide que esos intentos
+           salgan es el bloqueo DNS. Asi que antes de activarlo se comprueba que
+           ese bloqueo este puesto, en vez de darlo por hecho. Para apagarlo no
+           hace falta: apagarlo solo quita intentos. */
+        if (turningOn && !protection::dnsBlockingOk(protection::run())) {
+            brls::Dialog* warn = new brls::Dialog("menus/time/system_sync_unprotected"_i18n);
+            warn->addButton("menus/time/system_sync_anyway"_i18n, [warn, applyAndReport](brls::View* v) {
+                warn->close(applyAndReport);
+            });
+            warn->addButton("menus/common/no"_i18n, [warn](brls::View* v) { warn->close(); });
+            warn->setCancelable(false);
+            warn->open();
+            return;
+        }
+
+        brls::Dialog* confirm = new brls::Dialog(turningOn ? "menus/time/system_sync_ask_on"_i18n
+                                                           : "menus/time/system_sync_ask_off"_i18n);
+        confirm->addButton("menus/common/yes"_i18n, [confirm, applyAndReport](brls::View* v) {
+            confirm->close(applyAndReport);
+        });
+        confirm->addButton("menus/common/no"_i18n, [confirm](brls::View* v) { confirm->close(); });
+        confirm->setCancelable(false);
+        confirm->open();
+    });
 
     brls::ListItem* netSettings = new brls::ListItem("menus/tools/internet_settings"_i18n);
     netSettings->getClickEvent()->subscribe([](brls::View* view) {
@@ -258,6 +331,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     if (!util::getBoolValue(hideStatus, "pccolor")) this->addView(PCcolor);
     if (erista && !util::getBoolValue(hideStatus, "rebootpayload")) this->addView(rebootPayload);
     if (!util::getBoolValue(hideStatus, "synctime")) this->addView(syncTime);
+    if (!util::getBoolValue(hideStatus, "synctime")) this->addView(clockSync);
     if (!util::getBoolValue(hideStatus, "netsettings")) this->addView(netSettings);
     if (!util::getBoolValue(hideStatus, "browser")) this->addView(browser);
     if (!util::getBoolValue(hideStatus, "move")) this->addView(move);

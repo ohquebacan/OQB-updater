@@ -312,7 +312,18 @@
         "failed": "No se pudo sincronizar la hora.\n\n{}",
         "behind": "atrasado",
         "ahead": "adelantado",
-        "needs_auto": "La consola solo muestra la hora nueva si tenés puesta «Sincronizar reloj por internet», en Configuración → Consola → Fecha y hora. La hora ya quedó guardada, así que al activarla se aplica sola — activarla no hace que la consola salga a internet."
+        "needs_auto": "La consola solo muestra la hora nueva si tenés puesta «Sincronizar reloj por internet», en Configuración → Consola → Fecha y hora. La hora ya quedó guardada, así que al activarla se aplica sola — activarla no hace que la consola salga a internet.",
+        "system_sync": "Sincronización de hora de la consola",
+        "system_sync_on": "Activada",
+        "system_sync_off": "Desactivada",
+        "system_sync_unreadable": "No se pudo leer el ajuste de la consola.",
+        "system_sync_ask_on": "¿Activar «Sincronizar reloj por internet»?\n\nEs lo que hace que la consola muestre la hora que pone esta app. La hora ya está guardada, así que al activarlo se aplica.\n\nLa consola también va a intentar su propio servidor de hora cada tanto. Tu bloqueo DNS los manda a ninguna parte, así que no sale nada de la consola.",
+        "system_sync_ask_off": "¿Desactivar «Sincronizar reloj por internet»?\n\nLa app va a seguir guardando la hora correcta, pero la consola dejará de mostrarla. Vas a tener que poner el reloj a mano.",
+        "system_sync_now_on": "Activada, y comprobado.\n\nLa consola ya muestra la hora que pone esta app.",
+        "system_sync_now_off": "Desactivada, y comprobado.",
+        "system_sync_refused": "La consola no aceptó el cambio. El ajuste quedó como estaba.",
+        "system_sync_unprotected": "Cuidado: el bloqueo DNS NO está activo ahora mismo.\n\nActivar esto hace que la consola contacte su propio servidor de hora cada tanto. Sin el bloqueo, esos pedidos sí salen de la consola.\n\nRevisá antes Protecciones, en este mismo menú.",
+        "system_sync_anyway": "Activar igualmente"
     },
     "color_picker": {
         "entry": "Color personalizado (RGB)",
