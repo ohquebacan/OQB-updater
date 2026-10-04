@@ -290,7 +290,8 @@
         "already": "The clock was already right ({}).",
         "failed": "Could not sync the clock.\n\n{}",
         "behind": "behind",
-        "ahead": "ahead"
+        "ahead": "ahead",
+        "needs_auto": "The console only shows the new time when \"Synchronize Clock via Internet\" is on, in System Settings → System → Date and Time. The time is already stored, so turning that on applies it — it does not make the console reach out to the internet."
     },
     "color_picker": {
         "entry": "Custom colour (RGB)",

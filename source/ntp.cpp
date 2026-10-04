@@ -181,6 +181,12 @@ namespace ntp {
             return result;
         }
 
+        // Si está apagada, la hora queda guardada pero no se ve, y hay que
+        // decirlo en los dos casos: si no, parece que no hizo nada.
+        bool autoCorrection = false;
+        if (R_SUCCEEDED(setsysIsUserSystemClockAutomaticCorrectionEnabled(&autoCorrection)))
+            result.autoCorrectionEnabled = autoCorrection;
+
         result.drift = (long long)networkTime - (long long)consoleTime;
         if (result.drift > -MIN_DRIFT_S && result.drift < MIN_DRIFT_S) {
             // Ya estaba en hora. No se escribe el reloj por unos segundos.
@@ -189,17 +195,21 @@ namespace ntp {
             return result;
         }
 
-        /* Se escriben los dos relojes. El de red es el que usa el sistema
-           cuando la sincronización por internet está activada; el de usuario es
-           el que se ve en la pantalla de inicio, y es el que de verdad cambia
-           la hora en un pack donde los servidores de Nintendo están bloqueados.
-           Si el de red falla no se da por perdido: lo que importa es el otro. */
-        timeSetCurrentTime(TimeType_NetworkSystemClock, networkTime);
-        if (R_FAILED(timeSetCurrentTime(TimeType_UserSystemClock, networkTime))) {
+        /* El reloj de red es el que de verdad se puede escribir desde aquí, y
+           es el que vale: con la opción "Sincronizar reloj por internet" puesta,
+           el sistema lo copia al reloj de usuario — el que se ve — sin salir a
+           internet.
+
+           El de usuario se intenta igual, por si en algún firmware o servicio
+           sí deja, pero que lo rechace no es un fallo de la sincronización: la
+           hora quedó guardada. Darlo por fallido, que es lo que hacía antes,
+           era decir que no se hizo nada cuando sí se hizo. */
+        if (R_FAILED(timeSetCurrentTime(TimeType_NetworkSystemClock, networkTime))) {
             result.detail = "no se pudo escribir el reloj de la consola";
-            result.ok = false;
             return result;
         }
+
+        result.userClockWritten = R_SUCCEEDED(timeSetCurrentTime(TimeType_UserSystemClock, networkTime));
 
         result.ok = true;
         return result;

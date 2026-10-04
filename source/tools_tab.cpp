@@ -90,13 +90,23 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             if (!result.ok) {
                 *message = fmt::format("menus/time/failed"_i18n, result.detail);
             }
-            else if (result.alreadyInSync) {
-                *message = fmt::format("menus/time/already"_i18n, result.detail);
-            }
             else {
-                *message = fmt::format("menus/time/done"_i18n, result.detail,
-                                       result.drift > 0 ? result.drift : -result.drift,
-                                       result.drift > 0 ? "menus/time/behind"_i18n : "menus/time/ahead"_i18n);
+                if (result.alreadyInSync) {
+                    *message = fmt::format("menus/time/already"_i18n, result.detail);
+                }
+                else {
+                    *message = fmt::format("menus/time/done"_i18n, result.detail,
+                                           result.drift > 0 ? result.drift : -result.drift,
+                                           result.drift > 0 ? "menus/time/behind"_i18n : "menus/time/ahead"_i18n);
+                }
+
+                /* La parte que faltaba explicar. La consola solo muestra la
+                   hora nueva si tiene puesta la sincronizacion por internet:
+                   sin ella queda guardada y no se ve, y eso parecia que la
+                   herramienta no hubiera hecho nada. */
+                if (!result.userClockWritten && !result.autoCorrectionEnabled) {
+                    *message += "\n\n" + "menus/time/needs_auto"_i18n;
+                }
             }
 
             progress.setStep(progress.getMax());

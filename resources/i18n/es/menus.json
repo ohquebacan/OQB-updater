@@ -311,7 +311,8 @@
         "already": "El reloj ya estaba en hora ({}).",
         "failed": "No se pudo sincronizar la hora.\n\n{}",
         "behind": "atrasado",
-        "ahead": "adelantado"
+        "ahead": "adelantado",
+        "needs_auto": "La consola solo muestra la hora nueva si tenés puesta «Sincronizar reloj por internet», en Configuración → Consola → Fecha y hora. La hora ya quedó guardada, así que al activarla se aplica sola — activarla no hace que la consola salga a internet."
     },
     "color_picker": {
         "entry": "Color personalizado (RGB)",
