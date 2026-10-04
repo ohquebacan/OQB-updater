@@ -8,14 +8,18 @@
 #include "app_page.hpp"
 #include "app_update.hpp"
 #include "cheats_page.hpp"
+#include "confirm_page.hpp"
 #include "constants.hpp"
 #include "forwarder_page.hpp"
 #include "fs.hpp"
 #include "hide_tabs_page.hpp"
 #include "net_page.hpp"
+#include "ntp.hpp"
 #include "payload_page.hpp"
+#include "progress_event.hpp"
 #include "protection_page.hpp"
 #include "utils.hpp"
+#include "worker_page.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -65,6 +69,42 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::PopupFrame::open("menus/tools/inject_payloads"_i18n, new PayloadPage(), "", "");
     });
     rebootPayload->setHeight(LISTITEM_HEIGHT);
+
+    /* La hora se pone sola al abrir la app; esta entrada es para forzarla y,
+       sobre todo, para ver que paso. La automatica es muda a proposito: no se
+       interrumpe a nadie al arrancar para contarle que el reloj ya estaba bien. */
+    brls::ListItem* syncTime = new brls::ListItem("menus/time/sync"_i18n);
+    syncTime->getClickEvent()->subscribe([](brls::View* view) {
+        auto message = std::make_shared<std::string>();
+
+        brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
+        stagedFrame->setTitle("menus/time/sync"_i18n);
+        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/time/syncing"_i18n, [message]() {
+            auto& progress = ProgressEvent::instance();
+            progress.reset();
+
+            const ntp::SyncResult result = ntp::sync();
+
+            // El dialogo no se puede abrir desde este hilo, asi que el texto se
+            // deja aqui y lo muestra la pagina siguiente.
+            if (!result.ok) {
+                *message = fmt::format("menus/time/failed"_i18n, result.detail);
+            }
+            else if (result.alreadyInSync) {
+                *message = fmt::format("menus/time/already"_i18n, result.detail);
+            }
+            else {
+                *message = fmt::format("menus/time/done"_i18n, result.detail,
+                                       result.drift > 0 ? result.drift : -result.drift,
+                                       result.drift > 0 ? "menus/time/behind"_i18n : "menus/time/ahead"_i18n);
+            }
+
+            progress.setStep(progress.getMax());
+        }));
+        stagedFrame->addStage(new ConfirmPage_Deferred(stagedFrame, message));
+        brls::Application::pushView(stagedFrame);
+    });
+    syncTime->setHeight(LISTITEM_HEIGHT);
 
     brls::ListItem* netSettings = new brls::ListItem("menus/tools/internet_settings"_i18n);
     netSettings->getClickEvent()->subscribe([](brls::View* view) {
@@ -207,6 +247,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     if (!util::getBoolValue(hideStatus, "jccolor")) this->addView(JCcolor);
     if (!util::getBoolValue(hideStatus, "pccolor")) this->addView(PCcolor);
     if (erista && !util::getBoolValue(hideStatus, "rebootpayload")) this->addView(rebootPayload);
+    if (!util::getBoolValue(hideStatus, "synctime")) this->addView(syncTime);
     if (!util::getBoolValue(hideStatus, "netsettings")) this->addView(netSettings);
     if (!util::getBoolValue(hideStatus, "browser")) this->addView(browser);
     if (!util::getBoolValue(hideStatus, "move")) this->addView(move);

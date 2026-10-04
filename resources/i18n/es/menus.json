@@ -303,5 +303,14 @@
         "hint": "Parte del nombre",
         "results": "Resultados de «{}»",
         "no_results": "No hay nada que coincida con «{}»."
+    },
+    "time": {
+        "sync": "Sincronizar la hora",
+        "syncing": "Consultando un servidor de hora…",
+        "done": "Hora sincronizada con {}.\n\nEl reloj iba {} segundos {}.",
+        "already": "El reloj ya estaba en hora ({}).",
+        "failed": "No se pudo sincronizar la hora.\n\n{}",
+        "behind": "atrasado",
+        "ahead": "adelantado"
     }
 }

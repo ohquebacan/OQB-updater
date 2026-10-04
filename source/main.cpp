@@ -9,12 +9,16 @@
 #include "current_cfw.hpp"
 #include "fs.hpp"
 #include "main_frame.hpp"
+#include "ntp.hpp"
 #include "warning_page.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
-// TimeServiceType __nx_time_service_type = TimeServiceType_System;
+/* Escribir el reloj necesita time:s; con el servicio de usuario, que es el que
+   libnx coge por defecto, timeSetCurrentTime falla. Esta linea ya estaba en el
+   archivo, comentada, desde el intento de NTP que quedo a medias. */
+TimeServiceType __nx_time_service_type = TimeServiceType_System;
 
 CFW CurrentCfw::running_cfw;
 
@@ -51,6 +55,12 @@ int main(int argc, char* argv[])
 
     CurrentCfw::running_cfw = CurrentCfw::getCFW();
 
+    /* En hora desde el arranque. Con los servidores de Nintendo bloqueados la
+       correccion automatica del sistema no funciona — va contra ntp.nintendo.net,
+       que esta justo entre lo que se bloquea — asi que el reloj se atrasa solo.
+       Va en segundo plano: al abrir la app no se puede esperar a la red. */
+    ntp::syncInBackground();
+
     fs::createTree(CONFIG_PATH);
 
     brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
@@ -71,6 +81,10 @@ int main(int argc, char* argv[])
     }
 
     while (brls::Application::mainLoop());
+
+    // Antes de cerrar servicios: el hilo de la hora todavia puede estar usando
+    // la red y el servicio de time.
+    ntp::waitForBackgroundSync();
 
     romfsExit();
     splExit();

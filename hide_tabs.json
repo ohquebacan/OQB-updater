@@ -15,6 +15,7 @@
     "manageforwarders": false,
     "move": false,
     "netsettings": false,
+    "synctime": false,
     "outdatedtitles": false,
     "pccolor": false,
     "rebootpayload": false

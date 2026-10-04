@@ -282,5 +282,14 @@
         "hint": "Part of the name",
         "results": "Results for \"{}\"",
         "no_results": "Nothing matches \"{}\"."
+    },
+    "time": {
+        "sync": "Sync the clock",
+        "syncing": "Asking an internet time server…",
+        "done": "Clock synced from {}.\n\nIt was {} seconds {}.",
+        "already": "The clock was already right ({}).",
+        "failed": "Could not sync the clock.\n\n{}",
+        "behind": "behind",
+        "ahead": "ahead"
     }
 }
