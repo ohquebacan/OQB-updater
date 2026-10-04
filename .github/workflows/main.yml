@@ -28,10 +28,17 @@ jobs:
         make -C aiosu-forwarder -f Makefile
         make -j$(nproc)
         
+    # El .elf va con el .nro a proposito. Un crash report de Atmosphere trae
+    # direcciones, y add2line.sh las convierte en lineas de codigo — pero solo
+    # con el .elf de ESE build exacto. Sin guardarlo, un informe de crash de una
+    # version ya publicada no se puede leer: las direcciones no corresponden a
+    # ningun binario que se conserve.
     - uses: actions/upload-artifact@master
       with:
         name: OQB-updater
-        path: OQB-updater.nro
+        path: |
+          OQB-updater.nro
+          OQB-updater.elf
 
     - name: Crear zip para release
       run: zip OQB-updater.zip OQB-updater.nro
