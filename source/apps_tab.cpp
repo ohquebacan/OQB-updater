@@ -11,15 +11,14 @@ namespace {
     struct Section {
         const char* jsonKey;
         const char* label;
-        const char* description;
     };
 
     constexpr Section SECTIONS[] = {
-        {"apps_emuladores", "menus/apps/sec_emuladores",  "menus/apps/sec_emuladores_desc"},
-        {"apps_mods",       "menus/apps/sec_mods",        "menus/apps/sec_mods_desc"},
-        {"apps_sysmodules", "menus/apps/sec_sysmodules",  "menus/apps/sec_sysmodules_desc"},
-        {"apps_instaladores","menus/apps/sec_instaladores","menus/apps/sec_instaladores_desc"},
-        {"apps_sistema",    "menus/apps/sec_sistema",     "menus/apps/sec_sistema_desc"},
+        {"apps_emuladores",  "menus/apps/sec_emuladores"},
+        {"apps_mods",        "menus/apps/sec_mods"},
+        {"apps_sysmodules",  "menus/apps/sec_sysmodules"},
+        {"apps_instaladores","menus/apps/sec_instaladores"},
+        {"apps_sistema",     "menus/apps/sec_sistema"},
     };
 
 }  // namespace
@@ -27,7 +26,7 @@ namespace {
 AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(nxlinks)
 {
     for (const auto& section : SECTIONS) {
-        brls::ListItem* item = new brls::ListItem(i18n::getStr(section.label), i18n::getStr(section.description));
+        brls::ListItem* item = new brls::ListItem(i18n::getStr(section.label));
         item->setHeight(LISTITEM_HEIGHT);
 
         const nlohmann::ordered_json links = this->nxlinks;
@@ -46,7 +45,7 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
 
     // Todo el catalogo junto, por si algo no encaja en ninguna seccion o el
     // pack todavia no trae las claves nuevas.
-    brls::ListItem* all = new brls::ListItem("menus/apps/sec_todas"_i18n, "menus/apps/sec_todas_desc"_i18n);
+    brls::ListItem* all = new brls::ListItem("menus/apps/sec_todas"_i18n);
     all->setHeight(LISTITEM_HEIGHT);
     const nlohmann::ordered_json links = this->nxlinks;
     all->getClickEvent()->subscribe([links](brls::View* view) {
