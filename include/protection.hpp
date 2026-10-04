@@ -23,7 +23,12 @@ namespace protection {
     };
 
     // Ejecuta todas las comprobaciones, en orden de importancia.
-    std::vector<Check> run();
+    //
+    // `root` se antepone a las rutas. En la consola se deja vacio, que es la
+    // raiz de la SD; las pruebas le pasan una carpeta temporal con una SD de
+    // mentira, porque esta logica decide si avisamos de que la consola esta al
+    // descubierto y no deberia verificarse solo leyendola.
+    std::vector<Check> run(const std::string& root = "");
 
     // true si alguna comprobacion fallo.
     bool anyFailed(const std::vector<Check>& checks);

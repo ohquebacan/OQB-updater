@@ -57,17 +57,27 @@ namespace protection {
             return false;
         }
 
-        bool hostsFileBlocks(const std::string& path, std::string& out_detail)
+        // Tres resultados, no dos: que un fichero falte no es lo mismo que que
+        // exista y no bloquee. Atmosphere usa default.txt cuando no encuentra
+        // el fichero del arranque, asi que faltar es lo normal; existir sin
+        // bloquear es lo que deja la consola al descubierto.
+        enum class HostsResult {
+            Blocks,
+            Absent,
+            DoesNotBlock,
+        };
+
+        HostsResult inspectHostsFile(const std::string& path, std::string& out_detail)
         {
             if (!std::filesystem::exists(path)) {
                 out_detail = "no existe";
-                return false;
+                return HostsResult::Absent;
             }
 
             const std::string contents = readFile(path);
             if (contents.empty()) {
                 out_detail = "esta vacio";
-                return false;
+                return HostsResult::DoesNotBlock;
             }
 
             // Contar solo lineas utiles: ni vacias ni comentadas.
@@ -89,20 +99,20 @@ namespace protection {
 
             if (rules == 0) {
                 out_detail = "solo tiene comentarios";
-                return false;
+                return HostsResult::DoesNotBlock;
             }
             if (!blocks_nintendo) {
                 out_detail = std::to_string(rules) + " reglas, pero ninguna bloquea nintendo";
-                return false;
+                return HostsResult::DoesNotBlock;
             }
 
             out_detail = std::to_string(rules) + " reglas";
-            return true;
+            return HostsResult::Blocks;
         }
 
     }  // namespace
 
-    std::vector<Check> run()
+    std::vector<Check> run(const std::string& root)
     {
         std::vector<Check> checks;
 
@@ -110,7 +120,7 @@ namespace protection {
               de Atmosphere, y eso ya nos dejo sin bloqueo una vez: Prelude lo
               pone en 0 al salir del modo Nintendo y no lo revierte. */
         {
-            const std::string ini = readFile(SYSTEM_SETTINGS);
+            const std::string ini = readFile(root + SYSTEM_SETTINGS);
             std::string value;
             if (ini.empty()) {
                 checks.push_back({"DNS MITM activado", Status::Fail, "no se pudo leer system_settings.ini"});
@@ -127,24 +137,51 @@ namespace protection {
             }
         }
 
-        /* 2. Los tres ficheros de hosts. Atmosphere elige uno segun arranques de
-              emuNAND o de sysNAND, asi que los tres tienen que bloquear; con
-              tener solo default.txt ya hubo consolas desprotegidas. */
-        for (const char* name : {"default.txt", "emummc.txt", "sysmmc.txt"}) {
+        /* 2. Los ficheros de hosts. Atmosphere busca el del arranque en curso
+              (emummc.txt o sysmmc.txt) y, si no existe, usa default.txt. Por eso
+              default.txt es el que tiene que bloquear siempre, y los otros dos
+              solo importan cuando existen: entonces reemplazan a default.txt y
+              son ellos los que deciden. */
+        std::string default_detail;
+        const bool default_blocks =
+            inspectHostsFile(root + HOSTS_DIR + "default.txt", default_detail) == HostsResult::Blocks;
+        checks.push_back({"hosts/default.txt", default_blocks ? Status::Ok : Status::Fail, default_detail});
+
+        for (const char* name : {"emummc.txt", "sysmmc.txt"}) {
             std::string detail;
-            const bool ok = hostsFileBlocks(std::string(HOSTS_DIR) + name, detail);
-            checks.push_back({std::string("hosts/") + name, ok ? Status::Ok : Status::Fail, detail});
+            switch (inspectHostsFile(root + HOSTS_DIR + name, detail)) {
+                case HostsResult::Blocks:
+                    checks.push_back({std::string("hosts/") + name, Status::Ok, detail});
+                    break;
+
+                case HostsResult::Absent:
+                    // Faltar es lo normal y no rompe nada: manda default.txt.
+                    // Solo es un fallo si default.txt tampoco bloquea, y en ese
+                    // caso el fallo de verdad ya esta reportado arriba.
+                    checks.push_back({std::string("hosts/") + name,
+                                      default_blocks ? Status::Ok : Status::Fail,
+                                      default_blocks ? "no existe: manda default.txt, que si bloquea"
+                                                     : "no existe, y default.txt tampoco bloquea"});
+                    break;
+
+                case HostsResult::DoesNotBlock:
+                    // El caso peligroso: existe, asi que deja fuera a
+                    // default.txt, y no bloquea.
+                    checks.push_back({std::string("hosts/") + name, Status::Fail,
+                                      detail + " — reemplaza a default.txt"});
+                    break;
+            }
         }
 
         /* 3. PRODINFO en blanco. Es la proteccion que no depende del DNS: aunque
               algo se escape, sin certificado la consola no puede identificarse. */
         {
-            const std::string ini = readFile(EXOSPHERE_INI);
+            const std::string ini = readFile(root + EXOSPHERE_INI);
             if (ini.empty()) {
                 checks.push_back({"PRODINFO en blanco", Status::Fail, "no se pudo leer exosphere.ini"});
             }
             else {
-                const bool has_emummc = std::filesystem::exists(EMUMMC_DIR);
+                const bool has_emummc = std::filesystem::exists(root + EMUMMC_DIR);
                 for (const auto& [key, label, required] : {
                          std::tuple<const char*, const char*, bool>{"blank_prodinfo_emummc", "PRODINFO en blanco (emuNAND)", has_emummc},
                          std::tuple<const char*, const char*, bool>{"blank_prodinfo_sysmmc", "PRODINFO en blanco (sysNAND)", false}}) {

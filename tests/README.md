@@ -17,3 +17,17 @@ Si tocás el matching en `source/fs.cpp`, actualizá la copia y corré:
 ```bash
 c++ -std=c++17 -o /tmp/t tests/preserve_matching_test.cpp && /tmp/t
 ```
+
+## protection_test.cpp
+
+Comprueba `protection::run()` — el verificador de protecciones del tab Tools.
+Aquí se compila **el código real**, no una copia: `run()` acepta una raíz, así
+que la prueba le arma una SD de mentira en `/tmp`.
+
+Está separada por la misma razón que la otra: un falso negativo deja la consola
+al descubierto sin avisar, y un falso positivo es casi igual de malo, porque una
+herramienta que da alarmas falsas se termina ignorando.
+
+```bash
+c++ -std=c++17 -Iinclude -o /tmp/pt tests/protection_test.cpp source/protection.cpp && /tmp/pt
+```
