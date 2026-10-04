@@ -10,6 +10,7 @@
 #include "fs.hpp"
 #include "main_frame.hpp"
 #include "ntp.hpp"
+#include "oqb_theme.hpp"
 #include "warning_page.hpp"
 
 namespace i18n = brls::i18n;
@@ -25,7 +26,10 @@ CFW CurrentCfw::running_cfw;
 int main(int argc, char* argv[])
 {
     // Init the app
-    if (!brls::Application::init(APP_TITLE)) {
+    // El tema propio va aqui: sin el, borealis usa el suyo y toda la interfaz
+    // sale en los colores del menu de la Switch. El estilo se deja en nullptr
+    // a proposito, que es quedarse con las medidas de Horizon.
+    if (!brls::Application::init(APP_TITLE, nullptr, oqb::themeVariants())) {
         brls::Logger::error("Unable to init Borealis application");
         return EXIT_FAILURE;
     }

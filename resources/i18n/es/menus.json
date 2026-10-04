@@ -139,7 +139,7 @@
         "cheats": "trucos",
         "links_not_found": "No se pudo encontrar un enlace de descarga, asegúrate de que tu Switch tiene acceso a Internet.\nSi el problema persiste, por favor, abre una incidencia en GitHub.",
         "new_update": "- Nueva actualización de la app disponible",
-        "about": "Acerca de",
+        "about": "Estado",
         "update_ams": "Actualizar Atmosphère",
         "custom_downloads": "Descargas personalizadas",
         "update_cfw": "Actualizar CFW",
@@ -266,7 +266,8 @@
         "sec_sysmodules": "Sysmodules y rendimiento",
         "sec_instaladores": "Instaladores y gestores",
         "sec_sistema": "Sistema y utilidades",
-        "sec_todas": "Todas las aplicaciones"
+        "sec_todas": "Todas las aplicaciones",
+        "count": "{} apps"
     },
     "forwarders": {
         "create_title": "Crear acceso directo en el menú HOME",

@@ -1,6 +1,8 @@
 #include "apps_tab.hpp"
 
+#include "download.hpp"
 #include "list_download_tab.hpp"
+#include "utils.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -47,11 +49,19 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
         const std::string key = section.jsonKey;
         const std::string title = i18n::getStr(section.label);
 
-        item->getClickEvent()->subscribe([links, key, title](brls::View* view) {
+        /* Cuantas apps trae la seccion, para decirlo en el subtitulo de la
+           ventana. Se cuenta lo que hay en el json; si la clave no esta — un
+           pack viejo que todavia no la trae — se deja sin subtitulo en vez de
+           poner un numero que no corresponde, porque en ese caso la lista cae
+           al catalogo entero. */
+        const size_t count = util::getValueFromKey(this->nxlinks, section.jsonKey).size();
+        const std::string subtitle = count ? fmt::format("menus/apps/count"_i18n, count) : "";
+
+        item->getClickEvent()->subscribe([links, key, title, subtitle](brls::View* view) {
             /* PopupFrame necesita un AppletFrame, asi que la lista va dentro de uno. */
             brls::AppletFrame* frame = new brls::AppletFrame(true, true);
             frame->setContentView(new ListDownloadTab(contentType::apps, links, key));
-            brls::PopupFrame::open(title, frame, "", "");
+            brls::PopupFrame::open(title, frame, subtitle, "");
         });
 
         this->addView(item);

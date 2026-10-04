@@ -43,6 +43,22 @@ MainFrame::MainFrame() : TabFrame()
     if (!util::getBoolValue(hideStatus, "about"))
         this->addTab("menus/main/about"_i18n, new AboutTab(tag));
 
+    /* Separadores entre grupos. Siete pestanas seguidas se leen como una lista
+       plana; partidas en estado, descargas y ajustes se ve de un vistazo que
+       hace cada grupo. Se anaden solo si el grupo que viene tiene algo, para no
+       dejar una raya suelta cuando se ocultan pestanas por hide_tabs.json. */
+    const bool hasDownloads = !util::getBoolValue(hideStatus, "atmosphere") ||
+                              !util::getBoolValue(hideStatus, "firmwares") ||
+                              !util::getBoolValue(hideStatus, "cheats") ||
+                              !util::getBoolValue(hideStatus, "apps");
+    const bool hasSettings = !util::getBoolValue(hideStatus, "tools") ||
+                             !util::getBoolValue(hideStatus, "language");
+
+    const bool hasStatus = !util::getBoolValue(hideStatus, "about");
+
+    if (hasStatus && hasDownloads)
+        this->addSeparator();
+
     if (!util::getBoolValue(hideStatus, "atmosphere"))
         this->addTab("menus/main/update_ams"_i18n, new AmsTab_Regular(nxlinks, erista));
 
@@ -54,6 +70,13 @@ MainFrame::MainFrame() : TabFrame()
 
     if (!util::getBoolValue(hideStatus, "apps"))
         this->addTab("menus/main/apps"_i18n, new AppsTab(nxlinks));
+
+    /* Mira los dos grupos anteriores, no solo el de descargas: ocultandolas
+       todas, estado y ajustes quedarian pegados sin separador. Cada separador
+       comprueba ademas que su propio grupo tenga algo, asi que no salen dos
+       seguidos ni uno al final. */
+    if ((hasStatus || hasDownloads) && hasSettings)
+        this->addSeparator();
 
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
