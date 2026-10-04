@@ -19,7 +19,7 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
-ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey) : brls::List(), type(type), nxlinks(nxlinks)
+ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey) : brls::List(), type(type), nxlinks(nxlinks), jsonKey(jsonKey)
 {
     this->setDescription();
 
