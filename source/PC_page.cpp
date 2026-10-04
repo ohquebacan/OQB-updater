@@ -30,14 +30,14 @@ PCPage::PCPage() : AppletFrame(true, true)
     list->addView(backup);
 
     // Selector de color personalizado (sliders RGB en vivo)
-    customColor = new brls::ListItem("Color personalizado (RGB)");
+    customColor = new brls::ListItem("menus/color_picker/entry"_i18n);
     customColor->getClickEvent()->subscribe([](brls::View* view) {
         brls::AppletFrame* appView = new brls::AppletFrame(true, true);
         appView->setContentView(new ColorPickerPage(ColorPickerPage::Controller::ProController));
         brls::PopupFrame::open(
-            "Color personalizado",
+            "menus/color_picker/title"_i18n,
             appView,
-            "↑↓ canal  ·  ←→ ajustar  ·  L/R ±16  ·  X parte  ·  A aplicar",
+            "menus/color_picker/hint"_i18n,
             "");
     });
     list->addView(customColor);

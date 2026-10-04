@@ -9,24 +9,30 @@ namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
 namespace {
-    const char* JC_SLOT_NAMES[4] = {
-        "Joy-Con Izq · Cuerpo",
-        "Joy-Con Izq · Botones",
-        "Joy-Con Der · Cuerpo",
-        "Joy-Con Der · Botones"};
+    /* Las claves, no los textos. Resolverlas aqui, en un array de ambito de
+       fichero, las dejaria traducidas antes de que main cargue el idioma: el
+       resultado serian las propias claves en pantalla. Se resuelven al usarlas. */
+    const char* JC_SLOT_KEYS[4] = {
+        "menus/color_picker/jc_left_body",
+        "menus/color_picker/jc_left_buttons",
+        "menus/color_picker/jc_right_body",
+        "menus/color_picker/jc_right_buttons"};
 
-    const char* PC_SLOT_NAMES[2] = {
-        "Pro Controller · Cuerpo",
-        "Pro Controller · Botones"};
+    const char* PC_SLOT_KEYS[2] = {
+        "menus/color_picker/pc_body",
+        "menus/color_picker/pc_buttons"};
 
     const char* CHANNEL_NAMES[3] = {"R", "G", "B"};
 
     NVGcolor channelColor(int channel)
     {
         switch (channel) {
-            case 0: return nvgRGB(229, 57, 53);   // R
-            case 1: return nvgRGB(67, 160, 71);    // G
-            default: return nvgRGB(30, 136, 229);  // B
+            case 0:
+                return nvgRGB(229, 57, 53);  // R
+            case 1:
+                return nvgRGB(67, 160, 71);  // G
+            default:
+                return nvgRGB(30, 136, 229);  // B
         }
     }
 
@@ -69,41 +75,37 @@ ColorPickerPage::ColorPickerPage(Controller type) : type(type)
         }
     }
 
-    this->registerAction("Aplicar", brls::Key::A, [this] {
+    this->registerAction("menus/color_picker/apply"_i18n, brls::Key::A, [this] {
         this->apply();
         return true;
     });
     if (numSlots > 1) {
-        this->registerAction("Cambiar parte", brls::Key::X, [this] {
+        this->registerAction("menus/color_picker/change_part"_i18n, brls::Key::X, [this] {
             this->cycleSlot(1);
             return true;
         });
     }
-    this->registerAction("Ajuste rápido (-16)", brls::Key::L, [this] {
+    this->registerAction("menus/color_picker/step_down"_i18n, brls::Key::L, [this] {
         this->adjust(-16);
         return true;
     });
-    this->registerAction("Ajuste rápido (+16)", brls::Key::R, [this] {
+    this->registerAction("menus/color_picker/step_up"_i18n, brls::Key::R, [this] {
         this->adjust(16);
         return true;
     });
     // D-pad: navegacion de canal y ajuste fino (ocultos del hint bar)
     this->registerAction("", brls::Key::DUP, [this] {
         this->cycleChannel(-1);
-        return true;
-    }, true);
+        return true; }, true);
     this->registerAction("", brls::Key::DDOWN, [this] {
         this->cycleChannel(1);
-        return true;
-    }, true);
+        return true; }, true);
     this->registerAction("", brls::Key::DLEFT, [this] {
         this->adjust(-1);
-        return true;
-    }, true);
+        return true; }, true);
     this->registerAction("", brls::Key::DRIGHT, [this] {
         this->adjust(1);
-        return true;
-    }, true);
+        return true; }, true);
 }
 
 int ColorPickerPage::toHardware(const int rgb[3])
@@ -151,8 +153,10 @@ void ColorPickerPage::apply()
     hiddbgExit();
     hidsysExit();
     if (res != 0) {
-        std::string mando = (type == Controller::JoyCon) ? "los Joy-Cons" : "el Pro Controller";
-        util::showDialogBoxInfo("No se pudo aplicar el color. Asegúrate de que " + mando + " esté(n) conectado(s) y vuelve a intentarlo.\nError: " + std::to_string(res));
+        const std::string controller = (type == Controller::JoyCon)
+                                           ? "menus/color_picker/the_joycons"_i18n
+                                           : "menus/color_picker/the_pro_controller"_i18n;
+        util::showDialogBoxInfo(fmt::format("menus/color_picker/apply_failed"_i18n, controller, res));
     }
 }
 
@@ -163,17 +167,17 @@ brls::View* ColorPickerPage::getDefaultFocus()
 
 void ColorPickerPage::drawJoyConPreview(NVGcontext* vg, int x, int y, unsigned width, int previewH, brls::FrameContext* ctx)
 {
-    const int cx    = x + width / 2;
-    const int jcW   = 96;
+    const int cx = x + width / 2;
+    const int jcW = 96;
     const int jcGap = 40;
-    const int jcY   = y + 20;
-    const int jcH   = previewH - 20;
+    const int jcY = y + 20;
+    const int jcH = previewH - 20;
 
     int jcX[2] = {cx - jcGap / 2 - jcW, cx + jcGap / 2};
 
     for (int side = 0; side < 2; side++) {
         int bodySlot = side == 0 ? 0 : 2;
-        int btnSlot  = side == 0 ? 1 : 3;
+        int btnSlot = side == 0 ? 1 : 3;
 
         NVGcolor bodyCol = nvgRGB(slots[bodySlot][0], slots[bodySlot][1], slots[bodySlot][2]);
         nvgBeginPath(vg);
@@ -210,7 +214,7 @@ void ColorPickerPage::drawJoyConPreview(NVGcontext* vg, int x, int y, unsigned w
 
 void ColorPickerPage::drawProControllerPreview(NVGcontext* vg, int x, int y, unsigned width, int previewH, brls::FrameContext* ctx)
 {
-    const int cx    = x + width / 2;
+    const int cx = x + width / 2;
     const int bodyW = 220;
     const int bodyH = previewH - 30;
     const int bodyX = cx - bodyW / 2;
@@ -225,7 +229,7 @@ void ColorPickerPage::drawProControllerPreview(NVGcontext* vg, int x, int y, uns
 
     // Botones (zona derecha del mando: 4 circulos)
     NVGcolor btnCol = nvgRGB(slots[1][0], slots[1][1], slots[1][2]);
-    int btnR  = 13;
+    int btnR = 13;
     int clusterX = bodyX + bodyW - 56;
     int clusterY = bodyY + bodyH / 2 - 6;
     int offs[4][2] = {{0, -btnR - 6}, {0, btnR + 6}, {-btnR - 6, 0}, {btnR + 6, 0}};
@@ -257,7 +261,7 @@ void ColorPickerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigne
     nvgFontFaceId(vg, ctx->fontStash->regular);
 
     const int padding = 40;
-    const int cx      = x + width / 2;
+    const int cx = x + width / 2;
 
     // ---- Preview del mando ----
     const int previewH = (int)(height * 0.40f);
@@ -268,7 +272,8 @@ void ColorPickerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigne
 
     // ---- Etiqueta de la parte + hex ----
     int* cur = slots[currentSlot];
-    const char* slotName = (type == Controller::JoyCon) ? JC_SLOT_NAMES[currentSlot] : PC_SLOT_NAMES[currentSlot];
+    const std::string slotName = i18n::getStr(
+        (type == Controller::JoyCon) ? JC_SLOT_KEYS[currentSlot] : PC_SLOT_KEYS[currentSlot]);
     char hex[16];
     snprintf(hex, sizeof(hex), "#%02X%02X%02X", cur[0], cur[1], cur[2]);
 
@@ -277,7 +282,7 @@ void ColorPickerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigne
     nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
     nvgFillColor(vg, a(ctx->theme->textColor));
     nvgBeginPath(vg);
-    nvgText(vg, cx, labelY, slotName, nullptr);
+    nvgText(vg, cx, labelY, slotName.c_str(), nullptr);
 
     nvgFontSize(vg, 22);
     nvgFillColor(vg, a(ctx->theme->descriptionColor));
@@ -285,12 +290,12 @@ void ColorPickerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigne
     nvgText(vg, cx, labelY + 30, hex, nullptr);
 
     // ---- Sliders R / G / B ----
-    int sy    = labelY + 64;
-    int rowH  = 50;
-    int barH  = 16;
+    int sy = labelY + 64;
+    int rowH = 50;
+    int barH = 16;
     int barX0 = x + padding + 44;
     int barX1 = x + width - padding - 64;
-    int barW  = barX1 - barX0;
+    int barW = barX1 - barX0;
 
     for (int ch = 0; ch < 3; ch++) {
         int rowY = sy + ch * rowH;

@@ -291,5 +291,23 @@
         "failed": "Could not sync the clock.\n\n{}",
         "behind": "behind",
         "ahead": "ahead"
+    },
+    "color_picker": {
+        "entry": "Custom colour (RGB)",
+        "title": "Custom colour",
+        "hint": "↑↓ channel  ·  ←→ adjust  ·  L/R ±16  ·  X part  ·  A apply",
+        "apply": "Apply",
+        "change_part": "Change part",
+        "step_down": "Quick adjust (-16)",
+        "step_up": "Quick adjust (+16)",
+        "jc_left_body": "Left Joy-Con · Body",
+        "jc_left_buttons": "Left Joy-Con · Buttons",
+        "jc_right_body": "Right Joy-Con · Body",
+        "jc_right_buttons": "Right Joy-Con · Buttons",
+        "pc_body": "Pro Controller · Body",
+        "pc_buttons": "Pro Controller · Buttons",
+        "the_joycons": "the Joy-Cons",
+        "the_pro_controller": "the Pro Controller",
+        "apply_failed": "Could not apply the colour. Make sure {} are connected and try again.\nError: {}"
     }
 }

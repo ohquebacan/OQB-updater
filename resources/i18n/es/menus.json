@@ -312,5 +312,23 @@
         "failed": "No se pudo sincronizar la hora.\n\n{}",
         "behind": "atrasado",
         "ahead": "adelantado"
+    },
+    "color_picker": {
+        "entry": "Color personalizado (RGB)",
+        "title": "Color personalizado",
+        "hint": "↑↓ canal  ·  ←→ ajustar  ·  L/R ±16  ·  X parte  ·  A aplicar",
+        "apply": "Aplicar",
+        "change_part": "Cambiar parte",
+        "step_down": "Ajuste rápido (-16)",
+        "step_up": "Ajuste rápido (+16)",
+        "jc_left_body": "Joy-Con Izq · Cuerpo",
+        "jc_left_buttons": "Joy-Con Izq · Botones",
+        "jc_right_body": "Joy-Con Der · Cuerpo",
+        "jc_right_buttons": "Joy-Con Der · Botones",
+        "pc_body": "Pro Controller · Cuerpo",
+        "pc_buttons": "Pro Controller · Botones",
+        "the_joycons": "los Joy-Cons",
+        "the_pro_controller": "el Pro Controller",
+        "apply_failed": "No se pudo aplicar el color. Asegurate de que {} estén conectados y volvé a intentarlo.\nError: {}"
     }
 }
