@@ -90,6 +90,66 @@ namespace oqb {
 
     }  // namespace
 
+    namespace {
+
+        /* La barra lateral no cabe, y no es cosa de los separadores.
+
+           Borealis dibuja a 720 de alto fijos. La barra lateral vive entre la
+           cabecera y el pie, asi que tiene 720 - 88 - 73 = 559. Con los
+           margenes de Horizon, 40 arriba y 40 abajo, quedan 479 utiles.
+
+           Siete pestanas de 70 son 490: ya se salian 11 antes de tocar nada.
+           Sumando dos separadores de 28, son 546 y se salen 67, que es lo que
+           empuja "Lenguaje" sobre el pie.
+
+           Y no se arregla solo, porque Sidebar hereda de BoxLayout y no de
+           ScrollView: lo que no cabe no se desplaza, se sale.
+
+           Con estas medidas son 7*58 + 2*20 = 446 sobre 507 utiles. Entra, y
+           sobra para una pestana mas: el static_assert de abajo lo comprueba al
+           compilar, asi que si algun dia se anade otra y deja de caber, falla el
+           build en vez de salirse en pantalla sin que nadie se entere. */
+        constexpr unsigned SCREEN_HEIGHT = 720;
+        constexpr unsigned HEADER_HEIGHT = 88;  // AppletFrame.headerHeightRegular
+        constexpr unsigned FOOTER_HEIGHT = 73;  // AppletFrame.footerHeight
+
+        constexpr unsigned SIDEBAR_ITEM_HEIGHT = 58;
+        constexpr unsigned SIDEBAR_SEPARATOR_HEIGHT = 20;
+        constexpr unsigned SIDEBAR_MARGIN = 26;
+
+        constexpr unsigned MAX_TABS = 7;
+        constexpr unsigned SEPARATORS = 2;
+
+        constexpr unsigned SIDEBAR_AVAILABLE = SCREEN_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 2 * SIDEBAR_MARGIN;
+        constexpr unsigned SIDEBAR_USED = MAX_TABS * SIDEBAR_ITEM_HEIGHT + SEPARATORS * SIDEBAR_SEPARATOR_HEIGHT;
+
+        static_assert(SIDEBAR_USED <= SIDEBAR_AVAILABLE,
+                      "La barra lateral no cabe en la pantalla: bajar la altura de las entradas, "
+                      "la de los separadores o los margenes en oqb_theme.cpp");
+
+        static_assert(SIDEBAR_USED + SIDEBAR_ITEM_HEIGHT <= SIDEBAR_AVAILABLE,
+                      "No queda sitio para una pestana mas; ajustar las medidas antes de anadirla");
+
+        class OqbStyle : public brls::HorizonStyle
+        {
+        public:
+            OqbStyle()
+            {
+                this->Sidebar.Item.height = SIDEBAR_ITEM_HEIGHT;
+                this->Sidebar.Separator.height = SIDEBAR_SEPARATOR_HEIGHT;
+                this->Sidebar.marginTop = SIDEBAR_MARGIN;
+                this->Sidebar.marginBottom = SIDEBAR_MARGIN;
+            }
+        };
+
+    }  // namespace
+
+    brls::Style* style()
+    {
+        // Lo libera borealis al cerrar.
+        return new OqbStyle();
+    }
+
     brls::LibraryViewsThemeVariantsWrapper* themeVariants()
     {
         // Lo libera borealis al cerrar: el wrapper borra las dos variantes.

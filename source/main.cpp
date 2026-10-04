@@ -26,10 +26,10 @@ CFW CurrentCfw::running_cfw;
 int main(int argc, char* argv[])
 {
     // Init the app
-    // El tema propio va aqui: sin el, borealis usa el suyo y toda la interfaz
-    // sale en los colores del menu de la Switch. El estilo se deja en nullptr
-    // a proposito, que es quedarse con las medidas de Horizon.
-    if (!brls::Application::init(APP_TITLE, nullptr, oqb::themeVariants())) {
+    // El tema y las medidas propias. Sin el tema, borealis usa el suyo y toda
+    // la interfaz sale en los colores del menu de la Switch; sin las medidas,
+    // las siete pestanas no caben en la barra lateral.
+    if (!brls::Application::init(APP_TITLE, oqb::style(), oqb::themeVariants())) {
         brls::Logger::error("Unable to init Borealis application");
         return EXIT_FAILURE;
     }
