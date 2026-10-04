@@ -19,9 +19,11 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
-ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey) : brls::List(), type(type), nxlinks(nxlinks), jsonKey(jsonKey)
+ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey, const std::string& filter) : brls::List(), type(type), nxlinks(nxlinks), jsonKey(jsonKey), filter(filter)
 {
     this->setDescription();
+
+    this->createSearchItem();
 
     this->createList();
 
@@ -67,6 +69,8 @@ void ListDownloadTab::createList(contentType type)
         }
         links = download::getLinksFromJson(section);
     }
+
+    links = this->applyFilter(links);
 
     if (links.size()) {
         for (const auto& link : links) {
@@ -137,7 +141,7 @@ void ListDownloadTab::createList(contentType type)
 
                 std::string doneMsg = "menus/common/all_done"_i18n;
                 if (type == contentType::fw && std::filesystem::exists(DAYBREAK_PATH)) {
-                        stagedFrame->addStage(new DialoguePage_fw(stagedFrame, doneMsg));
+                    stagedFrame->addStage(new DialoguePage_fw(stagedFrame, doneMsg));
                 }
                 else {
                     stagedFrame->addStage(new ConfirmPage_Done(stagedFrame, doneMsg));
@@ -150,6 +154,81 @@ void ListDownloadTab::createList(contentType type)
     else {
         this->displayNotFound();
     }
+}
+
+std::vector<std::pair<std::string, std::string>> ListDownloadTab::applyFilter(
+    const std::vector<std::pair<std::string, std::string>>& links) const
+{
+    if (this->filter.empty())
+        return links;
+
+    // Por trozo de texto y sin distinguir mayusculas, que es como se busca
+    // "zelda" o "ftp" sin saber el nombre exacto de la entrada. El lowerCase es
+    // byte a byte, asi que no empareja acentos entre si: buscar "pokemon" no
+    // encuentra "Pokemon" con tilde. Los nombres del catalogo no las llevan.
+    const std::string needle = util::lowerCase(this->filter);
+
+    std::vector<std::pair<std::string, std::string>> matches;
+    for (const auto& link : links) {
+        if (util::lowerCase(link.first).find(needle) != std::string::npos)
+            matches.push_back(link);
+    }
+    return matches;
+}
+
+void ListDownloadTab::openSearch(contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey)
+{
+    std::string query;
+    if (!brls::Swkbd::openForText([&query](std::string text) { query = text; },
+                                  "menus/search/entry"_i18n, "", 64, "", 0,
+                                  "menus/search/submit"_i18n, "menus/search/hint"_i18n)) {
+        return;
+    }
+
+    // Un texto en blanco mostraria la lista entera dentro de una pagina de
+    // resultados, que no es lo que se pidio.
+    if (query.find_first_not_of(' ') == std::string::npos)
+        return;
+
+    /* Los resultados van en una pagina nueva en vez de rehacer la de origen. La
+       entrada que abre el teclado es una de las vistas de esa lista y tiene el
+       foco mientras corre este codigo, asi que borrarlas para reconstruirla
+       dejaria el foco apuntando a algo ya liberado.
+
+       Se construye otro ListDownloadTab con el mismo tipo y la misma clave,
+       solo que filtrado: asi los resultados se descargan por el mismo camino
+       que la lista completa, sin una segunda copia de esa logica. */
+    brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+    frame->setContentView(new ListDownloadTab(type, nxlinks, jsonKey, query));
+    brls::PopupFrame::open(fmt::format("menus/search/results"_i18n, query), frame, "", "");
+}
+
+void ListDownloadTab::createSearchItem()
+{
+    // En una lista ya filtrada no se vuelve a ofrecer: para otra busqueda se
+    // sale con B, que es un paso menos que encadenar paginas de resultados.
+    if (!this->filter.empty())
+        return;
+
+    /* Solo donde la lista es larga de verdad. En la pestana de cheats la lista
+       propia son dos entradas (el archivo completo y el de 60fps/gfx); lo largo
+       esta en sus subpaginas, que no pasan por aqui. Payloads y hekate_ipl son
+       un punado de entradas. En esas, el buscador estorbaria mas que ayudar. */
+    if (this->type != contentType::apps && this->type != contentType::fw)
+        return;
+
+    brls::ListItem* search = new brls::ListItem("menus/search/entry"_i18n);
+    search->setHeight(LISTITEM_HEIGHT);
+
+    const contentType type = this->type;
+    const nlohmann::ordered_json links = this->nxlinks;
+    const std::string key = this->jsonKey;
+
+    search->getClickEvent()->subscribe([type, links, key](brls::View* view) {
+        ListDownloadTab::openSearch(type, links, key);
+    });
+
+    this->addView(search);
 }
 
 void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath)
@@ -204,9 +283,12 @@ void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, s
 
 void ListDownloadTab::displayNotFound()
 {
+    // Buscar y no encontrar nada no es lo mismo que no haber podido traer el
+    // catalogo, y decirlo igual manda a revisar la conexion sin motivo.
     brls::Label* notFound = new brls::Label(
         brls::LabelStyle::SMALL,
-        "menus/main/links_not_found"_i18n,
+        this->filter.empty() ? "menus/main/links_not_found"_i18n
+                             : fmt::format("menus/search/no_results"_i18n, this->filter),
         true);
     notFound->setHorizontalAlign(NVG_ALIGN_CENTER);
     this->addView(notFound);

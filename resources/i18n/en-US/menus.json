@@ -275,5 +275,12 @@
         "notice": "OQB-updater {} is running, and {} is available.\n\nUpdating replaces the app only. Nothing else on the SD card is touched.",
         "notice_now": "Update now",
         "notice_later": "Later"
+    },
+    "search": {
+        "entry": "Search",
+        "submit": "Search",
+        "hint": "Part of the name",
+        "results": "Results for \"{}\"",
+        "no_results": "Nothing matches \"{}\"."
     }
 }

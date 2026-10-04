@@ -296,5 +296,12 @@
         "notice": "Tenés OQB-updater {} y está disponible la {}.\n\nActualizar cambia solo la app. No toca nada más de la SD.",
         "notice_now": "Actualizar ahora",
         "notice_later": "Más tarde"
+    },
+    "search": {
+        "entry": "Buscar",
+        "submit": "Buscar",
+        "hint": "Parte del nombre",
+        "results": "Resultados de «{}»",
+        "no_results": "No hay nada que coincida con «{}»."
     }
 }
