@@ -13,8 +13,14 @@ protected:
     bool erista;
     nlohmann::ordered_json nxlinks;
     nlohmann::ordered_json hekate;
+    // Fechas publicadas de los packs. Se descarga una vez al construir la
+    // pestana; vacio si no hubo conexion, y entonces no se muestra nada.
+    nlohmann::ordered_json packVersions;
     contentType type;
-    void CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams = true, bool hekate = false, const std::string& text_hekate = "", const std::string& hekate_url = "");
+    /* packKey y packDate solo los traen los packs: al terminar de extraer se
+       anota en la SD que version quedo instalada, que es lo que luego permite
+       decir que hay una mas nueva. Vacios para todo lo demas. */
+    void CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams = true, bool hekate = false, const std::string& text_hekate = "", const std::string& hekate_url = "", const std::string& packKey = "", const std::string& packDate = "");
     bool CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool hekate = true, bool ams = true);
     void CreateNotFoundLabel();
     virtual void RegisterListItemAction(brls::ListItem* listItem);

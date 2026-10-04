@@ -10,6 +10,7 @@
 #include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
+#include "pack_version.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 namespace i18n = brls::i18n;
@@ -20,6 +21,7 @@ AmsTab::AmsTab(const nlohmann::ordered_json& nxlinks, const bool erista) : brls:
     this->erista = erista;
     this->nxlinks = nxlinks;
     this->hekate = util::getValueFromKey(nxlinks, "hekate");
+    this->packVersions = packVersion::fetchPublished();
 }
 
 void AmsTab::RegisterListItemAction(brls::ListItem* listItem) {}
@@ -39,12 +41,37 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
             std::string text("menus/common/download"_i18n + link.first);
             listItem = new brls::ListItem(link.first);
             listItem->setHeight(LISTITEM_HEIGHT);
-            listItem->getClickEvent()->subscribe([this, text, text_hekate, url, hekate_url, hekate, pack, ams](brls::View* view) {
+
+            /* Que version hay publicada y cual instalo el usuario. Un pack que
+               no este en el json no muestra nada: esto es para los packs
+               propios, no para cualquier descarga. */
+            const std::string packKey = packVersion::keyFromUrl(url);
+            const packVersion::Info packInfo = packVersion::published(this->packVersions, packKey);
+            const std::string packDate = packInfo.date;
+
+            if (!packDate.empty()) {
+                const std::string instalada = packVersion::installed(packKey);
+
+                if (!instalada.empty() && instalada != packDate) {
+                    listItem->setValue("menus/packs/update_available"_i18n);
+                    listItem->setSubLabel(fmt::format("menus/packs/installed_date"_i18n, instalada));
+                }
+                else {
+                    // Sin registro no se dice que este desactualizado: quien ya
+                    // tenia el pack antes de que esto existiera no dejo rastro,
+                    // y avisarle a ciegas seria mentirle la mitad de las veces.
+                    listItem->setValue(fmt::format("menus/packs/updated"_i18n, packDate), true);
+                    if (!packInfo.note.empty())
+                        listItem->setSubLabel(packInfo.note);
+                }
+            }
+
+            listItem->getClickEvent()->subscribe([this, text, text_hekate, url, hekate_url, hekate, pack, ams, packKey, packDate](brls::View* view) {
                 if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
                     brls::Application::crash("menus/errors/mariko_payload_missing"_i18n);
                 }
                 else {
-                    CreateStagedFrames(text, url, erista, ams, hekate && !pack, text_hekate, hekate_url);
+                    CreateStagedFrames(text, url, erista, ams, hekate && !pack, text_hekate, hekate_url, packKey, packDate);
                 }
             });
             this->RegisterListItemAction(listItem);
@@ -55,7 +82,7 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
     return false;
 }
 
-void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams, bool hekate, const std::string& text_hekate, const std::string& hekate_url)
+void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams, bool hekate, const std::string& text_hekate, const std::string& hekate_url, const std::string& packKey, const std::string& packDate)
 {
     brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
     stagedFrame->setTitle(this->type == contentType::ams_cfw ? "menus/ams_update/getting_ams"_i18n : "menus/ams_update/custom_download"_i18n);
@@ -64,7 +91,13 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
     stagedFrame->addStage(
         new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [&, url]() { util::downloadArchive(url, this->type); }));
     stagedFrame->addStage(
-        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [&]() { util::extractArchive(this->type); }));
+        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, packKey, packDate]() {
+            util::extractArchive(this->type);
+            /* Se anota la fecha que estaba publicada al empezar, no la de hoy:
+               es la del pack que acaba de quedar en la SD. Despues de extraer,
+               para no dar por instalado algo que fallo a medias. */
+            packVersion::recordInstalled(packKey, packDate);
+        }));
     if (hekate) {
         stagedFrame->addStage(
             new DialoguePage_ams(stagedFrame, text_hekate, erista));

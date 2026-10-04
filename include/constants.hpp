@@ -44,6 +44,13 @@ constexpr const char DEEPSEA_META_JSON[] = "https://builder.teamneptune.net/meta
 constexpr const char DEEPSEA_BUILD_URL[] = "https://builder.teamneptune.net/build/";
 constexpr const char DEEPSEA_PACKAGE_PATH[] = "/config/deepsea/customPackage.json";
 
+// Fecha de subida real de cada pack, publicada por su repositorio. El tag de un
+// release no cambia al reemplazar el zip, asi que es lo unico que delata que el
+// pack de hoy no es el de la semana pasada.
+constexpr const char PACK_VERSIONS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/pack-versions.json";
+// Lo que el usuario instalo, por nombre de archivo.
+constexpr const char PACK_VERSIONS_PATH[] = "/config/aio-switch-updater/pack_versions.json";
+
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
 constexpr const char CUSTOM_PACKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/custom_packs.json";
 

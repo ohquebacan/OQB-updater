@@ -343,5 +343,10 @@
         "the_joycons": "los Joy-Cons",
         "the_pro_controller": "el Pro Controller",
         "apply_failed": "No se pudo aplicar el color. Asegúrate de que {} estén conectados e inténtalo de nuevo.\nError: {}"
+    },
+    "packs": {
+        "updated": "Actualizado el {}",
+        "update_available": "Hay actualización",
+        "installed_date": "Instalaste el del {}"
     }
 }
