@@ -4,7 +4,21 @@
         "copyright": "AIO-Switch-Updater is licensed under GPL-3.0",
         "disclaimers_title": "Disclaimers",
         "disclaimers": "◆ This app uses third-party tools and apps. All rights and credits belong to their respective developers.\n◆ Follow us on YouTube for more tutorials",
-        "donate": ""
+        "donate": "",
+        "status_title": "Console status",
+        "status_version": "OQB-updater",
+        "status_version_new": "A new version is available. Press A to update.",
+        "status_cfw": "Custom firmware",
+        "status_firmware": "System firmware",
+        "status_model": "Console model",
+        "status_sd": "Free space on the SD card",
+        "status_protection": "Protections",
+        "status_protection_ok": "Active",
+        "status_protection_fail": "Check",
+        "status_protection_ok_sub": "DNS blocking and PRODINFO are in place. Press A for the details.",
+        "status_protection_fail_one": "One check failed. Press A to see which one.",
+        "status_protection_fail_many": "{} checks failed. Press A to see which ones.",
+        "status_unknown": "Could not read"
     },
     "cheats": {
         "installed": "Installed cheats",
@@ -250,5 +264,16 @@
         "fail": "FAILED",
         "summary_ok": "All protections are active.",
         "summary_fail": "Some protections are down. The console may reach Nintendo."
+    },
+    "app_update": {
+        "entry": "Update app ({} → {})",
+        "entry_again": "Download the app again ({})",
+        "staged_title": "Update to {}",
+        "staged_title_again": "Download {} again",
+        "confirm": "Download and install OQB-updater {}?",
+        "confirm_again": "Download and install OQB-updater {} again?",
+        "notice": "OQB-updater {} is running, and {} is available.\n\nUpdating replaces the app only. Nothing else on the SD card is touched.",
+        "notice_now": "Update now",
+        "notice_later": "Later"
     }
 }

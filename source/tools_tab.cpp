@@ -1,25 +1,21 @@
 #include "tools_tab.hpp"
 
-#include "protection_page.hpp"
-
 #include <filesystem>
 #include <fstream>
 
 #include "JC_page.hpp"
 #include "PC_page.hpp"
 #include "app_page.hpp"
+#include "app_update.hpp"
 #include "cheats_page.hpp"
-#include "confirm_page.hpp"
 #include "constants.hpp"
-#include "download.hpp"
-#include "extract.hpp"
 #include "forwarder_page.hpp"
 #include "fs.hpp"
 #include "hide_tabs_page.hpp"
 #include "net_page.hpp"
 #include "payload_page.hpp"
+#include "protection_page.hpp"
 #include "utils.hpp"
-#include "worker_page.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -185,37 +181,20 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     hideTabs->setHeight(LISTITEM_HEIGHT);
 
-    // Botón de actualización — siempre visible. Si hay versión nueva ofrece
-    // actualizar; si ya está al día permite volver a descargar, que sirve para
-    // recoger un rebuild publicado bajo el mismo tag.
+    /* Siempre visible. Si hay version nueva ofrece actualizar; si ya esta al
+       dia permite volver a descargar, que sirve para recoger un rebuild
+       publicado bajo el mismo tag. El flujo vive en appUpdate porque tambien lo
+       abre el aviso de arranque. */
     {
-        const bool hasUpdate = !tag.empty() && tag != AppVersion;
+        const bool hasUpdate = appUpdate::isAvailable(tag);
         const std::string targetTag = hasUpdate ? tag : std::string(AppVersion);
 
         brls::ListItem* updateApp = new brls::ListItem(
-            hasUpdate ? fmt::format("Actualizar app ({} → {})", AppVersion, tag)
-                      : fmt::format("Volver a descargar app ({})", AppVersion));
+            hasUpdate ? fmt::format("menus/app_update/entry"_i18n, AppVersion, tag)
+                      : fmt::format("menus/app_update/entry_again"_i18n, AppVersion));
         updateApp->setHeight(LISTITEM_HEIGHT);
         updateApp->getClickEvent()->subscribe([targetTag, hasUpdate](brls::View* view) {
-            brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-            stagedFrame->setTitle(hasUpdate
-                                      ? fmt::format("Actualizar a {}", targetTag)
-                                      : fmt::format("Volver a descargar {}", targetTag));
-            stagedFrame->addStage(new ConfirmPage(stagedFrame,
-                hasUpdate ? fmt::format("Descargar e instalar OQB-updater {}?", targetTag)
-                          : fmt::format("Volver a descargar e instalar OQB-updater {}?", targetTag)));
-            stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n,
-                []() {
-                    util::downloadArchive(APP_URL, contentType::app);
-                }));
-            stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n,
-                []() {
-                    // Extrae OQB-updater.nro a /config/aio-switch-updater/
-                    // El forwarder lo moverá a /switch/ y lanzará el nuevo binario
-                    util::extractArchive(contentType::app);
-                }));
-            stagedFrame->addStage(new ConfirmPage_AppUpdate(stagedFrame, "menus/common/all_done"_i18n));
-            brls::Application::pushView(stagedFrame);
+            appUpdate::pushFlow(targetTag, hasUpdate);
         });
         this->addView(updateApp);
     }

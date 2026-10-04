@@ -1,12 +1,11 @@
 #include "main_frame.hpp"
 
-#include "apps_tab.hpp"
-
 #include <fstream>
 #include <json.hpp>
 
 #include "about_tab.hpp"
 #include "ams_tab.hpp"
+#include "apps_tab.hpp"
 #include "download.hpp"
 #include "fs.hpp"
 #include "language_tab.hpp"
@@ -30,6 +29,7 @@ MainFrame::MainFrame() : TabFrame()
 
     s64 freeStorage;
     std::string tag = util::getLatestTag(TAGS_INFO);
+    this->latestTag = tag;
     this->setFooterText(fmt::format("menus/main/footer_text"_i18n,
                                     (!tag.empty() && tag != AppVersion) ? AppVersion + "menus/main/new_update"_i18n : AppVersion,
                                     R_SUCCEEDED(fs::getFreeStorageSD(freeStorage)) ? (float)freeStorage / 0x40000000 : -1));
@@ -41,7 +41,7 @@ MainFrame::MainFrame() : TabFrame()
     bool erista = util::isErista();
 
     if (!util::getBoolValue(hideStatus, "about"))
-        this->addTab("menus/main/about"_i18n, new AboutTab());
+        this->addTab("menus/main/about"_i18n, new AboutTab(tag));
 
     if (!util::getBoolValue(hideStatus, "atmosphere"))
         this->addTab("menus/main/update_ams"_i18n, new AmsTab_Regular(nxlinks, erista));

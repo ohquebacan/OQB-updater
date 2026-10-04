@@ -3,7 +3,21 @@
         "title": "Actualizador Todo-en-Uno de Nintendo Switch",
         "copyright": "AIO-Switch-Updater tiene licencia GPL-3.0",
         "disclaimers_title": "Descargo de responsabilidad",
-        "disclaimers": "◆ Esta aplicación utiliza herramientas y apps de terceros. Todos los derechos y créditos corresponden a sus respectivos desarrolladores.\n◆ Síguenos en YouTube para más tutoriales"
+        "disclaimers": "◆ Esta aplicación utiliza herramientas y apps de terceros. Todos los derechos y créditos corresponden a sus respectivos desarrolladores.\n◆ Síguenos en YouTube para más tutoriales",
+        "status_title": "Estado de la consola",
+        "status_version": "OQB-updater",
+        "status_version_new": "Hay una versión nueva. Pulsá A para actualizar.",
+        "status_cfw": "Custom firmware",
+        "status_firmware": "Firmware del sistema",
+        "status_model": "Modelo de consola",
+        "status_sd": "Espacio libre en la SD",
+        "status_protection": "Protecciones",
+        "status_protection_ok": "Activas",
+        "status_protection_fail": "Revisar",
+        "status_protection_ok_sub": "El bloqueo DNS y el PRODINFO están puestos. Pulsá A para ver el detalle.",
+        "status_protection_fail_one": "Falló una comprobación. Pulsá A para ver cuál.",
+        "status_protection_fail_many": "Fallaron {} comprobaciones. Pulsá A para ver cuáles.",
+        "status_unknown": "No se pudo leer"
     },
     "cheats": {
         "installed": "Trucos instalados",
@@ -271,5 +285,16 @@
         "fail": "FALLA",
         "summary_ok": "Todas las protecciones estan activas.",
         "summary_fail": "Hay protecciones caidas. La consola puede conectarse a Nintendo."
+    },
+    "app_update": {
+        "entry": "Actualizar app ({} → {})",
+        "entry_again": "Volver a descargar app ({})",
+        "staged_title": "Actualizar a {}",
+        "staged_title_again": "Volver a descargar {}",
+        "confirm": "¿Descargar e instalar OQB-updater {}?",
+        "confirm_again": "¿Volver a descargar e instalar OQB-updater {}?",
+        "notice": "Tenés OQB-updater {} y está disponible la {}.\n\nActualizar cambia solo la app. No toca nada más de la SD.",
+        "notice_now": "Actualizar ahora",
+        "notice_later": "Más tarde"
     }
 }

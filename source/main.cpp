@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <json.hpp>
 
+#include "app_update.hpp"
 #include "constants.hpp"
 #include "current_cfw.hpp"
 #include "fs.hpp"
@@ -13,7 +14,7 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
-//TimeServiceType __nx_time_service_type = TimeServiceType_System;
+// TimeServiceType __nx_time_service_type = TimeServiceType_System;
 
 CFW CurrentCfw::running_cfw;
 
@@ -31,7 +32,7 @@ int main(int argc, char* argv[])
     else
         i18n::loadTranslations();
 
-        //appletInitializeGamePlayRecording();
+        // appletInitializeGamePlayRecording();
 
         // Setup verbose logging on PC
 #ifndef __SWITCH__
@@ -56,14 +57,20 @@ int main(int argc, char* argv[])
     brls::Logger::debug("Start");
 
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
-        brls::Application::pushView(new MainFrame());
+        MainFrame* mainFrame = new MainFrame();
+        brls::Application::pushView(mainFrame);
+
+        /* El aviso de version nueva va aqui, despues de empujar la ventana: si
+           se abriera desde el constructor, MainFrame se empuja encima y el aviso
+           queda debajo sin que se vea. El tag ya lo consulto MainFrame, asi que
+           no se pregunta dos veces. */
+        appUpdate::showNoticeIfAvailable(mainFrame->getLatestTag());
     }
     else {
         brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
     }
 
-    while (brls::Application::mainLoop())
-        ;
+    while (brls::Application::mainLoop());
 
     romfsExit();
     splExit();
