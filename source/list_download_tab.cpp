@@ -23,8 +23,6 @@ ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered
 {
     this->setDescription();
 
-    this->createSearchItem();
-
     this->createList();
 
     if (this->type == contentType::cheats) {
@@ -201,34 +199,6 @@ void ListDownloadTab::openSearch(contentType type, const nlohmann::ordered_json&
     brls::AppletFrame* frame = new brls::AppletFrame(true, true);
     frame->setContentView(new ListDownloadTab(type, nxlinks, jsonKey, query));
     brls::PopupFrame::open(fmt::format("menus/search/results"_i18n, query), frame, "", "");
-}
-
-void ListDownloadTab::createSearchItem()
-{
-    // En una lista ya filtrada no se vuelve a ofrecer: para otra busqueda se
-    // sale con B, que es un paso menos que encadenar paginas de resultados.
-    if (!this->filter.empty())
-        return;
-
-    /* Solo donde la lista es larga de verdad. En la pestana de cheats la lista
-       propia son dos entradas (el archivo completo y el de 60fps/gfx); lo largo
-       esta en sus subpaginas, que no pasan por aqui. Payloads y hekate_ipl son
-       un punado de entradas. En esas, el buscador estorbaria mas que ayudar. */
-    if (this->type != contentType::apps && this->type != contentType::fw)
-        return;
-
-    brls::ListItem* search = new brls::ListItem("menus/search/entry"_i18n);
-    search->setHeight(LISTITEM_HEIGHT);
-
-    const contentType type = this->type;
-    const nlohmann::ordered_json links = this->nxlinks;
-    const std::string key = this->jsonKey;
-
-    search->getClickEvent()->subscribe([type, links, key](brls::View* view) {
-        ListDownloadTab::openSearch(type, links, key);
-    });
-
-    this->addView(search);
 }
 
 void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath)

@@ -34,10 +34,6 @@ private:
     void setDescription();
     void setDescription(contentType type);
     void displayNotFound();
-    // La entrada "Buscar" al principio de la lista. Abre el teclado y muestra
-    // los resultados en otra pagina, en vez de reconstruir esta: borrar vistas
-    // mientras el foco esta en una de ellas es como se cuelga borealis.
-    void createSearchItem();
     // Las entradas que pasan el filtro, en el orden del json.
     std::vector<std::pair<std::string, std::string>> applyFilter(
         const std::vector<std::pair<std::string, std::string>>& links) const;
@@ -46,10 +42,12 @@ private:
     void addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath);
 
 public:
-    // Pide el texto y abre los resultados. Es publica porque el menu de Apps
-    // tambien la ofrece: ahi se busca en todo el catalogo sin tener que entrar
-    // antes a una seccion, que es como se busca algo cuando no se sabe en cual
-    // esta. jsonKey vacia = todo el catalogo del tipo.
+    /* Pide el texto y abre los resultados.
+       La ofrece solo el menu de categorias de Apps, que es donde sirve: ahi se
+       busca en todo el catalogo sin tener que acertar antes la categoria. Dentro
+       de una categoria no aparece — son pocas entradas y se ven de un vistazo —
+       ni en las demas listas.
+       jsonKey vacia = todo el catalogo del tipo. */
     static void openSearch(contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey = "");
 
     ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks = nlohmann::ordered_json::object(), const std::string& jsonKey = "", const std::string& filter = "");
