@@ -10,14 +10,16 @@
 // en la propia consola, que es donde importa.
 namespace protection {
 
-    enum class Status {
+    enum class Status
+    {
         Ok,       // como debe estar
         Warning,  // no es un fallo, pero conviene mirarlo
         Fail,     // la proteccion NO esta activa
     };
 
-    struct Check {
-        std::string name;    // que se comprobo
+    struct Check
+    {
+        std::string name;  // que se comprobo
         Status status;
         std::string detail;  // por que salio asi
     };

@@ -12,10 +12,10 @@ namespace protection {
 
     namespace {
 
-        constexpr const char HOSTS_DIR[]       = "/atmosphere/hosts/";
+        constexpr const char HOSTS_DIR[] = "/atmosphere/hosts/";
         constexpr const char SYSTEM_SETTINGS[] = "/atmosphere/config/system_settings.ini";
-        constexpr const char EXOSPHERE_INI[]   = "/exosphere.ini";
-        constexpr const char EMUMMC_DIR[]      = "/emuMMC/";
+        constexpr const char EXOSPHERE_INI[] = "/exosphere.ini";
+        constexpr const char EMUMMC_DIR[] = "/emuMMC/";
 
         std::string readFile(const std::string& path)
         {
@@ -61,7 +61,8 @@ namespace protection {
         // exista y no bloquee. Atmosphere usa default.txt cuando no encuentra
         // el fichero del arranque, asi que faltar es lo normal; existir sin
         // bloquear es lo que deja la consola al descubierto.
-        enum class HostsResult {
+        enum class HostsResult
+        {
             Blocks,
             Absent,
             DoesNotBlock,

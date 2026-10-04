@@ -3,13 +3,13 @@
 //
 //   c++ -std=c++17 -Iinclude -o /tmp/pt tests/protection_test.cpp source/protection.cpp && /tmp/pt
 
+#include "protection.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include "protection.hpp"
 
 namespace {
 
@@ -36,7 +36,8 @@ namespace {
     {
         static int n = 0;
         const std::string root = (std::filesystem::temp_directory_path() /
-                                  ("oqb-prot-" + std::to_string(++n))).string();
+                                  ("oqb-prot-" + std::to_string(++n)))
+                                     .string();
         std::filesystem::remove_all(root);
         write(root + "/atmosphere/config/system_settings.ini",
               "[atmosphere]\nenable_dns_mitm = u8!0x1\n");
@@ -60,9 +61,12 @@ namespace {
     const char* statusName(protection::Status s)
     {
         switch (s) {
-            case protection::Status::Ok: return "Ok";
-            case protection::Status::Warning: return "Warning";
-            case protection::Status::Fail: return "Fail";
+            case protection::Status::Ok:
+                return "Ok";
+            case protection::Status::Warning:
+                return "Warning";
+            case protection::Status::Fail:
+                return "Fail";
         }
         return "?";
     }
