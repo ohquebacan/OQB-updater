@@ -74,7 +74,7 @@ namespace download {
             if (dltotal <= 0.0) return 0;
 
             double fractionDownloaded = dlnow / dltotal;
-            int counter = (int)(fractionDownloaded * ProgressEvent::instance().getMax());  //20 is the number of increments
+            int counter = (int)(fractionDownloaded * ProgressEvent::instance().getMax());  // 20 is the number of increments
             ProgressEvent::instance().setStep(std::min(ProgressEvent::instance().getMax() - 1, counter));
             ProgressEvent::instance().setNow(dlnow);
             ProgressEvent::instance().setTotalCount(dltotal);
@@ -113,6 +113,45 @@ namespace download {
             return realsize;
         }
 
+        /* Sin esto, curl usa sus valores por defecto: 300 segundos para
+           conectar y ningun limite total. Una consola con WiFi conectado pero
+           sin salida real — un portal cautivo, una regla de DNS que se pase de
+           la raya — deja la app esperando minutos sin decir nada. */
+        constexpr long CONNECT_TIMEOUT_S = 10;
+
+        // Las consultas de catalogo y version son unos pocos KB: si no estan en
+        // medio minuto, no van a estar.
+        constexpr long API_TIMEOUT_S = 30;
+
+        // Una descarga grande no puede llevar limite total — un firmware
+        // completo tarda lo que tarde — asi que se corta por otro lado: si no
+        // llegan ni 100 bytes por segundo durante un minuto, esta parada.
+        constexpr long STALLED_SPEED_BYTES = 100;
+        constexpr long STALLED_SECONDS = 60;
+
+        /* Opciones de red comunes. `totalTimeout` en 0 significa sin limite
+           total, para las transferencias largas.
+
+           Las cuatro opciones se escriben siempre, incluso para desactivarlas.
+           No es por gusto: checkSize() y la descarga comparten el mismo handle,
+           y las opciones de curl se quedan puestas de una llamada a la otra. Si
+           esta funcion solo escribiera la rama que le toca, el limite de 30
+           segundos de la comprobacion seguiria vivo durante la descarga y
+           cortaria un firmware entero a la mitad. */
+        void setTimeouts(CURL* curl, long totalTimeout)
+        {
+            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, CONNECT_TIMEOUT_S);
+
+            // 0 desactiva el limite total.
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, totalTimeout > 0 ? totalTimeout : 0L);
+
+            // El corte por transferencia parada solo aplica donde no hay limite
+            // total; 0 lo desactiva.
+            const bool stallGuard = totalTimeout <= 0;
+            curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, stallGuard ? STALLED_SPEED_BYTES : 0L);
+            curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, stallGuard ? STALLED_SECONDS : 0L);
+        }
+
         bool checkSize(CURL* curl, const std::string& url)
         {
             curl_off_t dl;
@@ -122,6 +161,7 @@ namespace download {
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+            setTimeouts(curl, API_TIMEOUT_S);
             curl_easy_perform(curl);
             auto res = curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &dl);
             if (!res) {
@@ -179,6 +219,7 @@ namespace download {
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+            setTimeouts(curl, API_TIMEOUT_S);
             curl_easy_setopt(
                 curl,
                 CURLOPT_WRITEFUNCTION,
@@ -245,7 +286,7 @@ namespace download {
             /**
              * The encoded base64 is (usually?) 43 characters long. With padding it goes
              * to 44. When we calculate the decoded size, we need to allocate 33 bytes.
-             * But the last encoded character is padding, and combined with the last 
+             * But the last encoded character is padding, and combined with the last
              * valid character, it should produce a 32 byte node key.
              */
             decoded.resize(olen);
@@ -326,6 +367,7 @@ namespace download {
                     curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);
                     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
                     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
+                    setTimeouts(curl, 0);
 
                     if (api == OFF) {
                         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
@@ -377,6 +419,7 @@ namespace download {
         curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, API_AGENT);
 
         curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
+        setTimeouts(curl_handle, API_TIMEOUT_S);
         curl_easy_perform(curl_handle);
 
         /* check for errors */
@@ -385,8 +428,8 @@ namespace download {
         std::regex rgx("<title>.+</title>");
         std::smatch match;
         if (std::regex_search(s, match, rgx)) {
-            //ver = std::stoi(match[0]);
-            //std::cout << match[0].str().substr(match[0].str().find(" ") + 1, 6) << std::endl;
+            // ver = std::stoi(match[0]);
+            // std::cout << match[0].str().substr(match[0].str().find(" ") + 1, 6) << std::endl;
             ver = match[0].str().substr(match[0].str().find(" ") + 1, 5);
         }
         curl_easy_cleanup(curl_handle);
@@ -425,6 +468,7 @@ namespace download {
         curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, API_AGENT);
 
         curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
+        setTimeouts(curl_handle, API_TIMEOUT_S);
         curl_easy_perform(curl_handle);
         curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &status_code);
         curl_easy_cleanup(curl_handle);
