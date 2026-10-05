@@ -271,11 +271,11 @@
     },
     "forwarders": {
         "create_title": "Crear acceso directo en el menú HOME",
-        "create_desc": "Elegí una app homebrew que ya tengas en la SD para agregarla al menú HOME.",
+        "create_desc": "Elige una app homebrew que ya tengas en la SD para agregarla al menú HOME.",
         "already_created": "Ya tiene acceso directo",
         "confirm_create": "¿Crear un acceso directo en el menú HOME para {}?",
         "manage_title": "Gestionar accesos directos",
-        "manage_desc": "Accesos directos creados por esta app. Seleccioná uno para borrarlo.",
+        "manage_desc": "Accesos directos creados por esta app. Selecciona uno para borrarlo.",
         "confirm_delete": "¿Borrar el acceso directo de {}?",
         "delete_error": "No se pudo borrar el acceso directo: {}",
         "removed": "Borrado"

@@ -10,6 +10,7 @@
 #include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
+#include "pack_list_item.hpp"
 #include "pack_version.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
@@ -38,6 +39,15 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
 {
     std::vector<std::pair<std::string, std::string>> links;
     links = download::getLinksFromJson(cfw_links);
+
+    /* Detalle opcional de cada entrada: una linea que explica el pack y a que
+       grupo pertenece. Va en una clave aparte de nx-links.json, no dentro de la
+       propia entrada: getLinksFromJson de las versiones ya publicadas convierte
+       el valor a string sin comprobar el tipo, asi que un objeto ahi tiraria una
+       excepcion y la app se caeria en toda consola que no se haya actualizado.
+       Una clave de mas, en cambio, la ignoran sin enterarse. */
+    const nlohmann::ordered_json detalle = util::getValueFromKey(this->nxlinks, "cfws_detalle");
+    std::string grupoActual;
     if (links.size() && !this->hekate.empty()) {  // non-empty this->hekate indicates internet connection
         auto hekate_link = download::getLinksFromJson(this->hekate);
         std::string hekate_url = hekate_link[0].second;
@@ -47,8 +57,33 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
             bool pack = link.first.contains("[PACK]");
             std::string url = link.second;
             std::string text("menus/common/download"_i18n + link.first);
-            listItem = new brls::ListItem(link.first);
-            listItem->setHeight(LISTITEM_HEIGHT);
+            /* El texto lo escribe quien publica el pack, no la app: asi se
+               puede corregir sin sacar una version nueva. */
+            std::string descripcion, grupo;
+            if (detalle.is_object()) {
+                const auto entrada = detalle.find(link.first);
+                if (entrada != detalle.end() && entrada->is_object()) {
+                    const auto desc = entrada->find("desc");
+                    if (desc != entrada->end() && desc->is_string())
+                        descripcion = desc->get<std::string>();
+
+                    const auto grp = entrada->find("grupo");
+                    if (grp != entrada->end() && grp->is_string())
+                        grupo = grp->get<std::string>();
+                }
+            }
+
+            if (!grupo.empty() && grupo != grupoActual) {
+                this->addView(new brls::Header(grupo));
+                grupoActual = grupo;
+            }
+
+            PackListItem* packItem = new PackListItem(link.first, descripcion);
+            listItem = packItem;
+            /* Con descripcion la altura la calcula borealis (ListItem::layout la
+               reescribe), asi que fijarla aqui solo provoca un salto al dibujar. */
+            if (descripcion.empty())
+                listItem->setHeight(LISTITEM_HEIGHT);
 
             /* Que version hay publicada y cual instalo el usuario. Un pack que
                no este en el json no muestra nada: esto es para los packs
@@ -61,7 +96,9 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
                 const std::string instalada = packVersion::installed(packKey);
 
                 if (!instalada.empty() && instalada != packDate) {
-                    listItem->setValue("menus/packs/update_available"_i18n);
+                    /* Marcado, no solo escrito: en una lista de varios packs el
+                       aviso tiene que encontrarse sin leerla entera. */
+                    packItem->setWarningValue("menus/packs/update_available"_i18n);
                     listItem->setSubLabel(fmt::format("menus/packs/installed_date"_i18n, instalada));
                 }
                 else {
