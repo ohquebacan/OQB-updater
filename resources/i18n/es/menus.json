@@ -109,7 +109,8 @@
         "label": "Cambiar color de Joy-Con",
         "backing_up": "Creando copia de seguridad del perfil de color actual. Asegúrate de que los Joy-Con están acoplados a la consola. Si el proceso se cuelga, prueba a desacoplar y acoplar los Joy-Con.",
         "changing": "Cambiando color. Asegúrate de que los Joy-Con están acoplados a la consola. Si el proceso se cuelga, prueba a desacoplar y acoplar los Joy-Cons.",
-        "all_done": "¡Finalizado! Puede que necesites desacoplar y acoplar tus Joy-Con para que el cambio surta efecto."
+        "all_done": "¡Finalizado! Puede que necesites desacoplar y acoplar tus Joy-Con para que el cambio surta efecto.",
+        "no_controller": "No se detectó ningún mando del que leer el color. Conecta un mando a la primera ranura y vuelve a intentarlo.\n\nEn una Switch Lite los Joy-Con van integrados y no se pueden leer, así que esta opción no funciona ahí."
     },
     "pro_con": {
         "title": "Cambiar color del Pro Controller",

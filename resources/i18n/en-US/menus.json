@@ -109,7 +109,8 @@
         "label": "Joy-Con color swapper",
         "backing_up": "Backing up the current color profile. Make sure the Joy-Cons are docked. If the process hangs, try docking/undocking the Joy-Cons.",
         "changing": "Changing color. Make sure the Joy-Con are docked. If the process hangs, try docking/undocking the Joy-Cons.",
-        "all_done": "All done! You may need to dock/undock your Joy-Cons for the change to take effect."
+        "all_done": "All done! You may need to dock/undock your Joy-Cons for the change to take effect.",
+        "no_controller": "No controller was found to read the color from. Connect one to the first slot and try again.\n\nOn a Switch Lite the Joy-Cons are built in and cannot be read, so this option does not work there."
     },
     "pro_con": {
         "title": "Pro controller color swapper",

@@ -12,6 +12,9 @@
 #include "progress_event.hpp"
 #include "utils.hpp"
 
+namespace i18n = brls::i18n;
+using namespace i18n::literals;
+
 using json = nlohmann::ordered_json;
 
 namespace {
@@ -204,8 +207,33 @@ namespace JC {
             profiles.erase(profiles.begin() + k);
         }
 
-        while (backup.empty()) {
+        /* Antes esto era `while (backup.empty())` a secas. backupProfile() lee el
+           color del mando en P1, y en una consola que no tiene mando que leer
+           —una Lite, por ejemplo— esa lectura falla siempre: el bucle giraba
+           para siempre, sin pausa y sin mirar si el usuario pedia cancelar. La
+           barra se quedaba en 1%, la B no respondia porque el trabajo nunca
+           volvia, y solo se salia reiniciando la consola.
+
+           Ahora se reintenta un rato y se cede el procesador entre intentos. */
+        constexpr int INTENTOS = 60;             // unos tres segundos
+        constexpr u64 ESPERA_NS = 50'000'000ULL;  // 50 ms
+
+        for (int intento = 0; intento < INTENTOS && backup.empty(); ++intento) {
+            if (ProgressEvent::instance().getInterupt())
+                break;
+
             backup = backupProfile();
+            if (backup.empty())
+                svcSleepThread(ESPERA_NS);
+        }
+
+        if (backup.empty()) {
+            hiddbgExit();
+            hidsysExit();
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            if (!ProgressEvent::instance().getInterupt())
+                util::showDialogBoxBlocking("menus/joy_con/no_controller"_i18n, "menus/common/ok"_i18n);
+            return;
         }
 
         profiles.push_back(backup);
@@ -362,8 +390,33 @@ namespace PC {
             profiles.erase(profiles.begin() + k);
         }
 
-        while (backup.empty()) {
+        /* Antes esto era `while (backup.empty())` a secas. backupProfile() lee el
+           color del mando en P1, y en una consola que no tiene mando que leer
+           —una Lite, por ejemplo— esa lectura falla siempre: el bucle giraba
+           para siempre, sin pausa y sin mirar si el usuario pedia cancelar. La
+           barra se quedaba en 1%, la B no respondia porque el trabajo nunca
+           volvia, y solo se salia reiniciando la consola.
+
+           Ahora se reintenta un rato y se cede el procesador entre intentos. */
+        constexpr int INTENTOS = 60;             // unos tres segundos
+        constexpr u64 ESPERA_NS = 50'000'000ULL;  // 50 ms
+
+        for (int intento = 0; intento < INTENTOS && backup.empty(); ++intento) {
+            if (ProgressEvent::instance().getInterupt())
+                break;
+
             backup = backupProfile();
+            if (backup.empty())
+                svcSleepThread(ESPERA_NS);
+        }
+
+        if (backup.empty()) {
+            hiddbgExit();
+            hidsysExit();
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            if (!ProgressEvent::instance().getInterupt())
+                util::showDialogBoxBlocking("menus/joy_con/no_controller"_i18n, "menus/common/ok"_i18n);
+            return;
         }
 
         profiles.push_back(backup);
