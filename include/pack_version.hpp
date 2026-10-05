@@ -28,6 +28,12 @@ namespace packVersion {
     // enlace y no hay que mantener una lista aparte que se desincronice.
     std::string keyFromUrl(const std::string& url);
 
+    // Si un enlace puede ser un pack de los nuestros. El dueño y el repositorio
+    // salen de PACK_VERSIONS_URL, así que publicar un pack más en ese mismo
+    // repositorio no obliga a tocar código. Sirve para no pedir el json cuando
+    // la lista que se está armando no tiene ningún pack, como la de Atmosphère.
+    bool couldBeTracked(const std::string& url);
+
     Info published(const nlohmann::ordered_json& all, const std::string& key);
 
     // Lo que el usuario tiene instalado, o vacío si nunca instaló desde la app.

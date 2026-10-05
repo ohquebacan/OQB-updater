@@ -21,7 +21,15 @@ AmsTab::AmsTab(const nlohmann::ordered_json& nxlinks, const bool erista) : brls:
     this->erista = erista;
     this->nxlinks = nxlinks;
     this->hekate = util::getValueFromKey(nxlinks, "hekate");
-    this->packVersions = packVersion::fetchPublished();
+}
+
+const nlohmann::ordered_json& AmsTab::getPackVersions()
+{
+    if (!this->packVersionsPedidas) {
+        this->packVersionsPedidas = true;
+        this->packVersions = packVersion::fetchPublished();
+    }
+    return this->packVersions;
 }
 
 void AmsTab::RegisterListItemAction(brls::ListItem* listItem) {}
@@ -45,8 +53,8 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
             /* Que version hay publicada y cual instalo el usuario. Un pack que
                no este en el json no muestra nada: esto es para los packs
                propios, no para cualquier descarga. */
-            const std::string packKey = packVersion::keyFromUrl(url);
-            const packVersion::Info packInfo = packVersion::published(this->packVersions, packKey);
+            const std::string packKey = packVersion::couldBeTracked(url) ? packVersion::keyFromUrl(url) : "";
+            const packVersion::Info packInfo = packKey.empty() ? packVersion::Info{} : packVersion::published(this->getPackVersions(), packKey);
             const std::string packDate = packInfo.date;
 
             if (!packDate.empty()) {

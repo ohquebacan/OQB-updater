@@ -21,6 +21,32 @@ namespace packVersion {
         return barra == std::string::npos ? url : url.substr(barra + 1);
     }
 
+    bool couldBeTracked(const std::string& url)
+    {
+        /* De "https://raw.githubusercontent.com/dueno/repo/main/..." se saca
+           "/dueno/repo/", que es lo que llevan también los enlaces de descarga
+           de los releases de ese repositorio. */
+        const std::string fuente = PACK_VERSIONS_URL;
+
+        const size_t host = fuente.find("://");
+        if (host == std::string::npos)
+            return false;
+
+        const size_t duenoIni = fuente.find('/', host + 3);
+        if (duenoIni == std::string::npos)
+            return false;
+
+        const size_t repoIni = fuente.find('/', duenoIni + 1);
+        if (repoIni == std::string::npos)
+            return false;
+
+        const size_t repoFin = fuente.find('/', repoIni + 1);
+        if (repoFin == std::string::npos)
+            return false;
+
+        return url.find(fuente.substr(duenoIni, repoFin - duenoIni + 1)) != std::string::npos;
+    }
+
     Info published(const nlohmann::ordered_json& all, const std::string& key)
     {
         Info info;

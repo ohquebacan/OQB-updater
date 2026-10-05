@@ -13,9 +13,13 @@ protected:
     bool erista;
     nlohmann::ordered_json nxlinks;
     nlohmann::ordered_json hekate;
-    // Fechas publicadas de los packs. Se descarga una vez al construir la
-    // pestana; vacio si no hubo conexion, y entonces no se muestra nada.
+    /* Fechas publicadas de los packs. Se piden la primera vez que una lista
+       trae un pack nuestro, no al construir: la pestana de Atmosphere no tiene
+       ninguno, y pedirlas ahi era una descarga al arranque que nadie usaba.
+       Quedan vacias si no hubo conexion, y entonces no se muestra nada. */
     nlohmann::ordered_json packVersions;
+    bool packVersionsPedidas = false;
+    const nlohmann::ordered_json& getPackVersions();
     contentType type;
     /* packKey y packDate solo los traen los packs: al terminar de extraer se
        anota en la SD que version quedo instalada, que es lo que luego permite
