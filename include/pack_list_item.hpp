@@ -25,6 +25,11 @@ public:
 
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 
+    /* Recoloca el valor. Borealis lo pone a la altura del subtitulo y pegado al
+       borde derecho, que con el halo detras hace que el aviso toque el marco de
+       la celda por arriba y por la derecha. */
+    void layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash) override;
+
 private:
     bool warning = false;
 };

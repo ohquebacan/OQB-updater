@@ -40,6 +40,39 @@ void PackListItem::setWarningValue(const std::string& value)
         this->valueView->setColor(colorAviso());
 }
 
+void PackListItem::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash)
+{
+    brls::ListItem::layout(vg, style, stash);
+
+    if (!this->warning || !this->valueView)
+        return;
+
+    const unsigned anchoTexto = this->valueView->getTextWidth();
+    const unsigned altoTexto = this->valueView->getTextHeight();
+    if (anchoTexto == 0 || altoTexto == 0)
+        return;
+
+    /* La celda es solo la parte de arriba: la descripcion va por debajo y no
+       cuenta para centrar. */
+    unsigned celda = this->height;
+    if (this->descriptionView)
+        celda -= this->descriptionView->getHeight() + style->List.Item.descriptionSpacing;
+
+    /* Holgura extra por la derecha: la del estilo deja el texto pelado contra el
+       borde, y con el halo detras se nota todavia mas. */
+    constexpr unsigned HOLGURA_DERECHA = 12;
+
+    const int izquierda = this->x + (int)this->width - (int)style->List.Item.padding - (int)HOLGURA_DERECHA - (int)anchoTexto;
+    const int arriba = this->y + ((int)celda - (int)altoTexto) / 2;
+
+    /* Alineado a la izquierda a proposito: con NVG_ALIGN_RIGHT, Label::layout
+       vuelve a correr la x cada vez que se mide, y el texto se iria moviendo. */
+    this->valueView->setBoundaries(izquierda, arriba, anchoTexto, altoTexto);
+    this->valueView->setHorizontalAlign(NVG_ALIGN_LEFT);
+    this->valueView->setVerticalAlign(NVG_ALIGN_TOP);
+    this->valueView->invalidate(true);
+}
+
 void PackListItem::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
     if (this->warning && this->valueView) {
