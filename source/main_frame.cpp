@@ -28,7 +28,14 @@ MainFrame::MainFrame() : TabFrame()
     this->setTitle(AppTitle);
 
     s64 freeStorage;
-    std::string tag = util::getLatestTag(TAGS_INFO);
+
+    /* Las dos peticiones de abajo son sincronas y ocurren antes de dibujar
+       nada: sin conexion la app se quedaba hasta un minuto en negro esperando
+       que vencieran los timeouts, que para el usuario es la app colgada.
+       Preguntarle al sistema cuesta nada y ahorra esa espera. */
+    const bool conectado = util::hayInternet();
+
+    std::string tag = conectado ? util::getLatestTag(TAGS_INFO) : "";
     this->latestTag = tag;
     this->setFooterText(fmt::format("menus/main/footer_text"_i18n,
                                     (!tag.empty() && tag != AppVersion) ? AppVersion + "menus/main/new_update"_i18n : AppVersion,
@@ -36,7 +43,8 @@ MainFrame::MainFrame() : TabFrame()
 
     json hideStatus = fs::parseJsonFile(HIDE_TABS_JSON);
     nlohmann::ordered_json nxlinks;
-    download::getRequest(NXLINKS_URL, nxlinks);
+    if (conectado)
+        download::getRequest(NXLINKS_URL, nxlinks);
 
     bool erista = util::isErista();
 

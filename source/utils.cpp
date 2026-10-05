@@ -275,6 +275,23 @@ namespace util {
         reboot_to_payload(path.c_str(), CurrentCfw::running_cfw != CFW::ams);
     }
 
+    bool hayInternet()
+    {
+        if (R_FAILED(nifmInitialize(NifmServiceType_User)))
+            return true;  // si no se puede preguntar, mejor intentar la peticion
+
+        NifmInternetConnectionType tipo;
+        u32 fuerza;
+        NifmInternetConnectionStatus estado;
+        const Result res = nifmGetInternetConnectionStatus(&tipo, &fuerza, &estado);
+        nifmExit();
+
+        if (R_FAILED(res))
+            return true;
+
+        return estado == NifmInternetConnectionStatus_Connected;
+    }
+
     std::string getLatestTag(const std::string& url)
     {
         nlohmann::ordered_json tag;

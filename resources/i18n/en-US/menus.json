@@ -184,7 +184,15 @@
         "outdated_titles_desc": "Updates are available for the following titles:",
         "scanning": "Checking {} of {}... (B to cancel)",
         "protection": "Check protections",
-        "protection_desc": "Verifies that DNS blocking and blanked PRODINFO are still active"
+        "protection_desc": "Verifies that DNS blocking and blanked PRODINFO are still active",
+        "grupo_app": "The app",
+        "grupo_juegos": "Games",
+        "grupo_consola": "Console and controllers",
+        "grupo_red": "Internet and time",
+        "grupo_archivos": "Files",
+        "grupo_inicio": "HOME menu",
+        "clean_up_nothing": "There was nothing to clean up.",
+        "clean_up_done": "Freed {} across {} items.\n\n{}"
     },
     "utils": {
         "fw_warning": "Because of the size of FW archives, downloading firmwares in Applet Mode is not supported. Please launch the app with full RAM access.",

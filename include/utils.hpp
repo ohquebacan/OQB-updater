@@ -37,6 +37,10 @@ namespace util {
     int showDialogBoxBlocking(const std::string& text, const std::string& opt);
     int showDialogBoxBlocking(const std::string& text, const std::string& opt1, const std::string& opt2);
     std::string getLatestTag(const std::string& url);
+
+    /* Si la consola tiene internet, segun el propio sistema. Sirve para no
+       gastar el arranque esperando timeouts de peticiones que no pueden salir. */
+    bool hayInternet();
     std::string downloadFileToString(const std::string& url);
     std::string getCheatsVersion();
     void saveToFile(const std::string& text, const std::string& path);

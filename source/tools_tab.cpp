@@ -1,7 +1,11 @@
 #include "tools_tab.hpp"
 
+#include <dirent.h>
+#include <sys/stat.h>
+
 #include <filesystem>
 #include <fstream>
+#include <vector>
 
 #include "JC_page.hpp"
 #include "PC_page.hpp"
@@ -28,6 +32,73 @@ using json = nlohmann::ordered_json;
 
 namespace {
     constexpr const char AppVersion[] = APP_VERSION;
+
+    /* El tamano se mide con stat y no con std::filesystem: en esta consola
+       std::filesystem no es de fiar con rutas de la SD (copy_file ya nos fallo
+       en silencio en otra app). Devuelve -1 si no existe. */
+    long long tamanoArchivo(const std::string& ruta)
+    {
+        struct stat st;
+        if (stat(ruta.c_str(), &st) != 0 || !S_ISREG(st.st_mode))
+            return -1;
+        return (long long)st.st_size;
+    }
+
+    // Suma recursiva de una carpeta. -1 si no existe.
+    long long tamanoCarpeta(const std::string& ruta)
+    {
+        DIR* dir = opendir(ruta.c_str());
+        if (!dir)
+            return -1;
+
+        long long total = 0;
+        while (struct dirent* entrada = readdir(dir)) {
+            const std::string nombre = entrada->d_name;
+            if (nombre == "." || nombre == "..")
+                continue;
+
+            std::string hijo = ruta;
+            if (!hijo.empty() && hijo.back() != '/')
+                hijo += '/';
+            hijo += nombre;
+
+            struct stat st;
+            if (stat(hijo.c_str(), &st) != 0)
+                continue;
+
+            if (S_ISDIR(st.st_mode)) {
+                const long long sub = tamanoCarpeta(hijo);
+                if (sub > 0) total += sub;
+            }
+            else {
+                total += (long long)st.st_size;
+            }
+        }
+        closedir(dir);
+        return total;
+    }
+
+    std::string enUnidades(long long bytes)
+    {
+        if (bytes >= 1024LL * 1024 * 1024)
+            return fmt::format("{:.1f} GB", (double)bytes / (1024.0 * 1024.0 * 1024.0));
+        if (bytes >= 1024LL * 1024)
+            return fmt::format("{:.1f} MB", (double)bytes / (1024.0 * 1024.0));
+        if (bytes >= 1024)
+            return fmt::format("{:.1f} KB", (double)bytes / 1024.0);
+        return fmt::format("{} B", bytes);
+    }
+
+    // Lo ultimo del camino, para nombrar en el mensaje sin la ruta entera.
+    std::string nombreDe(const std::string& ruta)
+    {
+        std::string limpia = ruta;
+        while (limpia.size() > 1 && limpia.back() == '/')
+            limpia.pop_back();
+
+        const size_t barra = limpia.rfind('/');
+        return barra == std::string::npos ? limpia : limpia.substr(barra + 1);
+    }
 }
 
 ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus) : brls::List()
@@ -220,17 +291,58 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
 
     brls::ListItem* cleanUp = new brls::ListItem("menus/tools/clean_up"_i18n);
     cleanUp->getClickEvent()->subscribe([](brls::View* view) {
-        std::filesystem::remove(AMS_FILENAME);
-        std::filesystem::remove(APP_FILENAME);
-        std::filesystem::remove(FIRMWARE_FILENAME);
-        std::filesystem::remove(CHEATS_FILENAME);
-        std::filesystem::remove(BOOTLOADER_FILENAME);
-        std::filesystem::remove(CHEATS_VERSION);
-        std::filesystem::remove(CUSTOM_FILENAME);
-        fs::removeDir(AMS_DIRECTORY_PATH);
-        fs::removeDir(SEPT_DIRECTORY_PATH);
-        fs::removeDir(FW_DIRECTORY_PATH);
-        util::showDialogBoxInfo("menus/common/all_done"_i18n);
+        /* Antes borraba a ciegas y siempre decia "Finalizado", hubiera liberado
+           11 MB o nada. Ahora se mide antes de borrar y se comprueba que de
+           verdad desaparecio, para poder decir que paso. */
+        long long liberado = 0;
+        std::vector<std::string> borrados;
+
+        for (const char* archivo : {AMS_FILENAME, APP_FILENAME, FIRMWARE_FILENAME,
+                                    CHEATS_FILENAME, BOOTLOADER_FILENAME, CHEATS_VERSION,
+                                    CUSTOM_FILENAME}) {
+            const long long tam = tamanoArchivo(archivo);
+            if (tam < 0)
+                continue;
+
+            std::error_code ec;
+            std::filesystem::remove(archivo, ec);
+
+            // No se confia en lo que devuelve: se comprueba que ya no esta.
+            if (tamanoArchivo(archivo) < 0) {
+                liberado += tam;
+                borrados.push_back(nombreDe(archivo));
+            }
+        }
+
+        for (const char* carpeta : {AMS_DIRECTORY_PATH, SEPT_DIRECTORY_PATH, FW_DIRECTORY_PATH}) {
+            const long long tam = tamanoCarpeta(carpeta);
+            if (tam < 0)
+                continue;
+
+            fs::removeDir(carpeta);
+
+            if (tamanoCarpeta(carpeta) < 0) {
+                liberado += tam;
+                borrados.push_back(nombreDe(carpeta) + "/");
+            }
+        }
+
+        if (borrados.empty()) {
+            util::showDialogBoxInfo("menus/tools/clean_up_nothing"_i18n);
+            return;
+        }
+
+        std::string lista;
+        for (const std::string& nombre : borrados) {
+            if (!lista.empty())
+                lista += ", ";
+            lista += nombre;
+        }
+
+        util::showDialogBoxInfo(fmt::format("menus/tools/clean_up_done"_i18n,
+                                            enUnidades(liberado),
+                                            borrados.size(),
+                                            lista));
     });
     cleanUp->setHeight(LISTITEM_HEIGHT);
 
@@ -308,33 +420,78 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
        dia permite volver a descargar, que sirve para recoger un rebuild
        publicado bajo el mismo tag. El flujo vive en appUpdate porque tambien lo
        abre el aviso de arranque. */
-    {
-        const bool hasUpdate = appUpdate::isAvailable(tag);
-        const std::string targetTag = hasUpdate ? tag : std::string(AppVersion);
+    const bool hasUpdate = appUpdate::isAvailable(tag);
+    const std::string targetTag = hasUpdate ? tag : std::string(AppVersion);
 
-        brls::ListItem* updateApp = new brls::ListItem(
-            hasUpdate ? fmt::format("menus/app_update/entry"_i18n, AppVersion, tag)
-                      : fmt::format("menus/app_update/entry_again"_i18n, AppVersion));
-        updateApp->setHeight(LISTITEM_HEIGHT);
-        updateApp->getClickEvent()->subscribe([targetTag, hasUpdate](brls::View* view) {
-            appUpdate::pushFlow(targetTag, hasUpdate);
-        });
-        this->addView(updateApp);
-    }
+    brls::ListItem* updateApp = new brls::ListItem(
+        hasUpdate ? fmt::format("menus/app_update/entry"_i18n, AppVersion, tag)
+                  : fmt::format("menus/app_update/entry_again"_i18n, AppVersion));
+    updateApp->setHeight(LISTITEM_HEIGHT);
+    updateApp->getClickEvent()->subscribe([targetTag, hasUpdate](brls::View* view) {
+        appUpdate::pushFlow(targetTag, hasUpdate);
+    });
 
-    if (!util::getBoolValue(hideStatus, "protection")) this->addView(protectionCheck);
-    if (!util::getBoolValue(hideStatus, "createforwarder")) this->addView(createForwarder);
-    if (!util::getBoolValue(hideStatus, "manageforwarders")) this->addView(manageForwarders);
-    if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
-    if (!util::getBoolValue(hideStatus, "outdatedtitles")) this->addView(outdatedTitles);
-    if (!util::getBoolValue(hideStatus, "jccolor")) this->addView(JCcolor);
-    if (!util::getBoolValue(hideStatus, "pccolor")) this->addView(PCcolor);
-    if (erista && !util::getBoolValue(hideStatus, "rebootpayload")) this->addView(rebootPayload);
-    if (!util::getBoolValue(hideStatus, "synctime")) this->addView(syncTime);
-    if (!util::getBoolValue(hideStatus, "synctime")) this->addView(clockSync);
-    if (!util::getBoolValue(hideStatus, "netsettings")) this->addView(netSettings);
-    if (!util::getBoolValue(hideStatus, "browser")) this->addView(browser);
-    if (!util::getBoolValue(hideStatus, "move")) this->addView(move);
-    if (!util::getBoolValue(hideStatus, "cleanup")) this->addView(cleanUp);
-    this->addView(hideTabs);
+    /* Dieciseis entradas seguidas se leen como una lista plana donde hay que
+       recorrerlo todo para encontrar algo. Agrupadas, se ve de un vistazo
+       donde buscar.
+
+       El encabezado se agrega solo si su grupo tiene algo visible: con
+       hide_tabs.json cualquier entrada puede desaparecer, y un titulo sobre un
+       grupo vacio queda como una raya suelta.
+
+       Altura 34 en vez de los 44 del estilo: son varios grupos, y con la
+       altura por omision lo que se gana en orden se pierde en tener que
+       desplazarse mas. */
+    const auto visible = [&hideStatus](const char* clave) {
+        return !util::getBoolValue(hideStatus, clave);
+    };
+
+    const auto grupo = [this](const std::string& titulo, const std::vector<brls::View*>& entradas) {
+        if (entradas.empty())
+            return;
+
+        brls::Header* cabecera = new brls::Header(titulo);
+        cabecera->setHeight(34);
+        this->addView(cabecera);
+
+        for (brls::View* entrada : entradas)
+            this->addView(entrada);
+    };
+
+    const auto siVisible = [&visible](std::vector<brls::View*>& destino, const char* clave, brls::View* vista) {
+        if (visible(clave))
+            destino.push_back(vista);
+    };
+
+    std::vector<brls::View*> app, juegos, consola, red, archivos, inicio;
+
+    app.push_back(updateApp);  // siempre: sin actualizacion ofrece volver a descargar
+    siVisible(app, "language", language);
+    app.push_back(hideTabs);
+
+    siVisible(juegos, "cheats", cheats);
+    siVisible(juegos, "outdatedtitles", outdatedTitles);
+
+    siVisible(consola, "protection", protectionCheck);
+    if (erista) siVisible(consola, "rebootpayload", rebootPayload);
+    siVisible(consola, "jccolor", JCcolor);
+    siVisible(consola, "pccolor", PCcolor);
+
+    siVisible(red, "netsettings", netSettings);
+    siVisible(red, "browser", browser);
+    siVisible(red, "synctime", syncTime);
+    siVisible(red, "synctime", clockSync);
+
+    siVisible(archivos, "move", move);
+    siVisible(archivos, "cleanup", cleanUp);
+
+    siVisible(inicio, "createforwarder", createForwarder);
+    siVisible(inicio, "manageforwarders", manageForwarders);
+
+    grupo("menus/tools/grupo_app"_i18n, app);
+    grupo("menus/tools/grupo_juegos"_i18n, juegos);
+    grupo("menus/tools/grupo_consola"_i18n, consola);
+    grupo("menus/tools/grupo_red"_i18n, red);
+    grupo("menus/tools/grupo_archivos"_i18n, archivos);
+    grupo("menus/tools/grupo_inicio"_i18n, inicio);
 }

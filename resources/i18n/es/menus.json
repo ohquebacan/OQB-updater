@@ -184,7 +184,15 @@
         "outdated_titles_desc": "Los siguientes títulos tienen actualizaciones:",
         "scanning": "Revisando {} de {}... (B para cancelar)",
         "protection": "Verificar protecciones",
-        "protection_desc": "Comprueba que el bloqueo DNS y el PRODINFO en blanco sigan activos"
+        "protection_desc": "Comprueba que el bloqueo DNS y el PRODINFO en blanco sigan activos",
+        "grupo_app": "La app",
+        "grupo_juegos": "Juegos",
+        "grupo_consola": "Consola y mandos",
+        "grupo_red": "Internet y hora",
+        "grupo_archivos": "Archivos",
+        "grupo_inicio": "Menú HOME",
+        "clean_up_nothing": "No había nada que limpiar.",
+        "clean_up_done": "Se liberaron {} en {} elementos.\n\n{}"
     },
     "utils": {
         "fw_warning": "Debido al tamaño de los FW, descargar firmwares en modo applet no está soportado. Por favor, ejecuta la aplicación con acceso a toda la RAM.",
