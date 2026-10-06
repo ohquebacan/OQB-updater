@@ -240,8 +240,17 @@ ColorPickerPage::ColorPickerPage(Controller type) : type(type)
         }
     }
     if (!ok) {
+        /* Sin mando que leer hay que inventar algo. Poner los cuatro en el mismo
+           gris dejaba la vista plana y no se distinguian las partes nada mas
+           abrir. Tres niveles de gris hacen que la forma se lea, y siguen siendo
+           grises neutros: nadie va a creer que son los colores de su mando. */
+        static const int GRISES_JC[4] = {140, 70, 140, 70};    // cuerpo, botones, cuerpo, botones
+        static const int GRISES_PC[4] = {140, 70, 180, 180};  // cuerpo, botones, grip, grip
+
+        const int* grises = (type == Controller::JoyCon) ? GRISES_JC : GRISES_PC;
+
         for (int i = 0; i < numSlots; i++) {
-            slots[i][0] = slots[i][1] = slots[i][2] = 128;
+            slots[i][0] = slots[i][1] = slots[i][2] = grises[i];
         }
     }
 
