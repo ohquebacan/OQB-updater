@@ -330,6 +330,23 @@ namespace PC {
     json backupProfile()
     {
         json newBackup;
+
+        /* Primero la SPI, que es la unica que trae los grips. Un perfil guardado
+           sin ellos no podria devolver el mando a como estaba. */
+        int colores[4][3];
+        if (readColors(colores)) {
+            const auto aHex = [&colores](int parte) {
+                // readColors entrega R,G,B; BGRToHex espera el entero del hardware
+                return BGRToHex((colores[parte][2] << 16) | (colores[parte][1] << 8) | colores[parte][0]);
+            };
+            return json::object(
+                {{"name", BACKUP},
+                 {"BODY", aHex(0)},
+                 {"BTN", aHex(1)},
+                 {"LGRIP", aHex(2)},
+                 {"RGRIP", aHex(3)}});
+        }
+
         HidNpadControllerColor color;
         Result res = hidGetNpadControllerColorSingle(HidNpadIdType_No1, &color);
         if (R_SUCCEEDED(res)) {
@@ -365,11 +382,29 @@ namespace PC {
                         properData = false;
                     }
                 }
+
+                /* Los grips son opcionales al leer: los perfiles de antes y los
+                   que vienen del catalogo remoto solo traen cuerpo y botones.
+                   Si faltan se usa el color del cuerpo, que es lo que trae de
+                   fabrica un Pro de un solo color. */
+                auto grip = [&x](const char* clave, const std::string& porDefecto) {
+                    const auto campo = x.value().find(clave);
+                    if (campo == x.value().end() || !campo->is_string())
+                        return porDefecto;
+
+                    const std::string valor = campo->get<std::string>();
+                    return isHexaAnd3Bytes(valor) ? valor : porDefecto;
+                };
+
                 if (properData) {
                     if (name == "") name = "Unamed";
+                    const std::string gripIzq = grip("LGRIP", values[0]);
+                    const std::string gripDer = grip("RGRIP", values[0]);
                     auto profile = std::make_pair(name, (std::vector<int>){
                                                             hexToBGR(values[0]),
-                                                            hexToBGR(values[1])});
+                                                            hexToBGR(values[1]),
+                                                            hexToBGR(gripIzq),
+                                                            hexToBGR(gripDer)});
                     if (name == BACKUP) {
                         res.push_front(profile);
                     }

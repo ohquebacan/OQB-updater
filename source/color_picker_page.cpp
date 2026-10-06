@@ -158,9 +158,22 @@ namespace {
         nvgClosePath(vg);
     }
 
+    /* El riel no es una parte que se pueda pintar: en un Joy-Con real siempre es
+       negro, haya el color que haya en el cuerpo. Va aparte y con color fijo. */
+    void jcRielIzq(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgRect(vg, l.X(115.9f), l.Y(12.0f), l.R(6.6f), l.R(216.0f));
+    }
+
+    void jcRielDer(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgRect(vg, l.X(197.4f), l.Y(12.0f), l.R(6.6f), l.R(216.0f));
+    }
+
+    NVGcolor COLOR_RIEL = nvgRGB(26, 26, 26);
+
     void jcBotonesIzq(NVGcontext* vg, const Lienzo& l)
     {
-        nvgRect(vg, l.X(115.9f), l.Y(12.0f), l.R(6.6f), l.R(216.0f));  // riel
         nvgCircle(vg, l.X(83.7f), l.Y(67.5f), l.R(16.2f));             // palanca
         nvgCircle(vg, l.X(83.7f), l.Y(110.0f), l.R(7.7f));             // cruceta
         nvgCircle(vg, l.X(83.7f), l.Y(141.1f), l.R(7.7f));
@@ -172,7 +185,6 @@ namespace {
 
     void jcBotonesDer(NVGcontext* vg, const Lienzo& l)
     {
-        nvgRect(vg, l.X(197.4f), l.Y(12.0f), l.R(6.6f), l.R(216.0f));  // riel
         nvgCircle(vg, l.X(236.3f), l.Y(125.7f), l.R(16.2f));           // palanca
         nvgCircle(vg, l.X(236.3f), l.Y(51.9f), l.R(7.7f));             // ABXY
         nvgCircle(vg, l.X(236.3f), l.Y(83.1f), l.R(7.7f));
@@ -357,8 +369,13 @@ void ColorPickerPage::drawJoyConPreview(NVGcontext* vg, int x, int y, unsigned w
     };
 
     pintarParte(vg, l, jcCuerpoIzq, color(0), currentSlot == 0, realce);
-    pintarParte(vg, l, jcBotonesIzq, color(1), currentSlot == 1, realce);
     pintarParte(vg, l, jcCuerpoDer, color(2), currentSlot == 2, realce);
+
+    // El riel va con color fijo y sin realce: no se puede cambiar.
+    pintarParte(vg, l, jcRielIzq, COLOR_RIEL, false, realce);
+    pintarParte(vg, l, jcRielDer, COLOR_RIEL, false, realce);
+
+    pintarParte(vg, l, jcBotonesIzq, color(1), currentSlot == 1, realce);
     pintarParte(vg, l, jcBotonesDer, color(3), currentSlot == 3, realce);
 }
 
