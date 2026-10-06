@@ -200,7 +200,16 @@ namespace extract {
                         extractEntry(filename, zfile);
                         if (filename.substr(0, 14) == "/hekate_ctcaer") {
                             fs::copyFile(filename, UPDATE_BIN_PATH);
-                            if (CurrentCfw::running_cfw == CFW::ams && util::showDialogBoxBlocking(fmt::format("menus/utils/set_hekate_reboot_payload"_i18n, UPDATE_BIN_PATH, REBOOT_PAYLOAD_PATH), "menus/common/yes"_i18n, "menus/common/no"_i18n) == 0) {
+
+                            /* Antes se preguntaba si copiarlo tambien a
+                               reboot_payload.bin. Ese archivo es el que
+                               Atmosphere usa al reiniciar: sin el, un reinicio
+                               devuelve al arranque original en vez de a hekate,
+                               que no es lo que espera quien acaba de instalar un
+                               pack que arranca por hekate. Responder que no
+                               dejaba la consola a medias sin decir por que, asi
+                               que se copia siempre. */
+                            if (CurrentCfw::running_cfw == CFW::ams) {
                                 fs::copyFile(UPDATE_BIN_PATH, REBOOT_PAYLOAD_PATH);
                             }
                         }
