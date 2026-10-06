@@ -1,6 +1,7 @@
 #include "extract.hpp"
 
 #include <dirent.h>
+#include <sys/stat.h>
 #include <minizip/unzip.h>
 
 #include <algorithm>
@@ -8,6 +9,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iterator>
+#include <map>
 #include <ranges>
 #include <set>
 #include <sstream>
@@ -26,6 +28,59 @@ namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
 constexpr size_t WRITE_BUFFER_SIZE = 0x10000;
+
+namespace {
+    /* En FAT32 da igual la caja, asi que las comparaciones de nombre tambien. */
+    std::string enMinusculas(std::string v)
+    {
+        std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) { return std::tolower(c); });
+        return v;
+    }
+
+    std::string nombreDeArchivo(const std::string& ruta)
+    {
+        const size_t barra = ruta.rfind('/');
+        return barra == std::string::npos ? ruta : ruta.substr(barra + 1);
+    }
+
+    /* Indice de los .nro que ya estan en /switch, de nombre a ruta. Sirve para
+       no dejar una segunda copia de una app que el usuario ya tiene en otro
+       sitio: el pack reparte unos sueltos y otros en carpeta propia, y la app,
+       al descargar homebrew, usa siempre carpeta propia. Sin esto, quien baje
+       una app por la app y luego instale el pack termina con dos entradas en el
+       menu homebrew.
+
+       Se recorre con dirent y no con std::filesystem, que con rutas de la SD ya
+       nos ha fallado en silencio. Tres niveles alcanzan: /switch/x.nro,
+       /switch/app/x.nro y /switch/app/sub/x.nro. */
+    void indexarNros(const std::string& carpeta, int profundidad, std::map<std::string, std::string>& indice)
+    {
+        if (profundidad <= 0) return;
+
+        DIR* dir = opendir(carpeta.c_str());
+        if (!dir) return;
+
+        while (struct dirent* entrada = readdir(dir)) {
+            const std::string nombre = entrada->d_name;
+            if (nombre == "." || nombre == "..") continue;
+
+            const std::string hijo = carpeta + (carpeta.back() == '/' ? "" : "/") + nombre;
+
+            struct stat st;
+            if (stat(hijo.c_str(), &st) != 0) continue;
+
+            if (S_ISDIR(st.st_mode)) {
+                indexarNros(hijo, profundidad - 1, indice);
+            }
+            else if (nombre.size() > 4 && enMinusculas(nombre.substr(nombre.size() - 4)) == ".nro") {
+                // El primero que aparezca manda; da igual cual, lo que importa
+                // es no crear uno nuevo al lado.
+                indice.emplace(enMinusculas(nombre), hijo);
+            }
+        }
+        closedir(dir);
+    }
+}  // namespace
 
 namespace extract {
 
@@ -157,6 +212,42 @@ namespace extract {
         std::set<std::string> ignoreList = fs::readLineByLine(FILES_IGNORE);
         std::string appPath = util::getAppPath();
 
+        /* Para no duplicar homebrew: si una app que trae el zip ya existe en
+           otro sitio de /switch, se escribe encima de la que el usuario tiene en
+           vez de dejar una segunda copia. Asi se respeta donde la tenga, con sus
+           datos al lado, que es lo que hace la app al descargar homebrew.
+
+           Antes hay que saber que rutas trae el propio zip: si el zip ya incluye
+           la ruta donde esta la copia del usuario, no se redirige nada, o un zip
+           con dos .nro del mismo nombre acabaria escribiendo los dos encima del
+           mismo archivo. */
+        std::map<std::string, std::string> nrosEnLaSD;
+        std::set<std::string> rutasDelZip;
+        {
+            unzFile previo = unzOpen(archivePath.c_str());
+            if (previo != NULL) {
+                unz_global_info giPrevio;
+                unzGetGlobalInfo(previo, &giPrevio);
+                for (uLong j = 0; j < giPrevio.number_entry; ++j) {
+                    char nombre[0x301] = "";
+                    unzGetCurrentFileInfo(previo, NULL, nombre, sizeof(nombre), NULL, 0, NULL, 0);
+                    std::string ruta = nombre;
+                    if (!stripPrefix.empty() && ruta.rfind(stripPrefix, 0) == 0)
+                        ruta = ruta.substr(stripPrefix.length());
+                    if (!ruta.empty())
+                        rutasDelZip.insert(workingPath + ruta);
+                    unzGoToNextFile(previo);
+                }
+                unzClose(previo);
+            }
+
+            const bool tocaSwitch = std::any_of(rutasDelZip.begin(), rutasDelZip.end(), [](const std::string& r) {
+                return r.rfind(APP_PATH, 0) == 0 && r.size() > 4 && enMinusculas(r.substr(r.size() - 4)) == ".nro";
+            });
+            if (tocaSwitch)
+                indexarNros(APP_PATH, 3, nrosEnLaSD);
+        }
+
         for (uLong i = 0; i < gi.number_entry; ++i) {
             char szFilename[0x301] = "";
             unzOpenCurrentFile(zfile);
@@ -173,6 +264,15 @@ namespace extract {
                 continue;
             }
             std::string filename = workingPath + entryName;
+
+            // Redirigir a donde el usuario ya tenga esa app, si la tiene.
+            if (!nrosEnLaSD.empty() && filename.rfind(APP_PATH, 0) == 0 && filename.size() > 4 && enMinusculas(filename.substr(filename.size() - 4)) == ".nro") {
+                const auto yaInstalada = nrosEnLaSD.find(enMinusculas(nombreDeArchivo(filename)));
+                if (yaInstalada != nrosEnLaSD.end() && yaInstalada->second != filename && rutasDelZip.count(yaInstalada->second) == 0) {
+                    brls::Logger::info("{} ya existe en {}, se escribe ahi", filename, yaInstalada->second);
+                    filename = yaInstalada->second;
+                }
+            }
 
             if (ProgressEvent::instance().getInterupt()) {
                 unzCloseCurrentFile(zfile);
