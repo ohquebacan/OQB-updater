@@ -217,6 +217,23 @@ namespace util {
                     }
                     fs::removeDirContentsExcept("/SaltySD", preserved);
                     fs::removeDirContentsExcept(AMS_CONTENTS, preserved);
+
+                    /* bootloader tambien, por lo mismo que contents: lo que el
+                       pack ya no trae se quedaba en la SD y seguia surtiendo
+                       efecto. El caso que lo destapo fue bootlogo.bmp, que se
+                       quito del pack y hekate seguia mostrandolo porque lo toma
+                       de su ruta por omision aunque nadie lo declare.
+
+                       Se conservan dos cosas. ini/, porque son entradas de
+                       arranque que el usuario agrega y no le corresponde al pack
+                       borrarlas. Y payloads/, porque ahi la gente deja los suyos;
+                       el pack repone los que trae de todos modos. El resto (res/,
+                       sys/, los .ini sueltos y cualquier archivo heredado) se
+                       rehace con lo que venga en el zip. */
+                    auto preservedBoot = preserved;
+                    preservedBoot.insert(std::string(BOOTLOADER_PATH) + "ini");
+                    preservedBoot.insert(std::string(BOOTLOADER_PATH) + "payloads");
+                    fs::removeDirContentsExcept(BOOTLOADER_PATH, preservedBoot);
                 }
                 extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
                 break;
