@@ -20,6 +20,10 @@ namespace PC {
     int backupToJSON(nlohmann::ordered_json& profiles, const std::string& path);
     std::deque<std::pair<std::string, std::vector<int>>> getProfiles(const std::string& path);
     void changePCColor(const std::vector<int>& values);
+
+    /* Lee de la SPI del mando los cuatro colores: cuerpo, botones y los dos
+       grips. false si no hay mando o la lectura falla. */
+    bool readColors(int out[4][3]);
     nlohmann::ordered_json backupProfile();
     void backupPCColor(const std::string& path);
 

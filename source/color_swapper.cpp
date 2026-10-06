@@ -257,13 +257,45 @@ namespace PC {
 
         pads = hidsysGetUniquePadsFromNpad(HidNpadIdType_No1, UniquePadIds, 1, &nbEntries);
         if (R_SUCCEEDED(pads)) {
-            pc = hiddbgUpdateControllerColor(colors[0], colors[1], UniquePadIds[0]);
+            /* Con cuatro colores hay que usar UpdateDesignInfo: UpdateControllerColor
+               solo sabe de cuerpo y botones, y los grips se quedarian como estaban.
+               Los perfiles guardados siguen trayendo dos, y por ahi se sigue usando
+               la de siempre. */
+            if (colors.size() >= 4)
+                pc = hiddbgUpdateDesignInfo(colors[0], colors[1], colors[2], colors[3], 0, UniquePadIds[0]);
+            else
+                pc = hiddbgUpdateControllerColor(colors[0], colors[1], UniquePadIds[0]);
+
             if (R_FAILED(pc)) res += 1;
         }
         else {
             res += 4;
         }
         return res;
+    }
+
+    bool readColors(int out[4][3])
+    {
+        /* Los cuatro colores viven en la SPI del mando, en 0x6050: cuerpo,
+           botones, grip izquierdo y grip derecho, tres bytes RGB cada uno.
+           hidGetNpadControllerColorSingle solo devuelve los dos primeros. */
+        constexpr u32 OFFSET_COLORES = 0x6050;
+
+        s32 nbEntries = 0;
+        HidsysUniquePadId UniquePadIds[1] = {};
+        if (R_FAILED(hidsysGetUniquePadsFromNpad(HidNpadIdType_No1, UniquePadIds, 1, &nbEntries)) || nbEntries < 1)
+            return false;
+
+        u8 crudo[12] = {};
+        if (R_FAILED(hiddbgReadSerialFlash(OFFSET_COLORES, crudo, sizeof(crudo), UniquePadIds[0])))
+            return false;
+
+        for (int parte = 0; parte < 4; ++parte) {
+            out[parte][0] = crudo[parte * 3 + 0];
+            out[parte][1] = crudo[parte * 3 + 1];
+            out[parte][2] = crudo[parte * 3 + 2];
+        }
+        return true;
     }
 
     int backupToJSON(json& profiles, const std::string& path)

@@ -2,6 +2,8 @@
 
 #include <switch.h>
 
+#include <algorithm>
+
 #include "color_swapper.hpp"
 #include "utils.hpp"
 
@@ -18,9 +20,11 @@ namespace {
         "menus/color_picker/jc_right_body",
         "menus/color_picker/jc_right_buttons"};
 
-    const char* PC_SLOT_KEYS[2] = {
+    const char* PC_SLOT_KEYS[4] = {
         "menus/color_picker/pc_body",
-        "menus/color_picker/pc_buttons"};
+        "menus/color_picker/pc_buttons",
+        "menus/color_picker/pc_left_grip",
+        "menus/color_picker/pc_right_grip"};
 
     const char* CHANNEL_NAMES[3] = {"R", "G", "B"};
 
@@ -43,11 +47,146 @@ namespace {
         rgb[1] = (hw >> 8) & 0xFF;   // G
         rgb[2] = (hw >> 16) & 0xFF;  // B
     }
+
+    /* Las formas estan trazadas sobre un lienzo de 320x240, sacadas de los SVG
+       de los mandos reales en vez de dibujadas a mano: por eso las curvas son
+       Bezier y no rectangulos redondeados. Esto las encaja en el hueco que haya,
+       centradas y sin deformar. */
+    struct Lienzo
+    {
+        float s, ox, oy;
+        float X(float v) const { return ox + v * s; }
+        float Y(float v) const { return oy + v * s; }
+        float R(float v) const { return v * s; }
+    };
+
+    Lienzo encajar(int x, int y, unsigned width, int alto)
+    {
+        constexpr float DISENO_W = 320.0f, DISENO_H = 240.0f;
+        const float s = std::min((float)width / DISENO_W, (float)alto / DISENO_H);
+        return {s, x + ((float)width - DISENO_W * s) / 2.0f, y + ((float)alto - DISENO_H * s) / 2.0f};
+    }
+
+    void curva(NVGcontext* vg, const Lienzo& l, float x1, float y1, float x2, float y2, float x3, float y3)
+    {
+        nvgBezierTo(vg, l.X(x1), l.Y(y1), l.X(x2), l.Y(y2), l.X(x3), l.Y(y3));
+    }
+
+    // ---- Pro Controller ----
+    void proCuerpo(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgMoveTo(vg, l.X(37.6f), l.Y(84.6f));
+        curva(vg, l, 38.0f, 82.5f, 38.5f, 80.5f, 39.0f, 78.5f);
+        nvgLineTo(vg, l.X(41.4f), l.Y(68.7f));
+        curva(vg, l, 46.0f, 49.3f, 60.8f, 34.4f, 79.9f, 29.8f);
+        curva(vg, l, 100.8f, 24.7f, 127.4f, 24.3f, 160.0f, 24.3f);
+        curva(vg, l, 192.6f, 24.3f, 219.1f, 24.7f, 240.0f, 29.8f);
+        curva(vg, l, 259.2f, 34.4f, 274.0f, 49.3f, 278.6f, 68.7f);
+        nvgLineTo(vg, l.X(280.9f), l.Y(78.5f));
+        curva(vg, l, 281.4f, 80.5f, 281.9f, 82.5f, 282.4f, 84.6f);
+        nvgLineTo(vg, l.X(219.0f), l.Y(160.0f));
+        nvgLineTo(vg, l.X(101.0f), l.Y(160.0f));
+        nvgClosePath(vg);
+    }
+
+    /* El corte entre cuerpo y grip es la diagonal que trae el propio SVG, no un
+       corte horizontal: las tres piezas comparten esa arista y encajan sin
+       solaparse ni dejar rendija. */
+    void proGripIzq(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgMoveTo(vg, l.X(37.6f), l.Y(84.6f));
+        curva(vg, l, 25.3f, 136.0f, 14.6f, 183.8f, 30.3f, 204.9f);
+        curva(vg, l, 35.2f, 211.5f, 42.3f, 215.1f, 51.8f, 215.6f);
+        curva(vg, l, 51.9f, 215.6f, 52.0f, 215.6f, 52.1f, 215.6f);
+        curva(vg, l, 63.5f, 215.6f, 73.6f, 204.5f, 83.0f, 181.7f);
+        curva(vg, l, 88.9f, 168.3f, 94.0f, 160.0f, 101.0f, 160.0f);
+        nvgClosePath(vg);
+    }
+
+    void proGripDer(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgMoveTo(vg, l.X(219.0f), l.Y(160.0f));
+        curva(vg, l, 226.0f, 160.0f, 231.1f, 168.3f, 237.0f, 181.7f);
+        curva(vg, l, 246.4f, 204.5f, 256.5f, 215.7f, 267.9f, 215.7f);
+        curva(vg, l, 268.0f, 215.7f, 268.1f, 215.7f, 268.2f, 215.7f);
+        nvgLineTo(vg, l.X(268.4f), l.Y(215.7f));
+        curva(vg, l, 277.7f, 215.1f, 284.9f, 211.5f, 289.7f, 205.0f);
+        curva(vg, l, 305.4f, 183.8f, 294.7f, 136.1f, 282.4f, 84.6f);
+        nvgClosePath(vg);
+    }
+
+    void proBotones(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgCircle(vg, l.X(85.7f), l.Y(81.1f), l.R(15.6f));    // palanca izquierda
+        nvgCircle(vg, l.X(196.5f), l.Y(118.1f), l.R(15.6f));  // palanca derecha
+        nvgCircle(vg, l.X(232.0f), l.Y(62.8f), l.R(9.5f));    // ABXY
+        nvgCircle(vg, l.X(253.4f), l.Y(81.1f), l.R(9.5f));
+        nvgCircle(vg, l.X(232.0f), l.Y(99.7f), l.R(9.5f));
+        nvgCircle(vg, l.X(210.6f), l.Y(80.7f), l.R(9.5f));
+        nvgRoundedRect(vg, l.X(101.0f), l.Y(113.3f), l.R(35.4f), l.R(10.4f), l.R(1.6f));  // cruceta
+        nvgRoundedRect(vg, l.X(113.1f), l.Y(100.4f), l.R(11.2f), l.R(35.4f), l.R(1.6f));
+        nvgCircle(vg, l.X(127.1f), l.Y(60.6f), l.R(5.6f));  // menos
+        nvgCircle(vg, l.X(192.9f), l.Y(60.6f), l.R(5.6f));  // mas
+        nvgCircle(vg, l.X(178.8f), l.Y(81.1f), l.R(5.6f));  // home
+        nvgRoundedRect(vg, l.X(137.6f), l.Y(75.5f), l.R(9.2f), l.R(9.2f), l.R(1.6f));  // captura
+    }
+
+    // ---- Joy-Con ----
+    void jcCuerpoIzq(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgMoveTo(vg, l.X(122.6f), l.Y(228.0f));
+        nvgLineTo(vg, l.X(93.3f), l.Y(228.0f));
+        curva(vg, l, 80.5f, 228.0f, 68.4f, 223.1f, 59.0f, 214.3f);
+        curva(vg, l, 49.1f, 204.8f, 43.6f, 192.0f, 43.6f, 178.2f);
+        nvgLineTo(vg, l.X(43.6f), l.Y(61.8f));
+        curva(vg, l, 43.6f, 57.9f, 44.0f, 54.1f, 44.8f, 50.5f);
+        curva(vg, l, 50.1f, 27.9f, 70.0f, 12.0f, 93.3f, 12.0f);
+        nvgLineTo(vg, l.X(122.6f), l.Y(12.0f));
+        nvgClosePath(vg);
+    }
+
+    void jcCuerpoDer(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgMoveTo(vg, l.X(197.4f), l.Y(12.0f));
+        nvgLineTo(vg, l.X(226.7f), l.Y(12.0f));
+        curva(vg, l, 250.0f, 12.0f, 269.9f, 27.8f, 275.2f, 50.5f);
+        curva(vg, l, 276.0f, 54.1f, 276.4f, 57.9f, 276.4f, 61.8f);
+        nvgLineTo(vg, l.X(276.4f), l.Y(178.2f));
+        curva(vg, l, 276.4f, 192.0f, 270.9f, 204.8f, 261.0f, 214.3f);
+        curva(vg, l, 251.6f, 223.1f, 239.5f, 228.0f, 226.7f, 228.0f);
+        nvgLineTo(vg, l.X(197.4f), l.Y(228.0f));
+        nvgClosePath(vg);
+    }
+
+    void jcBotonesIzq(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgRect(vg, l.X(115.9f), l.Y(12.0f), l.R(6.6f), l.R(216.0f));  // riel
+        nvgCircle(vg, l.X(83.7f), l.Y(67.5f), l.R(16.2f));             // palanca
+        nvgCircle(vg, l.X(83.7f), l.Y(110.0f), l.R(7.7f));             // cruceta
+        nvgCircle(vg, l.X(83.7f), l.Y(141.1f), l.R(7.7f));
+        nvgCircle(vg, l.X(67.5f), l.Y(125.7f), l.R(7.7f));
+        nvgCircle(vg, l.X(99.9f), l.Y(125.7f), l.R(7.7f));
+        nvgRoundedRect(vg, l.X(89.9f), l.Y(158.5f), l.R(11.7f), l.R(11.7f), l.R(1.2f));  // captura
+        nvgRect(vg, l.X(98.7f), l.Y(33.5f), l.R(11.7f), l.R(3.3f));                      // menos
+    }
+
+    void jcBotonesDer(NVGcontext* vg, const Lienzo& l)
+    {
+        nvgRect(vg, l.X(197.4f), l.Y(12.0f), l.R(6.6f), l.R(216.0f));  // riel
+        nvgCircle(vg, l.X(236.3f), l.Y(125.7f), l.R(16.2f));           // palanca
+        nvgCircle(vg, l.X(236.3f), l.Y(51.9f), l.R(7.7f));             // ABXY
+        nvgCircle(vg, l.X(236.3f), l.Y(83.1f), l.R(7.7f));
+        nvgCircle(vg, l.X(220.1f), l.Y(67.6f), l.R(7.7f));
+        nvgCircle(vg, l.X(252.5f), l.Y(67.6f), l.R(7.7f));
+        nvgCircle(vg, l.X(224.8f), l.Y(164.9f), l.R(8.8f));            // home
+        nvgRect(vg, l.X(209.6f), l.Y(33.5f), l.R(11.7f), l.R(3.3f));   // mas
+        nvgRect(vg, l.X(215.1f), l.Y(28.0f), l.R(3.3f), l.R(11.7f));
+    }
 }  // namespace
 
 ColorPickerPage::ColorPickerPage(Controller type) : type(type)
 {
-    numSlots = (type == Controller::JoyCon) ? 4 : 2;
+    numSlots = 4;
 
     // Inicializar con los colores actuales del mando
     bool ok = false;
@@ -62,11 +201,30 @@ ColorPickerPage::ColorPickerPage(Controller type) : type(type)
         }
     }
     else {
-        HidNpadControllerColor color;
-        if (R_SUCCEEDED(hidGetNpadControllerColorSingle(HidNpadIdType_No1, &color))) {
-            decompose(color.main, slots[0]);
-            decompose(color.sub, slots[1]);
+        /* Primero la SPI, que es la unica que trae los grips. Si no se puede
+           leer se cae a la via de siempre, que solo da cuerpo y botones, y los
+           grips arrancan con el color del cuerpo: es mejor eso que un gris que
+           el usuario aplicaria sin querer. */
+        hiddbgInitialize();
+        hidsysInitialize();
+        const bool leidos = PC::readColors(slots);
+        hiddbgExit();
+        hidsysExit();
+
+        if (leidos) {
             ok = true;
+        }
+        else {
+            HidNpadControllerColor color;
+            if (R_SUCCEEDED(hidGetNpadControllerColorSingle(HidNpadIdType_No1, &color))) {
+                decompose(color.main, slots[0]);
+                decompose(color.sub, slots[1]);
+                for (int canal = 0; canal < 3; ++canal) {
+                    slots[2][canal] = slots[0][canal];
+                    slots[3][canal] = slots[0][canal];
+                }
+                ok = true;
+            }
         }
     }
     if (!ok) {
@@ -147,7 +305,9 @@ void ColorPickerPage::apply()
     else {
         std::vector<int> values = {
             toHardware(slots[0]),
-            toHardware(slots[1])};
+            toHardware(slots[1]),
+            toHardware(slots[2]),
+            toHardware(slots[3])};
         res = PC::setColor(values);
     }
     hiddbgExit();
@@ -165,95 +325,58 @@ brls::View* ColorPickerPage::getDefaultFocus()
     return this;
 }
 
-void ColorPickerPage::drawJoyConPreview(NVGcontext* vg, int x, int y, unsigned width, int previewH, brls::FrameContext* ctx)
-{
-    const int cx = x + width / 2;
-    const int jcW = 96;
-    const int jcGap = 40;
-    const int jcY = y + 20;
-    const int jcH = previewH - 20;
-
-    int jcX[2] = {cx - jcGap / 2 - jcW, cx + jcGap / 2};
-
-    for (int side = 0; side < 2; side++) {
-        int bodySlot = side == 0 ? 0 : 2;
-        int btnSlot = side == 0 ? 1 : 3;
-
-        NVGcolor bodyCol = nvgRGB(slots[bodySlot][0], slots[bodySlot][1], slots[bodySlot][2]);
+namespace {
+    /* Pinta una parte y, si esta seleccionada, le marca el contorno. El realce
+       sigue la forma real en vez de un rectangulo alrededor, que era lo que
+       hacia que no se supiera bien que se estaba cambiando. */
+    template <typename Forma>
+    void pintarParte(NVGcontext* vg, const Lienzo& l, Forma forma, NVGcolor color, bool seleccionada, NVGcolor realce)
+    {
         nvgBeginPath(vg);
-        nvgRoundedRect(vg, jcX[side], jcY, jcW, jcH, 18);
-        nvgFillColor(vg, bodyCol);
+        forma(vg, l);
+        nvgFillColor(vg, color);
         nvgFill(vg);
 
-        NVGcolor btnCol = nvgRGB(slots[btnSlot][0], slots[btnSlot][1], slots[btnSlot][2]);
-        int btnW = jcW / 2;
-        int btnH = jcH / 3;
-        int btnX = jcX[side] + (jcW - btnW) / 2;
-        int btnY = jcY + (side == 0 ? jcH / 6 : jcH - btnH - jcH / 6);
-        nvgBeginPath(vg);
-        nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 10);
-        nvgFillColor(vg, btnCol);
-        nvgFill(vg);
-
-        if (currentSlot == bodySlot) {
+        if (seleccionada) {
             nvgBeginPath(vg);
-            nvgRoundedRect(vg, jcX[side] - 4, jcY - 4, jcW + 8, jcH + 8, 22);
-            nvgStrokeColor(vg, a(ctx->theme->highlightColor1));
-            nvgStrokeWidth(vg, 4);
-            nvgStroke(vg);
-        }
-        if (currentSlot == btnSlot) {
-            nvgBeginPath(vg);
-            nvgRoundedRect(vg, btnX - 4, btnY - 4, btnW + 8, btnH + 8, 14);
-            nvgStrokeColor(vg, a(ctx->theme->highlightColor1));
-            nvgStrokeWidth(vg, 4);
+            forma(vg, l);
+            nvgStrokeColor(vg, realce);
+            nvgStrokeWidth(vg, std::max(3.0f, l.R(4.0f)));
             nvgStroke(vg);
         }
     }
+}  // namespace
+
+void ColorPickerPage::drawJoyConPreview(NVGcontext* vg, int x, int y, unsigned width, int previewH, brls::FrameContext* ctx)
+{
+    const Lienzo l = encajar(x, y, width, previewH);
+    const NVGcolor realce = a(ctx->theme->highlightColor1);
+
+    const auto color = [this](int parte) {
+        return nvgRGB(slots[parte][0], slots[parte][1], slots[parte][2]);
+    };
+
+    pintarParte(vg, l, jcCuerpoIzq, color(0), currentSlot == 0, realce);
+    pintarParte(vg, l, jcBotonesIzq, color(1), currentSlot == 1, realce);
+    pintarParte(vg, l, jcCuerpoDer, color(2), currentSlot == 2, realce);
+    pintarParte(vg, l, jcBotonesDer, color(3), currentSlot == 3, realce);
 }
 
 void ColorPickerPage::drawProControllerPreview(NVGcontext* vg, int x, int y, unsigned width, int previewH, brls::FrameContext* ctx)
 {
-    const int cx = x + width / 2;
-    const int bodyW = 220;
-    const int bodyH = previewH - 30;
-    const int bodyX = cx - bodyW / 2;
-    const int bodyY = y + 20;
+    const Lienzo l = encajar(x, y, width, previewH);
+    const NVGcolor realce = a(ctx->theme->highlightColor1);
 
-    // Cuerpo del mando
-    NVGcolor bodyCol = nvgRGB(slots[0][0], slots[0][1], slots[0][2]);
-    nvgBeginPath(vg);
-    nvgRoundedRect(vg, bodyX, bodyY, bodyW, bodyH, 40);
-    nvgFillColor(vg, bodyCol);
-    nvgFill(vg);
+    const auto color = [this](int parte) {
+        return nvgRGB(slots[parte][0], slots[parte][1], slots[parte][2]);
+    };
 
-    // Botones (zona derecha del mando: 4 circulos)
-    NVGcolor btnCol = nvgRGB(slots[1][0], slots[1][1], slots[1][2]);
-    int btnR = 13;
-    int clusterX = bodyX + bodyW - 56;
-    int clusterY = bodyY + bodyH / 2 - 6;
-    int offs[4][2] = {{0, -btnR - 6}, {0, btnR + 6}, {-btnR - 6, 0}, {btnR + 6, 0}};
-    for (auto& o : offs) {
-        nvgBeginPath(vg);
-        nvgCircle(vg, clusterX + o[0], clusterY + o[1], btnR);
-        nvgFillColor(vg, btnCol);
-        nvgFill(vg);
-    }
-
-    if (currentSlot == 0) {
-        nvgBeginPath(vg);
-        nvgRoundedRect(vg, bodyX - 4, bodyY - 4, bodyW + 8, bodyH + 8, 44);
-        nvgStrokeColor(vg, a(ctx->theme->highlightColor1));
-        nvgStrokeWidth(vg, 4);
-        nvgStroke(vg);
-    }
-    if (currentSlot == 1) {
-        nvgBeginPath(vg);
-        nvgRoundedRect(vg, clusterX - btnR * 2 - 10, clusterY - btnR * 2 - 10, btnR * 4 + 20, btnR * 4 + 20, 16);
-        nvgStrokeColor(vg, a(ctx->theme->highlightColor1));
-        nvgStrokeWidth(vg, 4);
-        nvgStroke(vg);
-    }
+    /* Los grips antes que el cuerpo: comparten la arista diagonal, y pintando
+       el cuerpo encima el borde queda limpio en vez de dentado. */
+    pintarParte(vg, l, proGripIzq, color(2), currentSlot == 2, realce);
+    pintarParte(vg, l, proGripDer, color(3), currentSlot == 3, realce);
+    pintarParte(vg, l, proCuerpo, color(0), currentSlot == 0, realce);
+    pintarParte(vg, l, proBotones, color(1), currentSlot == 1, realce);
 }
 
 void ColorPickerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)

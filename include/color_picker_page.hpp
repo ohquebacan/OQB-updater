@@ -11,7 +11,7 @@ public:
     enum class Controller
     {
         JoyCon,        // 4 partes: izq cuerpo/botones, der cuerpo/botones
-        ProController  // 2 partes: cuerpo, botones
+        ProController  // 4 partes: cuerpo, botones, grip izq, grip der
     };
 
     explicit ColorPickerPage(Controller type);
@@ -21,7 +21,7 @@ public:
 
 private:
     Controller type;
-    int numSlots;  // 4 para Joy-Con, 2 para Pro Controller
+    int numSlots;  // 4 en ambos
 
     // Cada parte guarda sus canales [R, G, B] (0-255)
     int slots[4][3];

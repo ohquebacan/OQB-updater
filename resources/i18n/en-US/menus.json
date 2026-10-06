@@ -330,7 +330,9 @@
         "pc_buttons": "Pro Controller · Buttons",
         "the_joycons": "the Joy-Cons",
         "the_pro_controller": "the Pro Controller",
-        "apply_failed": "Could not apply the colour. Make sure {} are connected and try again.\nError: {}"
+        "apply_failed": "Could not apply the colour. Make sure {} are connected and try again.\nError: {}",
+        "pc_left_grip": "Pro Controller · Left grip",
+        "pc_right_grip": "Pro Controller · Right grip"
     },
     "packs": {
         "updated": "Updated {}",

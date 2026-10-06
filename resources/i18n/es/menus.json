@@ -351,7 +351,9 @@
         "pc_buttons": "Pro Controller · Botones",
         "the_joycons": "los Joy-Cons",
         "the_pro_controller": "el Pro Controller",
-        "apply_failed": "No se pudo aplicar el color. Asegúrate de que {} estén conectados e inténtalo de nuevo.\nError: {}"
+        "apply_failed": "No se pudo aplicar el color. Asegúrate de que {} estén conectados e inténtalo de nuevo.\nError: {}",
+        "pc_left_grip": "Pro Controller · Grip izquierdo",
+        "pc_right_grip": "Pro Controller · Grip derecho"
     },
     "packs": {
         "updated": "Actualizado el {}",
