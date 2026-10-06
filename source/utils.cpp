@@ -191,10 +191,22 @@ namespace util {
                 break;
             }
             case contentType::ams_cfw: {
-                int preserveInis = showDialogBoxBlocking("menus/utils/overwrite_inis"_i18n, "menus/common/yes"_i18n, "menus/common/no"_i18n);
-                int deleteContents = showDialogBoxBlocking("menus/ams_update/delete_sysmodules_flags"_i18n, "menus/common/no"_i18n, "menus/common/yes"_i18n);
-                if (deleteContents == 1)
-                    removeSysmodulesFlags(AMS_CONTENTS);
+                /* Antes aqui se preguntaban dos cosas: si sobrescribir los .ini y
+                   si desactivar la carga de sysmodules. Las dos quedan fijadas en
+                   el valor que deja el pack funcionando tal como se armo, porque
+                   la pregunta no ayudaba: quien instala un pack no tiene como
+                   saber que responder, y una respuesta equivocada deja la consola
+                   sin arrancar o con los sysmodules apagados sin explicacion.
+
+                   Los .ini se sobrescriben: el pack trae su propio hekate_ipl.ini
+                   con las entradas de arranque, y conservar el anterior es
+                   justamente lo que hace que el pack no arranque como debe.
+
+                   Los sysmodules no se desactivan: lo de arriba ya borra de
+                   atmosphere/contents todo lo que no este en preserve.txt, asi
+                   que lo que sobrevive es lo que el pack trae o lo que el usuario
+                   pidio conservar, y apagarlo seria romperlo a proposito. */
+                constexpr bool preserveInis = false;
                 // Limpiar antes de extraer el HATS pack para evitar conflictos de arranque.
                 // preserve.txt ya se respetaba al extraer, pero no acá: lo que
                 // estuviera listado se borraba igual antes de llegar a esa parte.
