@@ -23,6 +23,28 @@ TimeServiceType __nx_time_service_type = TimeServiceType_System;
 
 CFW CurrentCfw::running_cfw;
 
+namespace {
+    bool hayTraduccion(const std::string& locale)
+    {
+        return !locale.empty() && std::filesystem::exists(fmt::format(LOCALISATION_FILE, locale));
+    }
+
+    // es-419 -> es, pt-PT -> pt, en-GB -> en. Si tampoco hay, ingles.
+    std::string resolverIdioma(const std::string& pedido)
+    {
+        if (hayTraduccion(pedido))
+            return pedido;
+
+        const size_t guion = pedido.find('-');
+        if (guion != std::string::npos) {
+            const std::string base = pedido.substr(0, guion);
+            if (hayTraduccion(base))
+                return base;
+        }
+        return "en-US";
+    }
+}  // namespace
+
 int main(int argc, char* argv[])
 {
     // Init the app
@@ -34,11 +56,21 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
+    /* La consola reporta el idioma con su variante regional: es-419 para
+       "Espanol (Latinoamerica)", y tambien en-GB, fr-CA, pt-PT... La app solo
+       trae es, en-US, fr, pt-BR. Cuando no hay carpeta para el codigo exacto,
+       borealis no carga ninguna traduccion y todo sale en ingles, aunque la
+       consola este en espanol. Antes de rendirse se prueba el idioma base. */
     nlohmann::ordered_json languageFile = fs::parseJsonFile(LANGUAGE_JSON);
-    if (languageFile.find("language") != languageFile.end())
-        i18n::loadTranslations(languageFile["language"]);
-    else
-        i18n::loadTranslations();
+    const std::string idiomaPedido = (languageFile.find("language") != languageFile.end())
+                                         ? languageFile["language"].get<std::string>()
+                                         : i18n::getCurrentLocale();
+    const std::string idioma = resolverIdioma(idiomaPedido);
+
+    if (idioma != idiomaPedido)
+        brls::Logger::info("Sin traduccion para {}, se usa {}", idiomaPedido, idioma);
+
+    i18n::loadTranslations(idioma);
 
         // appletInitializeGamePlayRecording();
 
