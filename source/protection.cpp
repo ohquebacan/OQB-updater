@@ -326,8 +326,10 @@ namespace protection {
         if (!nextendo) {
             for (auto& c : checks) {
                 if (c.status == Status::Fail && c.name.rfind("PRODINFO", 0) == 0) {
-                    c.detail += ". Si usaste Nextendo, vuelve a los servidores de Nintendo en Prelude; si no, "
-                                "reinstala el pack desde la app";
+                    c.detail += ". Si usaste Nextendo, vuelve a los servidores de Nintendo en Prelude. Si no, "
+                                "puede que el pack se haya copiado desde la computadora sin reemplazar los "
+                                "archivos anteriores: reinstálalo desde la app, en Actualizar Atmosphère, que "
+                                "reemplaza todo como debe";
                 }
             }
         }
@@ -343,17 +345,21 @@ namespace protection {
             /* 4. Nextendo a medias. Prelude cambia dos cosas: los hosts, para
                   mandar la consola a sus servidores, y el PRODINFO, para que la
                   consola muestre su numero de serie y esos servidores la
-                  reconozcan. Si solo llego lo primero (pasa al copiar los
-                  archivos a mano), Nextendo no funciona, y desde aqui se ve. */
+                  reconozcan. Si solo llego lo primero, Nextendo no funciona. Pasa
+                  cuando el pack se copio desde la computadora sin reemplazar y
+                  quedo un exosphere.ini de antes; la app si reemplaza. */
             if (std::filesystem::exists(root + EMUMMC_DIR)) {
                 std::string value;
                 const bool hidden = !findIniValue(readFile(root + EXOSPHERE_INI), "blank_prodinfo_emummc", value) ||
                                     value == "1";
                 if (hidden) {
                     checks.push_back({NEXTENDO_CHECK, Status::Warning,
-                                      "Los hosts ya van a Nextendo, pero el número de serie sigue oculto y sus "
-                                      "servidores no van a reconocer la consola. Reinstala Prelude desde la app "
-                                      "y vuelve a activar Nextendo"});
+                                      "Nextendo está activo, pero la consola no muestra su número de serie, así que "
+                                      "sus servidores no la van a reconocer. Esto pasa cuando el pack se copia a la "
+                                      "SD desde la computadora sin reemplazar lo que ya había: los archivos nuevos se "
+                                      "mezclan con los de packs anteriores. Reinstala el HATS PACK desde la app, en "
+                                      "Actualizar Atmosphère, que reemplaza todo como debe, y luego vuelve a activar "
+                                      "Nextendo en Prelude"});
                 }
                 else {
                     checks.push_back({NEXTENDO_CHECK, Status::Ok,
