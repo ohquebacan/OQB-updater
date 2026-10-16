@@ -20,7 +20,8 @@
         "status_protection_fail_many": "{} checks failed. Press A to see which ones.",
         "status_unknown": "Could not read",
         "status_protection_nextendo": "Nextendo",
-        "status_protection_nextendo_sub": "Nextendo turns off blocking to reach its servers. This is normal while you use it. Press A for the details."
+        "status_protection_nextendo_sub": "Nextendo turns off blocking to reach its servers. This is normal while you use it. Press A for the details.",
+        "status_protection_nextendo_incomplete_sub": "Nextendo is only half set up and will not work. Press A to see what is missing."
     },
     "cheats": {
         "installed": "Installed cheats",

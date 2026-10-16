@@ -120,7 +120,9 @@ void AboutTab::addStatusPanel(const std::string& tag)
     // Una comprobacion y varias no se dicen igual, asi que son dos textos en vez
     // de uno con un numero encajado a la fuerza.
     prot->setSubLabel(!failed   ? "menus/about/status_protection_ok_sub"_i18n
-                      : nextendo ? "menus/about/status_protection_nextendo_sub"_i18n
+                      : nextendo ? (protection::nextendoIncomplete(checks)
+                                        ? "menus/about/status_protection_nextendo_incomplete_sub"_i18n
+                                        : "menus/about/status_protection_nextendo_sub"_i18n)
                       : failures == 1
                           ? "menus/about/status_protection_fail_one"_i18n
                           : fmt::format("menus/about/status_protection_fail_many"_i18n, failures));

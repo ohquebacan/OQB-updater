@@ -19,7 +19,8 @@
         "status_protection_fail_many": "Fallaron {} comprobaciones. Presiona A para ver cuáles.",
         "status_unknown": "No se pudo leer",
         "status_protection_nextendo": "Nextendo",
-        "status_protection_nextendo_sub": "Nextendo apaga el bloqueo para conectarse a sus servidores. Es normal mientras lo uses. Presiona A para ver el detalle."
+        "status_protection_nextendo_sub": "Nextendo apaga el bloqueo para conectarse a sus servidores. Es normal mientras lo uses. Presiona A para ver el detalle.",
+        "status_protection_nextendo_incomplete_sub": "Nextendo quedó a medias y no va a funcionar. Presiona A para ver qué falta."
     },
     "cheats": {
         "installed": "Trucos instalados",

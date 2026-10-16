@@ -239,14 +239,18 @@ int main()
     {
         const std::string sd = makeSd();
         write(sd + "/atmosphere/hosts/default.txt",
-              "203.0.113.7 *.nintendo.com\n203.0.113.7 *.nintendo.net\n");
+              "51.178.29.194 *.nintendo.com\n51.178.29.194 *.nintendo.net\n");
         write(sd + "/atmosphere/hosts/emummc.txt",
-              "203.0.113.7 *.nintendo.com\n203.0.113.7 *.nintendo.net\n");
+              "51.178.29.194 *.nintendo.com\n164.132.111.120 g2*.s.n.srv.nintendo.net\n");
+        write(sd + "/exosphere.ini", "[exosphere]\nblank_prodinfo_emummc=0\nblank_prodinfo_sysmmc=1\n");
         write(sd + "/atmosphere/config/system_settings.ini", "[atmosphere]\nenable_dns_mitm = u8!0x0\n");
         Rt rt;
         rt.dns = Rt::Dns::Redirected;
-        rt.dnsDetail = "accounts.nintendo.com → 203.0.113.7";
+        rt.dnsAddress = "51.178.29.194";
+        rt.dnsDetail = "accounts.nintendo.com → 51.178.29.194";
         const auto checks = protection::run(sd, rt);
+        expect("Nextendo completo sale en verde en su propia comprobacion", checks, protection::NEXTENDO_CHECK,
+               protection::Status::Ok);
         expect("hosts de Nextendo ES una falla", checks, "hosts/default.txt", protection::Status::Fail);
         const bool all = std::all_of(checks.begin(), checks.end(), [](const protection::Check& c) {
             return c.status != protection::Status::Fail || c.byNextendo;
@@ -268,6 +272,51 @@ int main()
             ++failures;
         }
     }
+    {
+        // Nextendo a medias: los hosts van a Nextendo, pero el numero de serie
+        // sigue oculto. Es aviso, y lo demas se sigue explicando por Nextendo.
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/emummc.txt", "3.135.232.168 *.nintendo.com\n");
+        const auto checks = protection::run(sd);
+        expect("Nextendo con el numero de serie oculto es aviso", checks, protection::NEXTENDO_CHECK,
+               protection::Status::Warning);
+        if (protection::nextendoIncomplete(checks) && protection::failedOnlyByNextendo(checks))
+            std::cout << "ok     Nextendo a medias se reporta como tal\n";
+        else {
+            std::cout << "FALLA  Nextendo a medias deberia reportarse\n";
+            ++failures;
+        }
+    }
+    {
+        // Un servidor que no es de Nextendo (puede ser el de Nintendo): falla a
+        // secas, nunca "por Nextendo", aunque haya hosts de Nextendo tambien.
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/emummc.txt", "51.178.29.194 *.nintendo.com\n");
+        Rt rt;
+        rt.dns = Rt::Dns::Redirected;
+        rt.dnsAddress = "23.45.67.89";
+        rt.dnsDetail = "accounts.nintendo.com → 23.45.67.89";
+        const auto checks = protection::run(sd, rt);
+        if (find(checks, "DNS MITM activado").status == protection::Status::Fail &&
+            !find(checks, "DNS MITM activado").byNextendo && !protection::failedOnlyByNextendo(checks))
+            std::cout << "ok     el DNS que sale a un servidor que no es Nextendo es falla a secas\n";
+        else {
+            std::cout << "FALLA  el DNS que sale a otro servidor no deberia atribuirse a Nextendo\n";
+            ++failures;
+        }
+    }
+    {
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/default.txt", "23.45.67.89 *.nintendo.com\n");
+        const auto checks = protection::run(sd);
+        if (!find(checks, "hosts/default.txt").byNextendo && !protection::failedOnlyByNextendo(checks))
+            std::cout << "ok     hosts a un servidor desconocido no es Nextendo\n";
+        else {
+            std::cout << "FALLA  hosts a un servidor desconocido no deberia ser Nextendo\n";
+            ++failures;
+        }
+    }
+
     {
         // El pack OQB manda ctest y conntest a 90DNS: eso no es Nextendo.
         const std::string sd = makeSd();

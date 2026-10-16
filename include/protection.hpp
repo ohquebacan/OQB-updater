@@ -47,6 +47,7 @@ namespace protection {
         };
         Dns dns = Dns::NotTested;
         std::string dnsDetail;   // el host y la direccion que dio
+        std::string dnsAddress;  // solo la direccion, para reconocer a Nextendo
         uint32_t firmware = 0;   // (mayor << 16) | (menor << 8) | micro; 0 = no se sabe
         uint32_t atmosphere = 0; // igual que firmware
     };
@@ -69,6 +70,12 @@ namespace protection {
 
     // true si alguna comprobacion fallo.
     bool anyFailed(const std::vector<Check>& checks);
+
+    // Nombre de la comprobacion que solo aparece con Nextendo activo.
+    constexpr const char NEXTENDO_CHECK[] = "Nextendo configurado";
+
+    // true si Nextendo redirige pero no muestra el numero de serie.
+    bool nextendoIncomplete(const std::vector<Check>& checks);
 
     // true si hay fallas y todas son por Nextendo.
     bool failedOnlyByNextendo(const std::vector<Check>& checks);

@@ -25,6 +25,18 @@ namespace protection {
         constexpr const char EXOSPHERE_INI[] = "/exosphere.ini";
         constexpr const char EMUMMC_DIR[] = "/emuMMC/";
 
+        /* Los servidores de Nextendo, sacados de Prelude (nextendo.nro): los dos
+           que deja elegir (VPS y Local) y uno fijo que usa para algunos hosts.
+           Si cambian, la app deja de reconocerlos y lo da como falla a secas,
+           que es el lado seguro. */
+        constexpr const char* NEXTENDO_SERVERS[] = {"51.178.29.194", "3.135.232.168", "164.132.111.120"};
+
+        bool isNextendoServer(const std::string& ip)
+        {
+            return std::find(std::begin(NEXTENDO_SERVERS), std::end(NEXTENDO_SERVERS), ip) !=
+                   std::end(NEXTENDO_SERVERS);
+        }
+
         std::string readFile(const std::string& path)
         {
             std::ifstream f(path, std::ios::binary);
@@ -74,9 +86,11 @@ namespace protection {
             Blocks,
             Absent,
             DoesNotBlock,
-            // Manda lo de Nintendo a un servidor publico: es lo que hace
-            // Nextendo para que la consola hable con sus servidores.
-            Redirects,
+            // Manda lo de Nintendo a los servidores de Nextendo.
+            RedirectsNextendo,
+            // Manda lo de Nintendo a otro servidor publico, que no sabemos cual
+            // es: puede ser el de Nintendo.
+            RedirectsOther,
         };
 
         HostsResult inspectHostsFile(const std::string& path, std::string& out_detail)
@@ -95,7 +109,8 @@ namespace protection {
             // Contar solo lineas utiles: ni vacias ni comentadas.
             int rules = 0;
             bool blocks_nintendo = false;
-            std::string redirect_ip;
+            std::string nextendo_ip;
+            std::string other_ip;
             std::istringstream ss(contents);
             std::string line;
             while (std::getline(ss, line)) {
@@ -113,19 +128,24 @@ namespace protection {
                    no cuentan: el pack OQB manda ctest y conntest a 90DNS a
                    proposito, para que la consola crea que tiene internet. */
                 if (n.find("ctest") != std::string::npos || n.find("conntest") != std::string::npos) continue;
-                if (redirect_ip.empty()) {
-                    std::istringstream fields(line);
-                    fields >> redirect_ip;
-                }
+                std::istringstream fields(line);
+                std::string ip;
+                fields >> ip;
+                std::string& slot = isNextendoServer(ip) ? nextendo_ip : other_ip;
+                if (slot.empty()) slot = ip;
             }
 
             if (rules == 0) {
                 out_detail = "solo tiene comentarios";
                 return HostsResult::DoesNotBlock;
             }
-            if (!redirect_ip.empty()) {
-                out_detail = "manda lo de nintendo a " + redirect_ip;
-                return HostsResult::Redirects;
+            if (!other_ip.empty()) {
+                out_detail = "manda lo de nintendo a " + other_ip + ", que no es un servidor de Nextendo";
+                return HostsResult::RedirectsOther;
+            }
+            if (!nextendo_ip.empty()) {
+                out_detail = "manda lo de nintendo a Nextendo (" + nextendo_ip + ")";
+                return HostsResult::RedirectsNextendo;
             }
             if (!blocks_nintendo) {
                 out_detail = std::to_string(rules) + " reglas, pero ninguna bloquea nintendo";
@@ -163,7 +183,9 @@ namespace protection {
         }
         else if (rt.dns == Runtime::Dns::Redirected) {
             checks.push_back({"DNS MITM activado", Status::Fail,
-                              "probado: " + rt.dnsDetail + ", sale a internet",
+                              "probado: " + rt.dnsDetail +
+                                  (isNextendoServer(rt.dnsAddress) ? ", va a Nextendo"
+                                                                   : ", sale a internet y no es Nextendo"),
                               true});
         }
         /* Sin prueba (o sin respuesta, que pasa sin MITM y sin red) queda el
@@ -215,17 +237,29 @@ namespace protection {
               default.txt es el que tiene que bloquear siempre, y los otros dos
               solo importan cuando existen: entonces reemplazan a default.txt y
               son ellos los que deciden. */
-        bool redirected = rt.dns == Runtime::Dns::Redirected;
+        /* Lo que lleva a Nextendo, y lo que sale a otro lado. Lo segundo nunca
+           se explica como Nextendo: si la consola llega a un servidor que no es
+           el suyo, puede ser el de Nintendo, y eso es una falla de verdad. */
+        bool nextendo = rt.dns == Runtime::Dns::Redirected && isNextendoServer(rt.dnsAddress);
+        std::vector<std::string> not_nextendo = {"Bloqueo DNS en este firmware"};
+        if (rt.dns == Runtime::Dns::Redirected && !nextendo) not_nextendo.push_back("DNS MITM activado");
+
+        const auto note = [&](const std::string& name, HostsResult r) {
+            if (r == HostsResult::RedirectsNextendo) nextendo = true;
+            if (r == HostsResult::RedirectsOther) not_nextendo.push_back(name);
+        };
 
         std::string default_detail;
         const HostsResult default_result = inspectHostsFile(root + HOSTS_DIR + "default.txt", default_detail);
         const bool default_blocks = default_result == HostsResult::Blocks;
-        redirected |= default_result == HostsResult::Redirects;
+        note("hosts/default.txt", default_result);
         checks.push_back({"hosts/default.txt", default_blocks ? Status::Ok : Status::Fail, default_detail, true});
 
         for (const char* name : {"emummc.txt", "sysmmc.txt"}) {
             std::string detail;
-            switch (inspectHostsFile(root + HOSTS_DIR + name, detail)) {
+            const HostsResult result = inspectHostsFile(root + HOSTS_DIR + name, detail);
+            note(std::string("hosts/") + name, result);
+            switch (result) {
                 case HostsResult::Blocks:
                     checks.push_back({std::string("hosts/") + name, Status::Ok, detail, true});
                     break;
@@ -241,9 +275,8 @@ namespace protection {
                                       true});
                     break;
 
-                case HostsResult::Redirects:
-                    redirected = true;
-                    [[fallthrough]];
+                case HostsResult::RedirectsNextendo:
+                case HostsResult::RedirectsOther:
                 case HostsResult::DoesNotBlock:
                     // El caso peligroso: existe, asi que deja fuera a
                     // default.txt, y no bloquea.
@@ -287,9 +320,45 @@ namespace protection {
            de verdad esta saliendo, y quien pregunte por el bloqueo (la hora del
            sistema) tiene que saberlo. La version de Atmosphere no es cosa de
            Nextendo, asi que esa no se marca. */
-        if (redirected) {
+        /* El caso al reves: sin Nextendo, pero con el numero de serie a la
+           vista. Suele ser un Prelude que no termino de volver a Nintendo, o
+           archivos copiados a mano a medias. */
+        if (!nextendo) {
             for (auto& c : checks) {
-                if (c.status == Status::Fail && c.name != "Bloqueo DNS en este firmware") c.byNextendo = true;
+                if (c.status == Status::Fail && c.name.rfind("PRODINFO", 0) == 0) {
+                    c.detail += ". Si usaste Nextendo, vuelve a los servidores de Nintendo en Prelude; si no, "
+                                "reinstala el pack desde la app";
+                }
+            }
+        }
+
+        if (nextendo) {
+            for (auto& c : checks) {
+                if (c.status == Status::Fail &&
+                    std::find(not_nextendo.begin(), not_nextendo.end(), c.name) == not_nextendo.end()) {
+                    c.byNextendo = true;
+                }
+            }
+
+            /* 4. Nextendo a medias. Prelude cambia dos cosas: los hosts, para
+                  mandar la consola a sus servidores, y el PRODINFO, para que la
+                  consola muestre su numero de serie y esos servidores la
+                  reconozcan. Si solo llego lo primero (pasa al copiar los
+                  archivos a mano), Nextendo no funciona, y desde aqui se ve. */
+            if (std::filesystem::exists(root + EMUMMC_DIR)) {
+                std::string value;
+                const bool hidden = !findIniValue(readFile(root + EXOSPHERE_INI), "blank_prodinfo_emummc", value) ||
+                                    value == "1";
+                if (hidden) {
+                    checks.push_back({NEXTENDO_CHECK, Status::Warning,
+                                      "Los hosts ya van a Nextendo, pero el número de serie sigue oculto y sus "
+                                      "servidores no van a reconocer la consola. Reinstala Prelude desde la app "
+                                      "y vuelve a activar Nextendo"});
+                }
+                else {
+                    checks.push_back({NEXTENDO_CHECK, Status::Ok,
+                                      "Va a sus servidores y muestra el número de serie, como necesita"});
+                }
             }
         }
 
@@ -337,6 +406,7 @@ namespace protection {
 
         const bool loopback = (ip >> 24) == 127 || ip == 0;
         rt.dns = loopback ? Runtime::Dns::Blocked : Runtime::Dns::Redirected;
+        rt.dnsAddress = text;
         rt.dnsDetail = std::string(HOST) + " → " + text;
         return rt;
     }
@@ -351,6 +421,13 @@ namespace protection {
     {
         return std::none_of(checks.begin(), checks.end(), [](const Check& c) {
             return c.dnsRelated && c.status == Status::Fail;
+        });
+    }
+
+    bool nextendoIncomplete(const std::vector<Check>& checks)
+    {
+        return std::any_of(checks.begin(), checks.end(), [](const Check& c) {
+            return c.name == NEXTENDO_CHECK && c.status == Status::Warning;
         });
     }
 
