@@ -278,8 +278,13 @@ namespace protection {
         /* Un host que los hosts del pack bloquean y que Atmosphere no bloquea
            por su cuenta (sus reglas por defecto son solo las de telemetria),
            asi que si da 127.0.0.1 es que los hosts de la SD se estan aplicando.
-           Con el MITM puesto la respuesta es local e inmediata. */
-        constexpr const char HOST[] = "ctest.cdn.nintendo.net";
+           Con el MITM puesto la respuesta es local e inmediata.
+
+           No sirve ctest.cdn.nintendo.net: el pack lo manda a proposito al
+           servidor de prueba de conexion de 90DNS para que la consola crea que
+           tiene internet, y eso se leia como que el DNS salia. La cuenta si es
+           algo que Nextendo tiene que redirigir, asi que distingue los modos. */
+        constexpr const char HOST[] = "accounts.nintendo.com";
         addrinfo hints{};
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_STREAM;

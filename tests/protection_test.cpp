@@ -173,7 +173,7 @@ int main()
         write(sd + "/atmosphere/config/system_settings.ini", "[atmosphere]\nenable_dns_mitm = u8!0x0\n");
         Rt rt;
         rt.dns = Rt::Dns::Blocked;
-        rt.dnsDetail = "ctest.cdn.nintendo.net → 127.0.0.1";
+        rt.dnsDetail = "accounts.nintendo.com → 127.0.0.1";
         const auto checks = protection::run(sd, rt);
         expect("ajuste en 0 pero DNS bloqueado de verdad sale en verde", checks, "DNS MITM activado",
                protection::Status::Ok);
@@ -189,7 +189,7 @@ int main()
         const std::string sd = makeSd();
         Rt rt;
         rt.dns = Rt::Dns::Redirected;
-        rt.dnsDetail = "ctest.cdn.nintendo.net → 203.0.113.7";
+        rt.dnsDetail = "accounts.nintendo.com → 203.0.113.7";
         const auto checks = protection::run(sd, rt);
         expect("DNS que sale a internet ES una falla aunque el ajuste diga 1", checks, "DNS MITM activado",
                protection::Status::Fail);
