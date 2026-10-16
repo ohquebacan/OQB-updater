@@ -18,7 +18,9 @@
         "status_protection_ok_sub": "DNS blocking and PRODINFO are in place. Press A for the details.",
         "status_protection_fail_one": "One check failed. Press A to see which one.",
         "status_protection_fail_many": "{} checks failed. Press A to see which ones.",
-        "status_unknown": "Could not read"
+        "status_unknown": "Could not read",
+        "status_protection_nextendo": "Nextendo",
+        "status_protection_nextendo_sub": "Nextendo turns off blocking to reach its servers. This is normal while you use it. Press A for the details."
     },
     "cheats": {
         "installed": "Installed cheats",
@@ -273,7 +275,10 @@
         "warning": "Check",
         "fail": "FAILED",
         "summary_ok": "All protections are active.",
-        "summary_fail": "Some protections are down. The console may reach Nintendo."
+        "summary_fail": "Some protections are down. The console may reach Nintendo.",
+        "nextendo": "Nextendo",
+        "nextendo_detail": "Normal while you use Nextendo. {}",
+        "summary_nextendo": "These protections are off because you are using Nextendo, which needs to reach its servers. This is normal while you use it. If you are not using Nextendo, check it: the console may reach Nintendo."
     },
     "app_update": {
         "entry": "Update app ({} → {})",

@@ -28,6 +28,9 @@ namespace protection {
            ese bloqueo concreto sin tener que reconocer comprobaciones por su
            nombre, que es texto y cambia. */
         bool dnsRelated = false;
+        /* Fallo porque se esta usando Nextendo, que apaga el bloqueo a
+           proposito. Sigue siendo una falla; solo cambia como se explica. */
+        bool byNextendo = false;
     };
 
     /* Lo que solo se sabe con la consola encendida: como resuelve el DNS de
@@ -66,6 +69,9 @@ namespace protection {
 
     // true si alguna comprobacion fallo.
     bool anyFailed(const std::vector<Check>& checks);
+
+    // true si hay fallas y todas son por Nextendo.
+    bool failedOnlyByNextendo(const std::vector<Check>& checks);
 
     /* true si el bloqueo DNS esta activo: el MITM encendido y un fichero de
        hosts que mande lo de Nintendo a ninguna parte.

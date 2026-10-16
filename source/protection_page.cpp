@@ -14,7 +14,9 @@ ProtectionPage::ProtectionPage() : brls::AppletFrame(true, true)
     for (const auto& check : checks) {
         /* El motivo va de descripcion: en una sola linea no cabe y lo que
            importa cuando algo falla es justamente por que fallo. */
-        brls::ListItem* item = new brls::ListItem(check.name, check.detail);
+        brls::ListItem* item = new brls::ListItem(
+            check.name, check.byNextendo ? fmt::format("menus/protection/nextendo_detail"_i18n, check.detail)
+                                         : check.detail);
 
         switch (check.status) {
             case protection::Status::Ok:
@@ -24,7 +26,8 @@ ProtectionPage::ProtectionPage() : brls::AppletFrame(true, true)
                 item->setValue("menus/protection/warning"_i18n);
                 break;
             case protection::Status::Fail:
-                item->setValue("menus/protection/fail"_i18n);
+                item->setValue(check.byNextendo ? "menus/protection/nextendo"_i18n
+                                                : "menus/protection/fail"_i18n);
                 break;
         }
 
@@ -33,8 +36,9 @@ ProtectionPage::ProtectionPage() : brls::AppletFrame(true, true)
 
     this->list->addView(new brls::Label(
         brls::LabelStyle::DESCRIPTION,
-        protection::anyFailed(checks) ? "menus/protection/summary_fail"_i18n
-                                      : "menus/protection/summary_ok"_i18n,
+        protection::failedOnlyByNextendo(checks) ? "menus/protection/summary_nextendo"_i18n
+        : protection::anyFailed(checks)          ? "menus/protection/summary_fail"_i18n
+                                                 : "menus/protection/summary_ok"_i18n,
         true));
 
     this->setContentView(this->list);

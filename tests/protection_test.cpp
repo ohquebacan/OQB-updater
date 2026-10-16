@@ -233,6 +233,62 @@ int main()
         }
     }
 
+    /* Nextendo: Prelude cambia los hosts para mandar lo de Nintendo a sus
+       servidores. Tiene que salir como falla (la consola si sale), pero
+       explicada, y el version check no es cosa suya. */
+    {
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/default.txt",
+              "203.0.113.7 *.nintendo.com\n203.0.113.7 *.nintendo.net\n");
+        write(sd + "/atmosphere/hosts/emummc.txt",
+              "203.0.113.7 *.nintendo.com\n203.0.113.7 *.nintendo.net\n");
+        write(sd + "/atmosphere/config/system_settings.ini", "[atmosphere]\nenable_dns_mitm = u8!0x0\n");
+        Rt rt;
+        rt.dns = Rt::Dns::Redirected;
+        rt.dnsDetail = "accounts.nintendo.com → 203.0.113.7";
+        const auto checks = protection::run(sd, rt);
+        expect("hosts de Nextendo ES una falla", checks, "hosts/default.txt", protection::Status::Fail);
+        const bool all = std::all_of(checks.begin(), checks.end(), [](const protection::Check& c) {
+            return c.status != protection::Status::Fail || c.byNextendo;
+        });
+        if (all && protection::failedOnlyByNextendo(checks) && !protection::dnsBlockingOk(checks))
+            std::cout << "ok     con Nextendo las fallas se explican, pero el bloqueo sigue dandose por caido\n";
+        else {
+            std::cout << "FALLA  con Nextendo las fallas deberian marcarse y seguir contando\n";
+            ++failures;
+        }
+
+        rt.firmware = (23 << 16) | 1;
+        rt.atmosphere = (1 << 16) | (11 << 8);
+        const auto with_old = protection::run(sd, rt);
+        if (!protection::failedOnlyByNextendo(with_old))
+            std::cout << "ok     un Atmosphere viejo no se le atribuye a Nextendo\n";
+        else {
+            std::cout << "FALLA  un Atmosphere viejo no deberia atribuirse a Nextendo\n";
+            ++failures;
+        }
+    }
+    {
+        // El pack OQB manda ctest y conntest a 90DNS: eso no es Nextendo.
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/default.txt",
+              HOSTS_BLOCK + "95.216.149.205 conntest.nintendowifi.net\n95.216.149.205 ctest.cdn.nintendo.net\n");
+        const auto checks = protection::run(sd);
+        expect("la prueba de conexion a 90DNS no cuenta como redireccion", checks, "hosts/default.txt",
+               protection::Status::Ok);
+    }
+    {
+        // Un hosts que no bloquea, sin Nextendo, sigue siendo falla a secas.
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/default.txt", HOSTS_NO_BLOCK);
+        if (!protection::failedOnlyByNextendo(protection::run(sd)))
+            std::cout << "ok     sin redireccion, las fallas no se atribuyen a Nextendo\n";
+        else {
+            std::cout << "FALLA  sin redireccion no deberia atribuirse a Nextendo\n";
+            ++failures;
+        }
+    }
+
     // PRODINFO: con emuNAND presente, apagarlo es una falla.
     {
         const std::string sd = makeSd();

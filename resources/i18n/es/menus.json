@@ -17,7 +17,9 @@
         "status_protection_ok_sub": "El bloqueo DNS y el PRODINFO están puestos. Presiona A para ver el detalle.",
         "status_protection_fail_one": "Falló una comprobación. Presiona A para ver cuál.",
         "status_protection_fail_many": "Fallaron {} comprobaciones. Presiona A para ver cuáles.",
-        "status_unknown": "No se pudo leer"
+        "status_unknown": "No se pudo leer",
+        "status_protection_nextendo": "Nextendo",
+        "status_protection_nextendo_sub": "Nextendo apaga el bloqueo para conectarse a sus servidores. Es normal mientras lo uses. Presiona A para ver el detalle."
     },
     "cheats": {
         "installed": "Trucos instalados",
@@ -294,7 +296,10 @@
         "warning": "Revisar",
         "fail": "FALLA",
         "summary_ok": "Todas las protecciones estan activas.",
-        "summary_fail": "Hay protecciones caidas. La consola puede conectarse a Nintendo."
+        "summary_fail": "Hay protecciones caidas. La consola puede conectarse a Nintendo.",
+        "nextendo": "Por Nextendo",
+        "nextendo_detail": "Normal mientras uses Nextendo. {}",
+        "summary_nextendo": "Estas protecciones están apagadas porque estás usando Nextendo, que necesita conectarse a sus servidores. Es normal mientras lo uses. Si no estás usando Nextendo, revísalo: la consola puede conectarse a Nintendo."
     },
     "app_update": {
         "entry": "Actualizar app ({} → {})",

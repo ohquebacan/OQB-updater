@@ -74,6 +74,9 @@ namespace protection {
             Blocks,
             Absent,
             DoesNotBlock,
+            // Manda lo de Nintendo a un servidor publico: es lo que hace
+            // Nextendo para que la consola hable con sus servidores.
+            Redirects,
         };
 
         HostsResult inspectHostsFile(const std::string& path, std::string& out_detail)
@@ -92,23 +95,37 @@ namespace protection {
             // Contar solo lineas utiles: ni vacias ni comentadas.
             int rules = 0;
             bool blocks_nintendo = false;
+            std::string redirect_ip;
             std::istringstream ss(contents);
             std::string line;
             while (std::getline(ss, line)) {
                 const std::string n = normalize(line);
                 if (n.empty()) continue;
                 ++rules;
+                if (n.find("nintendo") == std::string::npos) continue;
                 // La regla que de verdad importa: cualquier cosa de nintendo
                 // mandada a una direccion que no sale a internet.
-                if (n.find("nintendo") != std::string::npos &&
-                    (n.rfind("127.0.0.1", 0) == 0 || n.rfind("0.0.0.0", 0) == 0)) {
+                if (n.rfind("127.", 0) == 0 || n.rfind("0.0.0.0", 0) == 0) {
                     blocks_nintendo = true;
+                    continue;
+                }
+                /* Mandada a un servidor publico. Las de la prueba de conexion
+                   no cuentan: el pack OQB manda ctest y conntest a 90DNS a
+                   proposito, para que la consola crea que tiene internet. */
+                if (n.find("ctest") != std::string::npos || n.find("conntest") != std::string::npos) continue;
+                if (redirect_ip.empty()) {
+                    std::istringstream fields(line);
+                    fields >> redirect_ip;
                 }
             }
 
             if (rules == 0) {
                 out_detail = "solo tiene comentarios";
                 return HostsResult::DoesNotBlock;
+            }
+            if (!redirect_ip.empty()) {
+                out_detail = "manda lo de nintendo a " + redirect_ip;
+                return HostsResult::Redirects;
             }
             if (!blocks_nintendo) {
                 out_detail = std::to_string(rules) + " reglas, pero ninguna bloquea nintendo";
@@ -146,7 +163,7 @@ namespace protection {
         }
         else if (rt.dns == Runtime::Dns::Redirected) {
             checks.push_back({"DNS MITM activado", Status::Fail,
-                              "probado: " + rt.dnsDetail + ", sale a internet. En modo Nextendo es lo esperado",
+                              "probado: " + rt.dnsDetail + ", sale a internet",
                               true});
         }
         /* Sin prueba (o sin respuesta, que pasa sin MITM y sin red) queda el
@@ -198,9 +215,12 @@ namespace protection {
               default.txt es el que tiene que bloquear siempre, y los otros dos
               solo importan cuando existen: entonces reemplazan a default.txt y
               son ellos los que deciden. */
+        bool redirected = rt.dns == Runtime::Dns::Redirected;
+
         std::string default_detail;
-        const bool default_blocks =
-            inspectHostsFile(root + HOSTS_DIR + "default.txt", default_detail) == HostsResult::Blocks;
+        const HostsResult default_result = inspectHostsFile(root + HOSTS_DIR + "default.txt", default_detail);
+        const bool default_blocks = default_result == HostsResult::Blocks;
+        redirected |= default_result == HostsResult::Redirects;
         checks.push_back({"hosts/default.txt", default_blocks ? Status::Ok : Status::Fail, default_detail, true});
 
         for (const char* name : {"emummc.txt", "sysmmc.txt"}) {
@@ -221,6 +241,9 @@ namespace protection {
                                       true});
                     break;
 
+                case HostsResult::Redirects:
+                    redirected = true;
+                    [[fallthrough]];
                 case HostsResult::DoesNotBlock:
                     // El caso peligroso: existe, asi que deja fuera a
                     // default.txt, y no bloquea.
@@ -255,6 +278,18 @@ namespace protection {
                         checks.push_back({label, Status::Ok, std::string(key) + " = 1"});
                     }
                 }
+            }
+        }
+
+        /* Con Nextendo las protecciones se caen a proposito: Prelude cambia los
+           hosts para que la consola hable con sus servidores. Se marcan para
+           explicarlo en vez de alarmar, pero siguen siendo fallas: la consola
+           de verdad esta saliendo, y quien pregunte por el bloqueo (la hora del
+           sistema) tiene que saberlo. La version de Atmosphere no es cosa de
+           Nextendo, asi que esa no se marca. */
+        if (redirected) {
+            for (auto& c : checks) {
+                if (c.status == Status::Fail && c.name != "Bloqueo DNS en este firmware") c.byNextendo = true;
             }
         }
 
@@ -317,6 +352,13 @@ namespace protection {
         return std::none_of(checks.begin(), checks.end(), [](const Check& c) {
             return c.dnsRelated && c.status == Status::Fail;
         });
+    }
+
+    bool failedOnlyByNextendo(const std::vector<Check>& checks)
+    {
+        return anyFailed(checks) && std::all_of(checks.begin(), checks.end(), [](const Check& c) {
+                   return c.status != Status::Fail || c.byNextendo;
+               });
     }
 
     bool anyFailed(const std::vector<Check>& checks)

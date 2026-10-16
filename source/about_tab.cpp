@@ -112,12 +112,15 @@ void AboutTab::addStatusPanel(const std::string& tag)
                                               return c.status == protection::Status::Fail;
                                           });
 
+    const bool nextendo = protection::failedOnlyByNextendo(checks);
     brls::ListItem* prot = row("menus/about/status_protection"_i18n,
-                               failed ? "menus/about/status_protection_fail"_i18n
-                                      : "menus/about/status_protection_ok"_i18n);
+                               nextendo ? "menus/about/status_protection_nextendo"_i18n
+                               : failed ? "menus/about/status_protection_fail"_i18n
+                                        : "menus/about/status_protection_ok"_i18n);
     // Una comprobacion y varias no se dicen igual, asi que son dos textos en vez
     // de uno con un numero encajado a la fuerza.
-    prot->setSubLabel(!failed ? "menus/about/status_protection_ok_sub"_i18n
+    prot->setSubLabel(!failed   ? "menus/about/status_protection_ok_sub"_i18n
+                      : nextendo ? "menus/about/status_protection_nextendo_sub"_i18n
                       : failures == 1
                           ? "menus/about/status_protection_fail_one"_i18n
                           : fmt::format("menus/about/status_protection_fail_many"_i18n, failures));
