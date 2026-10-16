@@ -9,7 +9,7 @@ ProtectionPage::ProtectionPage() : brls::AppletFrame(true, true)
 {
     this->list = new brls::List();
 
-    const auto checks = protection::run();
+    const auto checks = protection::runOnConsole();
 
     for (const auto& check : checks) {
         /* El motivo va de descripcion: en una sola linea no cabe y lo que

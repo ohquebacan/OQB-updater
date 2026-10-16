@@ -239,7 +239,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
            salgan es el bloqueo DNS. Asi que antes de activarlo se comprueba que
            ese bloqueo este puesto, en vez de darlo por hecho. Para apagarlo no
            hace falta: apagarlo solo quita intentos. */
-        if (turningOn && !protection::dnsBlockingOk(protection::run())) {
+        if (turningOn && !protection::dnsBlockingOk(protection::runOnConsole())) {
             brls::Dialog* warn = new brls::Dialog("menus/time/system_sync_unprotected"_i18n);
             warn->addButton("menus/time/system_sync_anyway"_i18n, [warn, applyAndReport](brls::View* v) {
                 warn->close(applyAndReport);

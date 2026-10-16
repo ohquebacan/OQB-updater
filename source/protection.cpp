@@ -8,6 +8,14 @@
 
 #include "constants.hpp"
 
+#ifdef __SWITCH__
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <switch.h>
+#endif
+
 namespace protection {
 
     namespace {
@@ -111,16 +119,39 @@ namespace protection {
             return HostsResult::Blocks;
         }
 
+        std::string versionText(uint32_t v)
+        {
+            return std::to_string((v >> 16) & 0xFF) + "." + std::to_string((v >> 8) & 0xFF) + "." +
+                   std::to_string(v & 0xFF);
+        }
+
+        constexpr uint32_t version(uint32_t major, uint32_t minor, uint32_t micro)
+        {
+            return (major << 16) | (minor << 8) | micro;
+        }
+
     }  // namespace
 
-    std::vector<Check> run(const std::string& root)
+    std::vector<Check> run(const std::string& root, const Runtime& rt)
     {
         std::vector<Check> checks;
 
-        /* 1. El interruptor general. Si falta, se depende del valor por defecto
-              de Atmosphere, y eso ya nos dejo sin bloqueo una vez: Prelude lo
-              pone en 0 al salir del modo Nintendo y no lo revierte. */
-        {
+        /* 1. El MITM, probado de verdad cuando se puede. Leer el ajuste no
+              basta: Prelude lo deja en 0 al volver del modo Nextendo, y el
+              Atmosphere del pack OQB lo ignora y deja el MITM siempre puesto,
+              asi que el ajuste en 0 no dice nada sobre si se bloquea o no.
+              Preguntarle al DNS por un host de Nintendo si lo dice. */
+        if (rt.dns == Runtime::Dns::Blocked) {
+            checks.push_back({"DNS MITM activado", Status::Ok, "probado: " + rt.dnsDetail, true});
+        }
+        else if (rt.dns == Runtime::Dns::Redirected) {
+            checks.push_back({"DNS MITM activado", Status::Fail,
+                              "probado: " + rt.dnsDetail + ", sale a internet. En modo Nextendo es lo esperado",
+                              true});
+        }
+        /* Sin prueba (o sin respuesta, que pasa sin MITM y sin red) queda el
+           ajuste. Si falta, se depende del valor por defecto de Atmosphere. */
+        else {
             const std::string ini = readFile(root + SYSTEM_SETTINGS);
             std::string value;
             if (ini.empty()) {
@@ -135,6 +166,30 @@ namespace protection {
             }
             else {
                 checks.push_back({"DNS MITM activado", Status::Ok, "enable_dns_mitm = " + value, true});
+            }
+        }
+
+        /* 1b. Que el Atmosphere sepa bloquear en este firmware. Desde 23.0 los
+               modulos del sistema resuelven por otro camino que el MITM no
+               cubria: la prueba de arriba sale bien (la app usa el camino
+               viejo) mientras la consola habla con Nintendo igual. Solo se
+               puede saber por la version, y no del todo: 1.12.0 oficial no
+               trae el arreglo, pero las compilaciones de borntohonk y las de
+               prueba OQB con la misma version si. Por eso 1.12.0 es aviso. */
+        if (rt.firmware != 0 && rt.atmosphere != 0 && rt.firmware >= version(23, 0, 0)) {
+            const std::string what = "Atmosphère " + versionText(rt.atmosphere) + " en firmware " +
+                                     versionText(rt.firmware);
+            if (rt.atmosphere >= version(1, 12, 1)) {
+                checks.push_back({"Bloqueo DNS en este firmware", Status::Ok, what, true});
+            }
+            else if (rt.atmosphere == version(1, 12, 0)) {
+                checks.push_back({"Bloqueo DNS en este firmware", Status::Warning,
+                                  what + ": puede que no bloquee a los módulos del sistema. El pack OQB con 1.12.1 sí lo hace",
+                                  true});
+            }
+            else {
+                checks.push_back({"Bloqueo DNS en este firmware", Status::Fail,
+                                  what + ": no bloquea a los módulos del sistema. Actualiza el pack", true});
             }
         }
 
@@ -205,6 +260,52 @@ namespace protection {
 
         return checks;
     }
+
+#ifdef __SWITCH__
+    Runtime probeRuntime()
+    {
+        Runtime rt;
+
+        // hosversionGet ya viene empaquetado igual que Runtime::firmware.
+        rt.firmware = hosversionGet();
+
+        // 65000 es el item de configuracion de Atmosphere con su version.
+        u64 ams = 0;
+        if (R_SUCCEEDED(splGetConfig(static_cast<SplConfigItem>(65000), &ams))) {
+            rt.atmosphere = version((ams >> 56) & 0xFF, (ams >> 48) & 0xFF, (ams >> 40) & 0xFF);
+        }
+
+        /* Un host que los hosts del pack bloquean y que Atmosphere no bloquea
+           por su cuenta (sus reglas por defecto son solo las de telemetria),
+           asi que si da 127.0.0.1 es que los hosts de la SD se estan aplicando.
+           Con el MITM puesto la respuesta es local e inmediata. */
+        constexpr const char HOST[] = "ctest.cdn.nintendo.net";
+        addrinfo hints{};
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        addrinfo* res = nullptr;
+        if (getaddrinfo(HOST, nullptr, &hints, &res) != 0 || res == nullptr) {
+            rt.dns = Runtime::Dns::Unresolved;
+            return rt;
+        }
+
+        const auto* sin = reinterpret_cast<const sockaddr_in*>(res->ai_addr);
+        const uint32_t ip = ntohl(sin->sin_addr.s_addr);
+        char text[INET_ADDRSTRLEN] = {};
+        inet_ntop(AF_INET, &sin->sin_addr, text, sizeof(text));
+        freeaddrinfo(res);
+
+        const bool loopback = (ip >> 24) == 127 || ip == 0;
+        rt.dns = loopback ? Runtime::Dns::Blocked : Runtime::Dns::Redirected;
+        rt.dnsDetail = std::string(HOST) + " → " + text;
+        return rt;
+    }
+
+    std::vector<Check> runOnConsole()
+    {
+        return run("", probeRuntime());
+    }
+#endif
 
     bool dnsBlockingOk(const std::vector<Check>& checks)
     {

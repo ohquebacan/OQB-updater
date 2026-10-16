@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -29,13 +30,39 @@ namespace protection {
         bool dnsRelated = false;
     };
 
+    /* Lo que solo se sabe con la consola encendida: como resuelve el DNS de
+       verdad y que versiones estan corriendo. Va aparte de los ficheros para
+       que las pruebas puedan fingirlo igual que fingen la SD. */
+    struct Runtime
+    {
+        enum class Dns
+        {
+            NotTested,   // no se probo (las pruebas, o fuera de la consola)
+            Blocked,     // un host de Nintendo resolvio a 127.x o 0.0.0.0
+            Redirected,  // resolvio a una direccion que sale a internet
+            Unresolved,  // no resolvio: sin MITM y sin red no hay forma de saber
+        };
+        Dns dns = Dns::NotTested;
+        std::string dnsDetail;   // el host y la direccion que dio
+        uint32_t firmware = 0;   // (mayor << 16) | (menor << 8) | micro; 0 = no se sabe
+        uint32_t atmosphere = 0; // igual que firmware
+    };
+
     // Ejecuta todas las comprobaciones, en orden de importancia.
     //
     // `root` se antepone a las rutas. En la consola se deja vacio, que es la
     // raiz de la SD; las pruebas le pasan una carpeta temporal con una SD de
     // mentira, porque esta logica decide si avisamos de que la consola esta al
     // descubierto y no deberia verificarse solo leyendola.
-    std::vector<Check> run(const std::string& root = "");
+    std::vector<Check> run(const std::string& root = "", const Runtime& rt = {});
+
+#ifdef __SWITCH__
+    // Prueba el DNS y lee las versiones en la consola.
+    Runtime probeRuntime();
+
+    // run() con lo que se mide en la consola. Es lo que usa la app.
+    std::vector<Check> runOnConsole();
+#endif
 
     // true si alguna comprobacion fallo.
     bool anyFailed(const std::vector<Check>& checks);

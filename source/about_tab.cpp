@@ -105,7 +105,7 @@ void AboutTab::addStatusPanel(const std::string& tag)
        rotar el package3 puede dejar la consola sin bloqueo DNS sin avisar, y
        nadie entra a mirarlo si no se le dice que hay algo que mirar. La fila
        abre el verificador completo. */
-    const std::vector<protection::Check> checks = protection::run();
+    const std::vector<protection::Check> checks = protection::runOnConsole();
     const bool failed = protection::anyFailed(checks);
     const size_t failures = std::count_if(checks.begin(), checks.end(),
                                           [](const protection::Check& c) {

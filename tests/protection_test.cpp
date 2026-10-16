@@ -5,6 +5,7 @@
 
 #include "protection.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -161,6 +162,75 @@ int main()
         write(sd + "/atmosphere/config/system_settings.ini", "[atmosphere]\nenable_dns_mitm = u8!0x0\n");
         const auto checks = protection::run(sd);
         expect("enable_dns_mitm en 0 ES una falla", checks, "DNS MITM activado", protection::Status::Fail);
+    }
+
+    /* La prueba de DNS en la consola manda sobre el ajuste. Es el caso que
+       reporto Emilio: Prelude dejo enable_dns_mitm en 0 al volver de Nextendo,
+       pero el Atmosphere del pack ignora el ajuste y bloquea igual. */
+    using Rt = protection::Runtime;
+    {
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/config/system_settings.ini", "[atmosphere]\nenable_dns_mitm = u8!0x0\n");
+        Rt rt;
+        rt.dns = Rt::Dns::Blocked;
+        rt.dnsDetail = "ctest.cdn.nintendo.net → 127.0.0.1";
+        const auto checks = protection::run(sd, rt);
+        expect("ajuste en 0 pero DNS bloqueado de verdad sale en verde", checks, "DNS MITM activado",
+               protection::Status::Ok);
+        if (protection::dnsBlockingOk(checks))
+            std::cout << "ok     ajuste en 0 con bloqueo probado no frena la hora del sistema\n";
+        else {
+            std::cout << "FALLA  ajuste en 0 con bloqueo probado no deberia frenar la hora del sistema\n";
+            ++failures;
+        }
+    }
+    {
+        // Modo Nextendo: el ajuste en 1, pero los hosts mandan a otro servidor.
+        const std::string sd = makeSd();
+        Rt rt;
+        rt.dns = Rt::Dns::Redirected;
+        rt.dnsDetail = "ctest.cdn.nintendo.net → 203.0.113.7";
+        const auto checks = protection::run(sd, rt);
+        expect("DNS que sale a internet ES una falla aunque el ajuste diga 1", checks, "DNS MITM activado",
+               protection::Status::Fail);
+    }
+    {
+        // Sin respuesta queda el ajuste, como antes.
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/config/system_settings.ini", "[atmosphere]\nenable_dns_mitm = u8!0x0\n");
+        Rt rt;
+        rt.dns = Rt::Dns::Unresolved;
+        const auto checks = protection::run(sd, rt);
+        expect("sin respuesta del DNS, el ajuste en 0 sigue siendo falla", checks, "DNS MITM activado",
+               protection::Status::Fail);
+    }
+
+    // Version de Atmosphere contra firmware.
+    {
+        const std::string sd = makeSd();
+        Rt rt;
+        rt.firmware = (23 << 16) | (0 << 8) | 1;
+        rt.atmosphere = (1 << 16) | (12 << 8) | 1;
+        expect("Atmosphere 1.12.1 en 23.0.1 sale en verde", protection::run(sd, rt),
+               "Bloqueo DNS en este firmware", protection::Status::Ok);
+        rt.atmosphere = (1 << 16) | (12 << 8) | 0;
+        expect("Atmosphere 1.12.0 en 23.0.1 es aviso (no se sabe si trae el arreglo)",
+               protection::run(sd, rt), "Bloqueo DNS en este firmware", protection::Status::Warning);
+        rt.atmosphere = (1 << 16) | (11 << 8) | 1;
+        expect("Atmosphere 1.11.1 en 23.0.1 ES una falla", protection::run(sd, rt),
+               "Bloqueo DNS en este firmware", protection::Status::Fail);
+
+        rt.firmware = (22 << 16) | (5 << 8) | 0;
+        const auto checks = protection::run(sd, rt);
+        const bool present = std::any_of(checks.begin(), checks.end(), [](const protection::Check& c) {
+            return c.name == "Bloqueo DNS en este firmware";
+        });
+        if (!present)
+            std::cout << "ok     en firmware 22.5 no se compara la version\n";
+        else {
+            std::cout << "FALLA  en firmware 22.5 no deberia compararse la version\n";
+            ++failures;
+        }
     }
 
     // PRODINFO: con emuNAND presente, apagarlo es una falla.
