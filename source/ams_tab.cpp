@@ -17,6 +17,22 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
+namespace {
+    /* pack-versions.json trae las fechas como AAAA-MM-DD, que es exacto pero raro
+       de leer: en Latinoamerica se escribe dia/mes/año. El orden lo decide la
+       traduccion (menus/packs/date_format), porque en ingles va mes/dia y fijarlo
+       aqui haria que alguien leyera el 6 de octubre como el 10 de junio.
+       Si la fecha no viene con esa forma no se inventa nada: se muestra tal cual. */
+    std::string fechaLegible(const std::string& iso)
+    {
+        if (iso.size() != 10 || iso[4] != '-' || iso[7] != '-')
+            return iso;
+
+        return fmt::format("menus/packs/date_format"_i18n,
+                           iso.substr(0, 4), iso.substr(5, 2), iso.substr(8, 2));
+    }
+}  // namespace
+
 AmsTab::AmsTab(const nlohmann::ordered_json& nxlinks, const bool erista) : brls::List()
 {
     this->erista = erista;
@@ -99,13 +115,24 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
                     /* Marcado, no solo escrito: en una lista de varios packs el
                        aviso tiene que encontrarse sin leerla entera. */
                     packItem->setWarningValue("menus/packs/update_available"_i18n);
-                    listItem->setSubLabel(fmt::format("menus/packs/installed_date"_i18n, instalada));
+                    listItem->setSubLabel(fmt::format("menus/packs/installed_date"_i18n, fechaLegible(instalada)));
                 }
                 else {
-                    // Sin registro no se dice que este desactualizado: quien ya
-                    // tenia el pack antes de que esto existiera no dejo rastro,
-                    // y avisarle a ciegas seria mentirle la mitad de las veces.
-                    listItem->setValue(fmt::format("menus/packs/updated"_i18n, packDate), true);
+                    /* Aqui caen dos casos que antes decian lo mismo, "Actualizado el
+                       ...", y los clientes lo leian como la fecha en que se actualizo
+                       SU consola:
+
+                       - La app sabe que tienes la ultima: se dice sin mas.
+                       - La app no sabe que tienes, porque nunca instalaste desde
+                         ella: se muestra de que fecha es el pack publicado, sin
+                         afirmar nada de la consola. Tampoco se dice que este
+                         desactualizado: quien ya lo tenia no dejo rastro, y
+                         avisarle a ciegas seria mentirle la mitad de las veces. */
+                    if (instalada == packDate)
+                        listItem->setValue("menus/packs/up_to_date"_i18n, true);
+                    else
+                        listItem->setValue(fmt::format("menus/packs/version_of"_i18n, fechaLegible(packDate)), true);
+
                     if (!packInfo.note.empty())
                         listItem->setSubLabel(packInfo.note);
                 }

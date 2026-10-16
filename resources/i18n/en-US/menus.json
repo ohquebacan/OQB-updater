@@ -335,8 +335,10 @@
         "pc_right_grip": "Pro Controller · Right grip"
     },
     "packs": {
-        "updated": "Updated {}",
+        "up_to_date": "Up to date",
+        "version_of": "Version from {}",
         "update_available": "Update available",
-        "installed_date": "You installed the one from {}"
+        "installed_date": "You installed the one from {}",
+        "date_format": "{1}/{2}/{0}"
     }
 }
