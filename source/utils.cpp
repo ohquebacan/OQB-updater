@@ -164,6 +164,36 @@ namespace util {
         return result;
     }
 
+    /* Borra lo que el pack lista en pack_remove.txt y despues la lista. Solo
+       rutas absolutas dentro de /switch, /config o /atmosphere y sin "..": la
+       lista viene en un zip descargado y no puede tocar nada mas de la SD. Las
+       versiones viejas de la app no la conocen y solo la dejan en la SD. */
+    void removePackLeftovers()
+    {
+        if (!std::filesystem::exists(PACK_REMOVE_TXT))
+            return;
+
+        std::ifstream lista(PACK_REMOVE_TXT);
+        std::string linea;
+        while (std::getline(lista, linea)) {
+            while (!linea.empty() && (linea.back() == '\r' || linea.back() == ' '))
+                linea.pop_back();
+            if (linea.empty() || linea[0] == '#')
+                continue;
+            const bool permitida = (linea.rfind("/switch/", 0) == 0 || linea.rfind("/config/", 0) == 0 ||
+                                    linea.rfind("/atmosphere/", 0) == 0) &&
+                                   linea.find("..") == std::string::npos;
+            if (!permitida) {
+                brls::Logger::error("pack_remove.txt: se ignora {}", linea);
+                continue;
+            }
+            std::error_code ec;
+            std::filesystem::remove_all(linea, ec);
+        }
+        lista.close();
+        std::filesystem::remove(PACK_REMOVE_TXT);
+    }
+
     // false si el archivo descargado no es un zip completo. Quien llama tiene
     // que parar: el error queda anotado para que la pagina lo muestre.
     bool crashIfNotArchive(contentType type)
@@ -281,6 +311,7 @@ namespace util {
                     fs::removeDirContentsExcept(BOOTLOADER_PATH, preservedBoot);
                 }
                 extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
+                removePackLeftovers();
                 break;
             }
             case contentType::apps: {
