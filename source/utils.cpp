@@ -321,6 +321,10 @@ namespace util {
                     preservedBoot.insert(std::string(BOOTLOADER_PATH) + "payloads");
                     fs::removeDirContentsExcept(BOOTLOADER_PATH, preservedBoot);
                 }
+                /* Una lista que haya quedado de antes (un pack copiado a mano no
+                   la procesa) se aplicaria a este pack y podria borrar lo que
+                   acaba de instalar. Solo vale la que traiga este zip. */
+                std::filesystem::remove(PACK_REMOVE_TXT);
                 extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
                 removePackLeftovers();
                 break;
