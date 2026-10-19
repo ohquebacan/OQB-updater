@@ -27,13 +27,15 @@ namespace {
         int lado = 0;
 
     public:
-        explicit QrView(const std::string& texto) : qr(qrcodegen_BUFFER_LEN_MAX)
+        // Va a la izquierda de un BoxLayout horizontal, que le da todo el alto:
+        // por eso fija el ancho y se dibuja cuadrado y centrado en lo que haya.
+        explicit QrView(const std::string& texto, unsigned ancho) : qr(qrcodegen_BUFFER_LEN_MAX)
         {
             std::vector<uint8_t> temp(qrcodegen_BUFFER_LEN_MAX);
             if (qrcodegen_encodeText(texto.c_str(), temp.data(), qr.data(), qrcodegen_Ecc_LOW,
                                      qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true))
                 lado = qrcodegen_getSize(qr.data());
-            this->setHeight(420);
+            this->setWidth(ancho);
         }
 
         void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override
@@ -134,11 +136,13 @@ ClientePage::ClientePage(std::function<void(const cliente::Estado&)> alActivar)
 {
     this->list = new brls::List();
     const cliente::Estado estado = cliente::cargar();
-    if (estado.valido)
+    if (estado.valido) {
         this->construirSoporte(estado);
-    else
+    }
+    else {
         this->construirRegistro(estado);
-    this->setContentView(this->list);
+        this->setContentView(this->list);
+    }
 }
 
 void ClientePage::construirRegistro(const cliente::Estado& estado)
@@ -183,7 +187,6 @@ void ClientePage::construirSoporte(const cliente::Estado& estado)
                                         fmt::format("menus/cliente/es_cliente"_i18n, estado.nombre, fechaLegible(estado.fecha)), true));
 
     const nlohmann::ordered_json datos = datosSoporte(estado);
-    this->list->addView(new QrView(cliente::urlSoporte(datos)));
     this->list->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/cliente/soporte_desc"_i18n, true));
 
     // Lo mismo que lleva el QR, legible, por si la foto sale mal.
@@ -199,4 +202,14 @@ void ClientePage::construirSoporte(const cliente::Estado& estado)
     fila("menus/cliente/ams"_i18n, datos.value("ams", ""));
     fila("menus/cliente/pack"_i18n, datos.value("pack", ""));
     fila("menus/about/status_protection"_i18n, datos.value("prot", ""));
+
+    /* El QR al lado de los datos, no encima: en una lista solo se llega
+       desplazandose a lo que se puede seleccionar, y el QR no se puede, asi
+       que quedaba cortado arriba sin forma de verlo entero. Asi todo cabe en
+       la pantalla. */
+    brls::BoxLayout* pantalla = new brls::BoxLayout(brls::BoxLayoutOrientation::HORIZONTAL);
+    pantalla->setSpacing(20);
+    pantalla->addView(new QrView(cliente::urlSoporte(datos), 400));
+    pantalla->addView(this->list, true);
+    this->setContentView(pantalla);
 }
