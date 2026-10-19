@@ -1,6 +1,10 @@
 #include "pack_version.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <fstream>
+#include <sstream>
+#include <vector>
 
 #include "constants.hpp"
 #include "download.hpp"
@@ -81,6 +85,60 @@ namespace packVersion {
         return entrada->get<std::string>();
     }
 
+    namespace {
+        // Clave del registro con el pack que quedo en la SD. Empieza con "_"
+        // para que nunca coincida con el nombre de un zip; las versiones viejas
+        // de la app la ignoran porque solo buscan su propio pack.
+        constexpr const char CURRENT_KEY[] = "_actual";
+
+        std::string lower(std::string s)
+        {
+            std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+            return s;
+        }
+    }  // namespace
+
+    std::string current()
+    {
+        const nlohmann::ordered_json registro = fs::parseJsonFile(PACK_VERSIONS_PATH);
+        if (!registro.is_object())
+            return "";
+
+        const auto actual = registro.find(CURRENT_KEY);
+        if (actual != registro.end() && actual->is_string())
+            return actual->get<std::string>();
+
+        /* Instalado con una version que no anotaba cual era. Con un solo pack
+           registrado no hay duda. Con varios se mira hekate_ipl.ini: el pack de
+           overclock es el unico que carga hoc.kip, y la instalacion reescribe
+           ese ini, asi que dice cual de los dos se instalo al final. */
+        std::vector<std::string> packs;
+        for (const auto& [clave, valor] : registro.items()) {
+            if (!clave.empty() && clave[0] != '_' && valor.is_string())
+                packs.push_back(clave);
+        }
+        if (packs.size() == 1)
+            return packs[0];
+        if (packs.empty())
+            return "";
+
+        std::ifstream ini(HEKATE_IPL_PATH);
+        std::stringstream contenido;
+        contenido << ini.rdbuf();
+        const bool overclock = lower(contenido.str()).find("kips/hoc.kip") != std::string::npos;
+
+        std::string elegido;
+        for (const auto& clave : packs) {
+            const bool esOverclock = lower(clave).find("-oc-") != std::string::npos;
+            if (esOverclock == overclock) {
+                if (!elegido.empty())
+                    return "";  // mas de uno encaja: mejor no afirmar nada
+                elegido = clave;
+            }
+        }
+        return elegido;
+    }
+
     void recordInstalled(const std::string& key, const std::string& date)
     {
         if (key.empty() || date.empty())
@@ -93,6 +151,8 @@ namespace packVersion {
             registro = nlohmann::ordered_json::object();
 
         registro[key] = date;
+        // En la SD solo cabe un pack: el que se acaba de instalar es el actual.
+        registro[CURRENT_KEY] = key;
         fs::writeJsonToFile(registro, PACK_VERSIONS_PATH);
     }
 

@@ -39,6 +39,11 @@ namespace packVersion {
     // Lo que el usuario tiene instalado, o vacío si nunca instaló desde la app.
     std::string installed(const std::string& key);
 
+    // El pack que esta ahora en la SD, o vacio si no se sabe. Solo ese puede
+    // estar "al dia": tener registrado otro que se instalo antes no significa
+    // tenerlo, porque instalar uno reemplaza al otro.
+    std::string current();
+
     // Se llama al terminar de extraer. Guarda la fecha que estaba publicada en
     // ese momento, no la de hoy: es la del pack que acaba de quedar en la SD.
     void recordInstalled(const std::string& key, const std::string& date);

@@ -110,7 +110,10 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
             const std::string packDate = packInfo.date;
 
             if (!packDate.empty()) {
-                const std::string instalada = packVersion::installed(packKey);
+                /* Solo cuenta lo que se instalo de este pack si es el que esta en
+                   la SD. Antes el normal y el de overclock decian los dos "al
+                   dia" tras instalar uno y luego el otro. */
+                const std::string instalada = packVersion::current() == packKey ? packVersion::installed(packKey) : "";
 
                 if (!instalada.empty() && instalada != packDate) {
                     /* Marcado, no solo escrito: en una lista de varios packs el
@@ -125,7 +128,9 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
 
                        - La app sabe que tienes la ultima: se dice sin mas.
                        - La app no sabe que tienes, porque nunca instalaste desde
-                         ella: se muestra de que fecha es el pack publicado, sin
+                         ella, o lo que tienes en la SD es otro pack (el normal
+                         en vez del de overclock, o al reves): se muestra de que
+                         fecha es el pack publicado, sin
                          afirmar nada de la consola. Tampoco se dice que este
                          desactualizado: quien ya lo tenia no dejo rastro, y
                          avisarle a ciegas seria mentirle la mitad de las veces. */

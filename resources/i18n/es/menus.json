@@ -364,7 +364,7 @@
         "pc_right_grip": "Pro Controller · Grip derecho"
     },
     "packs": {
-        "up_to_date": "Estás al día",
+        "up_to_date": "Instalado · al día",
         "version_of": "Versión del {}",
         "update_available": "Hay actualización",
         "installed_date": "Instalaste la del {}",
