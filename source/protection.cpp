@@ -24,6 +24,8 @@ namespace protection {
         constexpr const char SYSTEM_SETTINGS[] = "/atmosphere/config/system_settings.ini";
         constexpr const char EXOSPHERE_INI[] = "/exosphere.ini";
         constexpr const char EMUMMC_DIR[] = "/emuMMC/";
+        // Lo pone el modo captura de Prelude (desde 4.0.x) y nada mas.
+        constexpr const char PRELUDE_CAPTURE_PATCHES[] = "/atmosphere/exefs_patches/disable_ca_verification";
 
         /* Los servidores de Nextendo, sacados de Prelude (nextendo.nro): los dos
            que deja elegir (VPS y Local) y uno fijo que usa para algunos hosts.
@@ -320,13 +322,26 @@ namespace protection {
            de verdad esta saliendo, y quien pregunte por el bloqueo (la hora del
            sistema) tiene que saberlo. La version de Atmosphere no es cosa de
            Nextendo, asi que esa no se marca. */
+        /* 5. El modo captura de Prelude: servidores reales de Nintendo, sin
+              verificar certificados y con el numero de serie a la vista. Prelude
+              mismo lo marca como riesgo alto de baneo. No es Nextendo, asi que
+              nunca se explica como tal. */
+        if (std::filesystem::exists(root + PRELUDE_CAPTURE_PATCHES)) {
+            checks.push_back({"Modo captura de Prelude", Status::Fail,
+                              "Está activo: la consola habla con los servidores reales de Nintendo sin verificar "
+                              "certificados. Riesgo alto de baneo. Sal de él en Prelude en cuanto termines",
+                              true});
+            not_nextendo.push_back("Modo captura de Prelude");
+        }
+
         /* El caso al reves: sin Nextendo, pero con el numero de serie a la
            vista. Suele ser un Prelude que no termino de volver a Nintendo, o
            archivos copiados a mano a medias. */
         if (!nextendo) {
             for (auto& c : checks) {
                 if (c.status == Status::Fail && c.name.rfind("PRODINFO", 0) == 0) {
-                    c.detail += ". Si usaste Nextendo, vuelve a los servidores de Nintendo en Prelude. Si no, "
+                    c.detail += ". Si usaste Nextendo, Prelude pregunta al volver a Nintendo: si elegiste "
+                                "\"Mantener real\", es por eso; vuelve a Prelude y elige \"Blanquear\". Si no, "
                                 "puede que el pack se haya copiado desde la computadora sin reemplazar los "
                                 "archivos anteriores: reinstálalo desde la app, en Actualizar Atmosphère, que "
                                 "reemplaza todo como debe";
