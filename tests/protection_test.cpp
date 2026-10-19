@@ -341,7 +341,7 @@ int main()
     {
         // Modo captura de Prelude: falla propia, nunca "por Nextendo".
         const std::string sd = makeSd();
-        std::filesystem::create_directories(sd + "/atmosphere/exefs_patches/disable_ca_verification");
+        write(sd + "/switch/prelude_capture_mode.flag", "capture");
         write(sd + "/atmosphere/hosts/emummc.txt", "51.178.29.194 *.nintendo.com\n");
         const auto checks = protection::run(sd);
         expect("modo captura de Prelude ES una falla", checks, "Modo captura de Prelude", protection::Status::Fail);
@@ -350,6 +350,22 @@ int main()
             std::cout << "ok     el modo captura no se explica como Nextendo y frena la hora del sistema\n";
         else {
             std::cout << "FALLA  el modo captura no deberia explicarse como Nextendo\n";
+            ++failures;
+        }
+    }
+
+    {
+        // Los parches de CA sueltos (de otros usos) no son el modo captura.
+        const std::string sd = makeSd();
+        std::filesystem::create_directories(sd + "/atmosphere/exefs_patches/disable_ca_verification");
+        const auto checks = protection::run(sd);
+        const bool present = std::any_of(checks.begin(), checks.end(), [](const protection::Check& c) {
+            return c.name == "Modo captura de Prelude";
+        });
+        if (!present && !protection::anyFailed(checks))
+            std::cout << "ok     la carpeta disable_ca_verification sola no es el modo captura\n";
+        else {
+            std::cout << "FALLA  la carpeta disable_ca_verification sola no deberia dar falla\n";
             ++failures;
         }
     }
