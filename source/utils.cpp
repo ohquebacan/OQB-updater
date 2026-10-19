@@ -187,8 +187,19 @@ namespace util {
                 brls::Logger::error("pack_remove.txt: se ignora {}", linea);
                 continue;
             }
+            /* Lo mismo que usa removeDirContentsExcept, que ya esta probado en
+               la consola. remove_all no sirve aca: en la Switch no borraba los
+               archivos sueltos (las carpetas si) y el error quedaba en ec. */
             std::error_code ec;
-            std::filesystem::remove_all(linea, ec);
+            if (std::filesystem::is_directory(linea, ec)) {
+                if (!fs::removeDir(linea))
+                    brls::Logger::error("pack_remove.txt: no se pudo borrar {}", linea);
+            }
+            else if (std::filesystem::exists(linea, ec)) {
+                std::filesystem::remove(linea, ec);
+                if (ec)
+                    brls::Logger::error("pack_remove.txt: no se pudo borrar {}: {}", linea, ec.message());
+            }
         }
         lista.close();
         std::filesystem::remove(PACK_REMOVE_TXT);
