@@ -127,6 +127,7 @@ constexpr const char HIDE_TABS_JSON[] = "/config/aio-switch-updater/hide_tabs.js
 constexpr const char COPY_FILES_TXT[] = "/config/aio-switch-updater/copy_files.txt";
 // Lista que puede traer un pack con lo que hay que borrar al instalarlo: lo que
 // dejo otro pack y este reemplaza (sys-clk cuando se instala el de overclock).
+constexpr const char CLIENTE_PATH[] = "/config/oqb/cliente.json";
 constexpr const char CRASH_REPORTS_PATH[] = "/atmosphere/crash_reports";
 constexpr const char PACK_REMOVE_TXT[] = "/config/aio-switch-updater/pack_remove.txt";
 constexpr const char LANGUAGE_JSON[] = "/config/aio-switch-updater/language.json";

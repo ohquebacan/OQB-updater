@@ -16,10 +16,10 @@ include $(DEVKITPRO)/libnx/switch_rules
 # DATA is a list of directories containing data files
 # INCLUDES is a list of directories containing header files
 BUILD		:=	build
-SOURCES		:=	source source/forwarder
+SOURCES		:=	source source/forwarder source/vendor
 RESOURCES	:=	resources
 DATA		:=	data
-INCLUDES	:=	include /lib/borealis/library/include/borealis/extern/nlohmann
+INCLUDES	:=	include include/vendor /lib/borealis/library/include/borealis/extern/nlohmann
 APP_TITLE	:=	All in One OQB Updater
 APP_AUTHOR	:=	OHQUEBACAN
 APP_VERSION :=	2.1

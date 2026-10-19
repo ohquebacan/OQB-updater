@@ -10,31 +10,27 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
-namespace {
+/* Los juegos y los forwarders estan instalados como titulos, asi que el
+   sistema sabe su nombre; para los programas del sistema que mas fallan se
+   pone a mano. Si no hay nada, el modulo donde fallo ("tinfoil") dice mas que
+   el id. */
+std::string crashProgramName(const crash::Group& g)
+{
+    if (g.programId == "0100000000001000") return "menus/diagnostics/name_home"_i18n;
+    if (g.programId == "010000000000100d") return "menus/diagnostics/name_hbl"_i18n;
+    if (g.processName == "ovlloader") return "menus/diagnostics/name_overlays"_i18n;
 
-    /* El nombre que reconoce el usuario. Los juegos y los forwarders estan
-       instalados como titulos, asi que el sistema lo sabe; para los
-       programas del sistema que mas fallan se pone a mano. Si no hay nada, el
-       modulo donde fallo ("tinfoil") dice mas que el id. */
-    std::string programName(const crash::Group& g)
-    {
-        if (g.programId == "0100000000001000") return "menus/diagnostics/name_home"_i18n;
-        if (g.programId == "010000000000100d") return "menus/diagnostics/name_hbl"_i18n;
-        if (g.processName == "ovlloader") return "menus/diagnostics/name_overlays"_i18n;
+    const u64 tid = std::strtoull(g.programId.c_str(), nullptr, 16);
+    auto control = std::make_unique<NsApplicationControlData>();
+    u64 size = 0;
+    NacpLanguageEntry* entry = nullptr;
+    if (R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, control.get(), sizeof(NsApplicationControlData), &size)) &&
+        size >= sizeof(control->nacp) && R_SUCCEEDED(nacpGetLanguageEntry(&control->nacp, &entry)) && entry && entry->name[0])
+        return entry->name;
 
-        const u64 tid = std::strtoull(g.programId.c_str(), nullptr, 16);
-        auto control = std::make_unique<NsApplicationControlData>();
-        u64 size = 0;
-        NacpLanguageEntry* entry = nullptr;
-        if (R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, control.get(), sizeof(NsApplicationControlData), &size)) &&
-            size >= sizeof(control->nacp) && R_SUCCEEDED(nacpGetLanguageEntry(&control->nacp, &entry)) && entry && entry->name[0])
-            return entry->name;
-
-        if (!g.module.empty()) return g.module;
-        return g.programId;
-    }
-
-}  // namespace
+    if (!g.module.empty()) return g.module;
+    return g.programId;
+}
 
 DiagnosticsPage::DiagnosticsPage() : brls::AppletFrame(true, true)
 {
@@ -67,7 +63,7 @@ void DiagnosticsPage::build()
         const std::string causa = crash::hint(g);
         if (!causa.empty()) detalle += "\n" + causa;
 
-        brls::ListItem* item = new brls::ListItem(programName(g), detalle);
+        brls::ListItem* item = new brls::ListItem(crashProgramName(g), detalle);
         item->setValue(g.count == 1 ? "menus/diagnostics/once"_i18n : fmt::format("menus/diagnostics/times"_i18n, g.count));
         this->list->addView(item);
     }

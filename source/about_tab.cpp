@@ -11,6 +11,8 @@
 #include "fs.hpp"
 #include "protection.hpp"
 #include "protection_page.hpp"
+#include "cliente.hpp"
+#include "cliente_page.hpp"
 #include "utils.hpp"
 
 namespace i18n = brls::i18n;
@@ -131,6 +133,24 @@ void AboutTab::addStatusPanel(const std::string& tag)
                                "menus/tools/protection_desc"_i18n, "");
     });
     this->addView(prot);
+
+    /* Cliente OQB. A cualquiera se le muestra como registrarse; el codigo de
+       soporte solo aparece con un certificado firmado por OQB para esta
+       consola. */
+    const cliente::Estado estado = cliente::cargar();
+    brls::ListItem* clienteRow = row("menus/cliente/titulo"_i18n,
+                                     estado.valido ? "menus/cliente/registrado"_i18n : "menus/cliente/no_registrado"_i18n,
+                                     !estado.valido);
+    clienteRow->setSubLabel(estado.valido ? fmt::format("menus/cliente/registrado_sub"_i18n, estado.nombre)
+                                          : "menus/cliente/no_registrado_sub"_i18n);
+    clienteRow->getClickEvent()->subscribe([clienteRow](brls::View* view) {
+        brls::PopupFrame::open("menus/cliente/titulo"_i18n, new ClientePage([clienteRow](const cliente::Estado& e) {
+                                   clienteRow->setValue("menus/cliente/registrado"_i18n);
+                                   clienteRow->setSubLabel(fmt::format("menus/cliente/registrado_sub"_i18n, e.nombre));
+                               }),
+                               "", "");
+    });
+    this->addView(clienteRow);
 }
 
 void AboutTab::addAppInfo()

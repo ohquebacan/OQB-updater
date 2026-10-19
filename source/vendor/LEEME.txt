@@ -1,0 +1,3 @@
+Codigo de terceros, sin modificar:
+- monocypher.c, monocypher-ed25519.c (+ headers en include/vendor): Monocypher 4.0.2, BSD-2 / CC-0 (LICENCIA-monocypher.md). Solo se usa crypto_ed25519_check.
+- qrcodegen.c (+ header): QR Code generator 1.8.0 de Project Nayuki, MIT (aviso en el propio archivo).

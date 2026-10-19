@@ -364,5 +364,28 @@
         "clear_desc": "Frees space. New errors are recorded again.",
         "clear_confirm": "Delete all error reports? Your games and data are not affected.",
         "cleared": "{} files deleted"
+    },
+    "cliente": {
+        "titulo": "OQB customer",
+        "registrado": "Registered",
+        "no_registrado": "Not registered",
+        "registrado_sub": "{}. Press A to see your support code.",
+        "no_registrado_sub": "If you bought or set up your console at OQB, press A to register it.",
+        "no_id": "Could not read this console’s identifier.",
+        "registro_desc": "Send this code to OQB with your name. Once they confirm it is registered, press Activate (online).",
+        "codigo": "This console’s code",
+        "activar": "Activate",
+        "activar_desc": "Downloads and verifies this console’s customer certificate.",
+        "activado": "All set, {}! Your console is registered as an OQB customer.",
+        "no_registrada": "This console is not registered yet. Send the code to OQB and try again once they confirm.",
+        "sin_red": "Could not connect. Check your internet connection and try again.",
+        "invalida": "The published certificate is not valid for this console. Contact OQB.",
+        "es_cliente": "OQB customer: {} · since {}",
+        "soporte_desc": "Scan it with your phone or send OQB a photo: it has everything we need to help you.",
+        "ams": "Atmosphère",
+        "pack": "Installed pack",
+        "prot_ok": "All active",
+        "prot_nextendo": "Off for Nextendo",
+        "prot_fail": "Failing: {}"
     }
 }

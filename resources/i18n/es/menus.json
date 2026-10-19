@@ -385,5 +385,28 @@
         "clear_desc": "Libera espacio. Los errores nuevos se vuelven a registrar.",
         "clear_confirm": "¿Borrar todos los informes de errores? No afecta a tus juegos ni a tus datos.",
         "cleared": "Se borraron {} archivos"
+    },
+    "cliente": {
+        "titulo": "Cliente OQB",
+        "registrado": "Registrado",
+        "no_registrado": "No registrado",
+        "registrado_sub": "{}. Presiona A para ver tu código de soporte.",
+        "no_registrado_sub": "Si compraste o configuraste tu consola en OQB, presiona A para registrarla.",
+        "no_id": "No se pudo leer el identificador de esta consola.",
+        "registro_desc": "Envía este código a OQB junto con tu nombre. Cuando te confirmen que está registrado, presiona Activar (con internet).",
+        "codigo": "Código de esta consola",
+        "activar": "Activar",
+        "activar_desc": "Descarga y verifica el certificado de cliente de esta consola.",
+        "activado": "¡Listo, {}! Tu consola quedó registrada como cliente OQB.",
+        "no_registrada": "Esta consola todavía no está registrada. Envía el código a OQB y vuelve a intentarlo cuando te confirmen.",
+        "sin_red": "No se pudo conectar. Revisa tu conexión a internet y vuelve a intentarlo.",
+        "invalida": "El certificado publicado no es válido para esta consola. Comunícate con OQB.",
+        "es_cliente": "Cliente OQB: {} · desde el {}",
+        "soporte_desc": "Escanéalo con tu celular o envíale una foto a OQB: ahí va todo lo que necesitamos para ayudarte.",
+        "ams": "Atmosphère",
+        "pack": "Pack instalado",
+        "prot_ok": "Todas activas",
+        "prot_nextendo": "Apagadas por Nextendo",
+        "prot_fail": "Fallan: {}"
     }
 }
