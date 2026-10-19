@@ -10,6 +10,7 @@
 #include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
+#include "progress_event.hpp"
 #include "pack_list_item.hpp"
 #include "pack_version.hpp"
 #include "utils.hpp"
@@ -167,8 +168,9 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
             util::extractArchive(this->type);
             /* Se anota la fecha que estaba publicada al empezar, no la de hoy:
                es la del pack que acaba de quedar en la SD. Despues de extraer,
-               para no dar por instalado algo que fallo a medias. */
-            packVersion::recordInstalled(packKey, packDate);
+               y solo si salio bien, para no dar por instalado algo que fallo. */
+            if (ProgressEvent::instance().getStatusCode() <= 399)
+                packVersion::recordInstalled(packKey, packDate);
         }));
     if (hekate) {
         stagedFrame->addStage(

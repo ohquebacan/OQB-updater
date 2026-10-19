@@ -135,9 +135,12 @@ namespace fs {
     bool copyFile(const std::string& from, const std::string& to)
     {
         std::ifstream src(from, std::ios::binary);
+        // Sin origen no se toca el destino: abrirlo lo vaciaria, y en el caso
+        // de payload.bin eso deja la consola sin arrancar.
+        if (!src.good()) return false;
         std::ofstream dst(to, std::ios::binary);
 
-        if (src.good() && dst.good()) {
+        if (dst.good()) {
             dst << src.rdbuf();
             return true;
         }

@@ -331,7 +331,7 @@ namespace download {
         const char* out = output.c_str();
         CURL* curl = curl_easy_init();
         ntwrk_struct_t chunk = {0};
-        long status_code;
+        long status_code = 0;
         time_old = std::chrono::steady_clock::now();
         dlold = 0.0f;
         bool can_download = true;
@@ -373,8 +373,12 @@ namespace download {
                         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
                         curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, download_progress);
                     }
-                    curl_easy_perform(curl);
+                    const CURLcode rc = curl_easy_perform(curl);
                     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
+                    /* Si la transferencia no termino, el servidor pudo haber
+                       respondido 200 igual: la conexion se corto despues. Lo que
+                       quedo es un archivo a medias, y eso no es un exito. */
+                    if (rc != CURLE_OK) status_code = 0;
 
                     if (fp && chunk.offset && can_download)
                         fwrite(chunk.data, 1, chunk.offset, fp);

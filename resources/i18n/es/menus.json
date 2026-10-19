@@ -240,7 +240,9 @@
     "errors": {
         "insufficient_storage": "No hay suficiente espacio disponible en tu tarjeta SD para realizar esta operación.",
         "error_message": "{}\nPor favor, vuelve a intentarlo dentro de un rato. Si el problema persiste abre una incidencia en GitHub.",
-        "mariko_payload_missing": "Para actualizar Atmosphère en Switch parcheadas tu payload debe de llamarse \"payload.bin\" y debe de estar en la raíz de tu tarjeta SD."
+        "mariko_payload_missing": "Para actualizar Atmosphère en Switch parcheadas tu payload debe de llamarse \"payload.bin\" y debe de estar en la raíz de tu tarjeta SD.",
+        "download_failed": "No se pudo descargar: revisa tu conexión a internet (¿modo avión?). No se cambió nada en tu SD.",
+        "incomplete_download": "La descarga llegó incompleta. No se cambió nada en tu SD; vuelve a intentarlo con una conexión estable."
     },
     "worker": {
         "of": "de",

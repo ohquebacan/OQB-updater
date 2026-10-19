@@ -13,6 +13,11 @@ constexpr const char RCM_PAYLOAD_PATH[] = "romfs:/aio_rcm.bin";
 constexpr const char MARIKO_PAYLOAD_PATH[] = "/payload.bin";
 constexpr const char MARIKO_PAYLOAD_PATH_TEMP[] = "/payload.bin.aio";
 
+// Codigos propios para ProgressEvent (por encima de 399, la pagina los muestra
+// como error y no sigue a la etapa siguiente).
+constexpr long STATUS_DOWNLOAD_FAILED = 600;      // sin respuesta o transferencia cortada
+constexpr long STATUS_INCOMPLETE_DOWNLOAD = 601;  // el archivo no es un zip completo
+
 constexpr const char CHANGELOG_URL[] = "https://github.com/HamletDuFromage/aio-switch-updater/releases";
 
 constexpr const char APP_URL[] = "https://github.com/ohquebacan/OQB-updater/releases/latest/download/OQB-updater.zip";

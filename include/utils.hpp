@@ -25,6 +25,13 @@ namespace util {
 
     void clearConsole();
     bool isArchive(const std::string& path);
+
+    /* En Mariko el modchip arranca /payload.bin. Para terminar la instalacion
+       se pone ahi el payload de la app, que al arrancar aplica los .aio y deja
+       en payload.bin lo que haya en payload.bin.aio. Solo se hace si hay un
+       hekate valido para poner detras (existe y cabe en los 128 KB que acepta
+       el modchip); si no, payload.bin no se toca. Devuelve si se hizo. */
+    bool prepareMarikoPayload();
     void downloadArchive(const std::string& url, contentType type);
     void downloadArchive(const std::string& url, contentType type, long& status_code);
     void extractArchive(contentType type, const std::string& version = "");

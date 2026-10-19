@@ -13,6 +13,7 @@
 #include "extract.hpp"
 #include "fs.hpp"
 #include "main_frame.hpp"
+#include <minizip/unzip.h>
 #include "progress_event.hpp"
 #include "reboot_payload.h"
 #include "unistd.h"
@@ -29,11 +30,44 @@ namespace util {
             char zip_signature[4] = {0x50, 0x4B, 0x03, 0x04};  // zip signature header PK\3\4
             char signature[4];
             is.read(signature, 4);
-            if (is.good() && std::equal(std::begin(signature), std::end(signature), std::begin(zip_signature), std::end(zip_signature))) {
-                return true;
+            if (!is.good() || !std::equal(std::begin(signature), std::end(signature), std::begin(zip_signature), std::end(zip_signature))) {
+                return false;
             }
+
+            /* La cabecera sola no basta: una descarga cortada a la mitad empieza
+               igual que una completa. El indice de un zip va al final del
+               archivo, asi que si se puede abrir y tiene entradas, el archivo
+               llego entero. Sin esto, un pack a medias pasaba por bueno, se
+               vaciaba bootloader/ para extraerlo y no se extraia nada. */
+            unzFile zfile = unzOpen(path.c_str());
+            if (!zfile) return false;
+            unz_global_info gi;
+            const bool ok = unzGetGlobalInfo(zfile, &gi) == UNZ_OK && gi.number_entry > 0;
+            unzClose(zfile);
+            return ok;
         }
         return false;
+    }
+
+    bool prepareMarikoPayload()
+    {
+        constexpr std::uintmax_t MaxPayloadSize = 0x20000;  // 128 KB, el limite del modchip
+        const auto valid = [](const char* path) {
+            std::error_code ec;
+            const auto size = std::filesystem::file_size(path, ec);
+            return !ec && size > 0 && size <= MaxPayloadSize;
+        };
+
+        const char* next = valid(UPDATE_BIN_PATH) ? UPDATE_BIN_PATH : valid(REBOOT_PAYLOAD_PATH) ? REBOOT_PAYLOAD_PATH : nullptr;
+        if (next == nullptr) {
+            brls::Logger::error("No hay un payload valido para payload.bin.aio; payload.bin no se toca");
+            return false;
+        }
+        if (!fs::copyFile(next, MARIKO_PAYLOAD_PATH_TEMP) || !valid(MARIKO_PAYLOAD_PATH_TEMP)) {
+            std::filesystem::remove(MARIKO_PAYLOAD_PATH_TEMP);
+            return false;
+        }
+        return fs::copyFile(RCM_PAYLOAD_PATH, MARIKO_PAYLOAD_PATH);
     }
 
     void downloadArchive(const std::string& url, contentType type)
@@ -70,6 +104,10 @@ namespace util {
             default:
                 break;
         }
+        /* 0 es que no hubo respuesta o que se corto a la mitad (sin red, modo
+           avion, wifi que se cae). Antes no contaba como error y se pasaba a
+           extraer lo que hubiera quedado. */
+        if (status_code == 0) status_code = STATUS_DOWNLOAD_FAILED;
         ProgressEvent::instance().setStatusCode(status_code);
     }
 
@@ -126,7 +164,9 @@ namespace util {
         return result;
     }
 
-    void crashIfNotArchive(contentType type)
+    // false si el archivo descargado no es un zip completo. Quien llama tiene
+    // que parar: el error queda anotado para que la pagina lo muestre.
+    bool crashIfNotArchive(contentType type)
     {
         std::string filename;
         switch (type) {
@@ -152,18 +192,23 @@ namespace util {
                 filename = CUSTOM_FILENAME;
                 break;
             default:
-                return;
+                return true;
         }
         if (!isArchive(filename)) {
-            ProgressEvent::instance().setStatusCode(406);
+            ProgressEvent::instance().setStatusCode(STATUS_INCOMPLETE_DOWNLOAD);
             ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            return false;
         }
+        return true;
     }
 
     void extractArchive(contentType type, const std::string& version)
     {
         chdir(ROOT_PATH);
-        crashIfNotArchive(type);
+        /* Antes esto solo anotaba el error y seguia: con un zip vacio (sin
+           conexion) o cortado, el pack vaciaba atmosphere/contents y bootloader/
+           y despues no tenia nada que extraer, y la consola quedaba sin hekate. */
+        if (!crashIfNotArchive(type)) return;
         switch (type) {
             case contentType::cheats: {
                 std::vector<std::string> titles = extract::getInstalledTitlesNs();
@@ -425,6 +470,12 @@ namespace util {
     {
         std::string res;
         switch (status_code) {
+            case STATUS_DOWNLOAD_FAILED:
+                res = "menus/errors/download_failed"_i18n;
+                break;
+            case STATUS_INCOMPLETE_DOWNLOAD:
+                res = "menus/errors/incomplete_download"_i18n;
+                break;
             case 500:
                 res = fmt::format("{0:}: Internal Server Error", status_code);
                 break;
