@@ -23,6 +23,7 @@
 #include "progress_event.hpp"
 #include "protection.hpp"
 #include "protection_page.hpp"
+#include "diagnostics_page.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -111,6 +112,12 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::PopupFrame::open("menus/tools/protection"_i18n, new ProtectionPage(), "menus/tools/protection_desc"_i18n, "");
     });
     protectionCheck->setHeight(LISTITEM_HEIGHT);
+
+    brls::ListItem* diagnostics = new brls::ListItem("menus/tools/diagnostics"_i18n);
+    diagnostics->getClickEvent()->subscribe([](brls::View* view) {
+        brls::PopupFrame::open("menus/tools/diagnostics"_i18n, new DiagnosticsPage(), "menus/tools/diagnostics_desc"_i18n, "");
+    });
+    diagnostics->setHeight(LISTITEM_HEIGHT);
 
     brls::ListItem* cheats = new brls::ListItem("menus/tools/cheats"_i18n);
     cheats->getClickEvent()->subscribe([](brls::View* view) {
@@ -473,6 +480,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     siVisible(juegos, "outdatedtitles", outdatedTitles);
 
     siVisible(consola, "protection", protectionCheck);
+    siVisible(consola, "diagnostics", diagnostics);
     if (erista) siVisible(consola, "rebootpayload", rebootPayload);
     siVisible(consola, "jccolor", JCcolor);
     siVisible(consola, "pccolor", PCcolor);

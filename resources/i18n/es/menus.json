@@ -196,7 +196,9 @@
         "grupo_archivos": "Archivos",
         "grupo_inicio": "Menú HOME",
         "clean_up_nothing": "No había nada que limpiar.",
-        "clean_up_done": "Se liberaron {} en {} elementos.\n\n{}"
+        "clean_up_done": "Se liberaron {} en {} elementos.\n\n{}",
+        "diagnostics": "Diagnóstico de errores",
+        "diagnostics_desc": "Qué programas fallaron, cuándo y por qué"
     },
     "utils": {
         "fw_warning": "Debido al tamaño de los FW, descargar firmwares en modo applet no está soportado. Por favor, ejecuta la aplicación con acceso a toda la RAM.",
@@ -369,5 +371,19 @@
         "update_available": "Hay actualización",
         "installed_date": "Instalaste la del {}",
         "date_format": "{2}/{1}/{0}"
+    },
+    "diagnostics": {
+        "none": "No hay informes de errores. Todo bien.",
+        "summary": "{} errores registrados en {} programas ({:.1f} MB).",
+        "detail": "Último: {} · código {}",
+        "once": "1 vez",
+        "times": "{} veces",
+        "name_home": "Menú HOME",
+        "name_hbl": "Homebrew launcher (álbum)",
+        "name_overlays": "Overlays de Ultrahand",
+        "clear": "Borrar los informes de errores",
+        "clear_desc": "Libera espacio. Los errores nuevos se vuelven a registrar.",
+        "clear_confirm": "¿Borrar todos los informes de errores? No afecta a tus juegos ni a tus datos.",
+        "cleared": "Se borraron {} archivos"
     }
 }

@@ -196,7 +196,9 @@
         "grupo_archivos": "Files",
         "grupo_inicio": "HOME menu",
         "clean_up_nothing": "There was nothing to clean up.",
-        "clean_up_done": "Freed {} across {} items.\n\n{}"
+        "clean_up_done": "Freed {} across {} items.\n\n{}",
+        "diagnostics": "Error diagnostics",
+        "diagnostics_desc": "Which programs crashed, when and why"
     },
     "utils": {
         "fw_warning": "Because of the size of FW archives, downloading firmwares in Applet Mode is not supported. Please launch the app with full RAM access.",
@@ -348,5 +350,19 @@
         "update_available": "Update available",
         "installed_date": "You installed the one from {}",
         "date_format": "{1}/{2}/{0}"
+    },
+    "diagnostics": {
+        "none": "No error reports. All good.",
+        "summary": "{} errors recorded in {} programs ({:.1f} MB).",
+        "detail": "Last: {} · code {}",
+        "once": "once",
+        "times": "{} times",
+        "name_home": "HOME menu",
+        "name_hbl": "Homebrew launcher (album)",
+        "name_overlays": "Ultrahand overlays",
+        "clear": "Delete error reports",
+        "clear_desc": "Frees space. New errors are recorded again.",
+        "clear_confirm": "Delete all error reports? Your games and data are not affected.",
+        "cleared": "{} files deleted"
     }
 }
