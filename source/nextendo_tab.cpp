@@ -3,10 +3,15 @@
 #include <switch.h>
 
 #include <algorithm>
+#include <utility>
+#include <vector>
 #include <cctype>
 #include <ctime>
+#include <filesystem>
+#include <fstream>
 
 #include "app_updates.hpp"
+#include "download.hpp"
 #include "donar_page.hpp"
 #include "pack_list_item.hpp"
 
@@ -87,17 +92,124 @@ namespace {
 
 }  // namespace
 
+namespace {
+    constexpr const char VISTO_PATH[] = "/config/aio-switch-updater/nextendo_visto";
+    int visto = -1;  // -1: todavia no se miro el archivo
+}  // namespace
+
+bool NextendoTab::seen()
+{
+    if (visto < 0) {
+        std::error_code ec;
+        visto = std::filesystem::exists(VISTO_PATH, ec) ? 1 : 0;
+    }
+    return visto == 1;
+}
+
+void NextendoTab::willAppear(bool resetState)
+{
+    if (!seen()) {
+        visto = 1;
+        std::ofstream(VISTO_PATH).put('1');
+    }
+    brls::List::willAppear(resetState);
+}
+
+namespace {
+
+    /* Quien esta jugando ahora: se pregunta a Nextendo al abrirlo (no al
+       arrancar la app), igual que hace CardsNX. Su API da solo el ID de cada
+       juego; los nombres y el estado vienen del catalogo. */
+    void abrirConectados(const nlohmann::ordered_json& datos)
+    {
+        nlohmann::ordered_json res;
+        const std::string url = text(datos, "conectados");
+        if (!url.empty())
+            download::getRequest(url, res);
+        if (!res.is_object() || !res.contains("counts") || !res["counts"].is_object()) {
+            brls::Application::notify("menus/nextendo/online_error"_i18n);
+            return;
+        }
+        const nlohmann::ordered_json juegos = datos.contains("juegos") ? datos["juegos"] : nlohmann::ordered_json::object();
+        auto nombreDe = [&juegos](const std::string& tid) {
+            return juegos.contains(tid) && juegos[tid].is_object() ? text(juegos[tid], "nombre") : "";
+        };
+
+        std::vector<std::pair<int, std::string>> jugando;
+        int total = 0;
+        for (auto it = res["counts"].begin(); it != res["counts"].end(); ++it) {
+            if (!it.value().is_number_integer())
+                continue;
+            std::string tid = it.key();
+            std::transform(tid.begin(), tid.end(), tid.begin(), [](unsigned char c) { return std::tolower(c); });
+            const int n = it.value().get<int>();
+            total += n;
+            if (n > 0)
+                jugando.emplace_back(n, tid);
+        }
+        std::sort(jugando.begin(), jugando.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
+
+        brls::List* l = new brls::List();
+        l->addView(new brls::Header(total == 1 ? "menus/nextendo/online_one"_i18n : fmt::format("menus/nextendo/online_total"_i18n, total)));
+        if (jugando.empty())
+            l->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/online_nobody"_i18n, true));
+        for (const auto& [n, tid] : jugando) {
+            const std::string nombre = nombreDe(tid);
+            PackListItem* item = new PackListItem(nombre.empty() ? tid : nombre);
+            item->setPositiveValue(n == 1 ? "menus/nextendo/players_one"_i18n : fmt::format("menus/nextendo/players"_i18n, n));
+            l->addView(item);
+        }
+
+        // Todos los compatibles, con su estado segun la wiki.
+        l->addView(new brls::Header("menus/nextendo/compatible"_i18n));
+        for (auto it = juegos.begin(); it != juegos.end(); ++it) {
+            if (!it.value().is_object())
+                continue;
+            const std::string estado = text(it.value(), "estado"), requiere = text(it.value(), "requiere");
+            brls::ListItem* item = new brls::ListItem(text(it.value(), "nombre"), "", requiere);
+            if (!estado.empty())
+                item->setValue(estado, true);
+            l->addView(item);
+        }
+
+        brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+        frame->setContentView(l);
+        brls::PopupFrame::open("menus/nextendo/online"_i18n, frame, "menus/nextendo/online_sub"_i18n, "");
+    }
+
+}  // namespace
+
 bool NextendoTab::available(const nlohmann::ordered_json& nxlinks)
 {
     return nxlinks.is_object() && nxlinks.contains("nextendo") && nxlinks["nextendo"].is_object();
 }
 
-NextendoTab::NextendoTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(nxlinks)
+NextendoTab::NextendoTab(const nlohmann::ordered_json& nxlinks, bool activo) : brls::List(), nxlinks(nxlinks), activo(activo)
 {
     const nlohmann::ordered_json& datos = this->nxlinks["nextendo"];
 
+    // Sin el modo activo: primero que es y como empezar, con el video.
+    const std::string presentacion = text(datos, "presentacion");
+    if (!activo && !presentacion.empty()) {
+        this->addView(new brls::Header("menus/nextendo/what_is"_i18n));
+        this->addView(new brls::Label(brls::LabelStyle::REGULAR, presentacion, true));
+        const std::string video = text(datos, "video");
+        const std::string empezar = text(datos, "como_empezar");
+        brls::ListItem* item = new brls::ListItem("menus/nextendo/how_to_start"_i18n);
+        item->getClickEvent()->subscribe([empezar, video](brls::View* view) {
+            abrirDetalle("menus/nextendo/how_to_start"_i18n, empezar, video);
+        });
+        this->addView(item);
+    }
+
     this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/intro"_i18n, true));
     this->addSearch(datos);
+    if (!text(datos, "conectados").empty()) {
+        brls::ListItem* online = new brls::ListItem("menus/nextendo/online"_i18n, "", "menus/nextendo/online_sub"_i18n);
+        const nlohmann::ordered_json copia = datos;
+        online->getClickEvent()->subscribe([copia](brls::View* view) { abrirConectados(copia); });
+        this->addView(online);
+    }
     this->addChecklist(datos);
 
     const auto etapas = datos.find("etapas");
@@ -183,6 +295,16 @@ void NextendoTab::addSearch(const nlohmann::ordered_json& datos)
 void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
 {
     this->addView(new brls::Header("menus/nextendo/checklist"_i18n));
+
+    // El modo en si: lo que el verificador ya sabe.
+    {
+        PackListItem* item = new PackListItem("menus/nextendo/check_mode"_i18n, "", "menus/nextendo/check_mode_sub"_i18n);
+        if (this->activo)
+            item->setPositiveValue("menus/nextendo/active"_i18n);
+        else
+            item->setWarningValue("menus/nextendo/inactive"_i18n);
+        this->addView(item);
+    }
 
     // Firmware: lo dice la consola.
     {

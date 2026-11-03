@@ -20,6 +20,9 @@ private:
     // La pestana Apps, si hay versiones nuevas: se le dibuja encima el aviso.
     brls::View* appsItem = nullptr;
 
+    // La pestana Nextendo mientras nunca se abrio: lleva un punto que invita.
+    brls::View* nextendoItem = nullptr;
+
 public:
     MainFrame();
 

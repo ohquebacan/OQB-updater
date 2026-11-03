@@ -3,7 +3,8 @@
 #include <borealis.hpp>
 #include <json.hpp>
 
-// Seccion "Nextendo": sale solo con la consola en modo Nextendo. Un checklist
+// Seccion "Nextendo": sale siempre, para despertar curiosidad. Sin el modo
+// activo empieza explicando que es y como empezar. Un checklist
 // (lo que la app puede revisar sola y lo que hay que confirmar a mano), que
 // hacer segun donde fallo, los codigos de error con un buscador y las notas.
 //
@@ -14,13 +15,21 @@ class NextendoTab : public brls::List
 {
 private:
     nlohmann::ordered_json nxlinks;
+    bool activo;
 
     void addChecklist(const nlohmann::ordered_json& datos);
     void addSearch(const nlohmann::ordered_json& datos);
 
 public:
-    explicit NextendoTab(const nlohmann::ordered_json& nxlinks);
+    // `activo`: la consola esta en modo Nextendo (lo dice el verificador).
+    NextendoTab(const nlohmann::ordered_json& nxlinks, bool activo);
 
     // Si el catalogo trae la seccion (un pack viejo no la tiene).
     static bool available(const nlohmann::ordered_json& nxlinks);
+
+    /* Si ya se abrio alguna vez. Hasta entonces el menu la marca con un punto;
+       despues no insiste. */
+    static bool seen();
+
+    void willAppear(bool resetState = false) override;
 };

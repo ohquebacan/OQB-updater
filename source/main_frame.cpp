@@ -106,9 +106,11 @@ MainFrame::MainFrame() : TabFrame()
     }
 
     /* Nextendo: solo con la consola en modo Nextendo, que es cuando sirve. */
-    if (!util::getBoolValue(hideStatus, "apps") && NextendoTab::available(nxlinks) &&
-        protection::failedOnlyByNextendo(protection::runOnConsole()))
-        this->addTab("Nextendo", new NextendoTab(nxlinks));
+    if (!util::getBoolValue(hideStatus, "apps") && NextendoTab::available(nxlinks)) {
+        this->addTab("Nextendo", new NextendoTab(nxlinks, protection::failedOnlyByNextendo(protection::runOnConsole())));
+        if (!NextendoTab::seen())
+            this->nextendoItem = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
+    }
 
     /* Mira los dos grupos anteriores, no solo el de descargas: ocultandolas
        todas, estado y ajustes quedarian pegados sin separador. Cada separador
@@ -129,6 +131,27 @@ MainFrame::MainFrame() : TabFrame()
 void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
     brls::TabFrame::draw(vg, x, y, width, height, style, ctx);
+
+    /* Nextendo, mientras no se haya abierto: un punto violeta que respira
+       lento. Otro color y otro ritmo que el aviso verde de las apps, para que
+       se lea como una invitacion y no como algo pendiente. */
+    if (this->nextendoItem && !NextendoTab::seen()) {
+        static const auto inicioN = std::chrono::steady_clock::now();
+        const float t = std::chrono::duration<float>(std::chrono::steady_clock::now() - inicioN).count();
+        const float respiro = 0.5f + 0.5f * std::sin(t * 1.4f);
+        brls::View* item = this->nextendoItem;
+        const float cy = item->getY() + item->getHeight() / 2.0f;
+        const float cx = item->getX() + item->getWidth() - style->Sidebar.Item.padding - 16.0f;
+        nvgBeginPath(vg);
+        nvgCircle(vg, cx, cy, 9.0f + 3.0f * respiro);
+        nvgFillColor(vg, this->a(nvgRGBA(150, 120, 255, (unsigned char)(30 + 40 * respiro))));
+        nvgFill(vg);
+        nvgBeginPath(vg);
+        nvgCircle(vg, cx, cy, 5.0f);
+        nvgFillColor(vg, this->a(nvgRGB(160, 132, 255)));
+        nvgFill(vg);
+    }
+
     if (!this->appsItem)
         return;
 
