@@ -82,16 +82,68 @@ AboutTab::AboutTab(const std::string& tag, const std::string& donationUrl) : brl
     this->addAppInfo();
 }
 
+namespace {
+
+    /* El QR a la izquierda y el texto a su derecha, en una sola fila con su
+       propio margen arriba y abajo: separados, el QR quedaba encima del
+       encabezado. Puede tener el foco, para que la lista baje hasta ella. */
+    class ApoyoView : public brls::View
+    {
+    private:
+        QrCodeView* qr;
+        std::string texto;
+
+    public:
+        explicit ApoyoView(const std::string& url) : qr(new QrCodeView(url)), texto("menus/donar/support_text"_i18n)
+        {
+            this->qr->setParent(this);
+            this->setHeight(260);
+        }
+
+        ~ApoyoView()
+        {
+            delete this->qr;
+        }
+
+        brls::View* getDefaultFocus() override
+        {
+            return this;
+        }
+
+        void layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash) override
+        {
+            const int margen = 24;
+            const int lado = this->height - margen * 2;
+            this->qr->setBoundaries(this->x + margen, this->y + margen, lado, lado);
+        }
+
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override
+        {
+            this->qr->frame(ctx);
+            const int margen = 24;
+            const int lado = height - margen * 2;
+            const float tx = x + margen + lado + 36;
+            nvgFontFaceId(vg, ctx->fontStash->regular);
+            nvgFontSize(vg, style->Label.regularFontSize);
+            nvgTextLineHeight(vg, 1.4f);
+            nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+            nvgFillColor(vg, this->a(ctx->theme->textColor));
+            float caja[4];
+            nvgTextBoxBounds(vg, 0, 0, width - (tx - x) - margen, this->texto.c_str(), nullptr, caja);
+            const float alto = caja[3] - caja[1];
+            nvgBeginPath(vg);
+            nvgTextBox(vg, tx, y + (height - alto) / 2.0f, width - (tx - x) - margen, this->texto.c_str(), nullptr);
+        }
+    };
+
+}  // namespace
+
 void AboutTab::addSupport(const std::string& donationUrl)
 {
     if (donationUrl.empty())
         return;
     this->addView(new brls::Header("menus/donar/support_title"_i18n));
-    this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/donar/support_text"_i18n, true));
-    QrCodeView* qr = new QrCodeView(donationUrl);
-    qr->setHeight(280);
-    qr->setFocusable(true);
-    this->addView(qr);
+    this->addView(new ApoyoView(donationUrl));
 }
 
 void AboutTab::addStatusPanel(const std::string& tag)
