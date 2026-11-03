@@ -12,9 +12,23 @@ class QrCodeView : public brls::View
 private:
     std::vector<uint8_t> qr;
     int size = 0;
+    bool focusable = false;
 
 public:
     explicit QrCodeView(const std::string& text);
+
+    /* En una lista, borealis solo baja hasta la ultima vista que puede tener
+       el foco: lo que hay debajo de ella nunca entra en pantalla. Con foco, el
+       QR es alcanzable y la lista se desplaza hasta mostrarlo entero. */
+    void setFocusable(bool focusable)
+    {
+        this->focusable = focusable;
+    }
+
+    brls::View* getDefaultFocus() override
+    {
+        return this->focusable ? this : nullptr;
+    }
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 };
 

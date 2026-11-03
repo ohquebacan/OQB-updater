@@ -90,6 +90,7 @@ void AboutTab::addSupport(const std::string& donationUrl)
     this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/donar/support_text"_i18n, true));
     QrCodeView* qr = new QrCodeView(donationUrl);
     qr->setHeight(280);
+    qr->setFocusable(true);
     this->addView(qr);
 }
 
@@ -166,6 +167,22 @@ void AboutTab::addStatusPanel(const std::string& tag)
     this->addView(clienteRow);
 }
 
+namespace {
+
+    /* Texto que puede tener el foco: es lo ultimo de la lista, y sin foco
+       borealis no baja hasta el y el descargo queda fuera de la pantalla. */
+    class LabelAlcanzable : public brls::Label
+    {
+    public:
+        using brls::Label::Label;
+        brls::View* getDefaultFocus() override
+        {
+            return this;
+        }
+    };
+
+}  // namespace
+
 void AboutTab::addAppInfo()
 {
     this->addView(new brls::Header("menus/about/disclaimers_title"_i18n));
@@ -177,7 +194,7 @@ void AboutTab::addAppInfo()
     subTitle->setHorizontalAlign(NVG_ALIGN_CENTER);
     this->addView(subTitle);
 
-    brls::Label* links = new brls::Label(
+    brls::Label* links = new LabelAlcanzable(
         brls::LabelStyle::SMALL,
         "menus/about/copyright"_i18n + "\n" + "menus/about/disclaimers"_i18n,
         true);
