@@ -29,6 +29,10 @@ namespace appUpdates {
     // Instalada desde una de nuestras apps y con otra fecha en el catalogo.
     bool hasUpdate(const nlohmann::ordered_json& nxlinks, const nlohmann::ordered_json& installed, const std::string& url);
 
+    // Si la app esta en la SD: su .nro, el de un zip ("nros") o un archivo
+    // propio de un zip sin .nro ("marcas"). Sin datos del catalogo, solo .nro.
+    bool isInstalled(const nlohmann::ordered_json& nxlinks, const std::string& url);
+
     // El registro de la SD, para leerlo una vez por lista.
     nlohmann::ordered_json installed();
 

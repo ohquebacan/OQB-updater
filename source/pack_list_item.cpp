@@ -14,6 +14,13 @@ namespace {
                    : nvgRGB(176, 106, 0);
     }
 
+    NVGcolor colorPositivo()
+    {
+        return brls::Application::getThemeVariant() == brls::ThemeVariant::DARK
+                   ? nvgRGB(52, 213, 131)
+                   : nvgRGB(20, 140, 80);
+    }
+
     // Segundos desde que arranco la app. Compartido, asi varios items pulsan a la par.
     float fase()
     {
@@ -38,6 +45,16 @@ void PackListItem::setWarningValue(const std::string& value)
 
     if (this->valueView)
         this->valueView->setColor(colorAviso());
+}
+
+void PackListItem::setPositiveValue(const std::string& value)
+{
+    this->setValue(value, false, false);
+    this->warning = true;
+    this->positive = true;
+
+    if (this->valueView)
+        this->valueView->setColor(colorPositivo());
 }
 
 void PackListItem::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash)
@@ -89,7 +106,7 @@ void PackListItem::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned h
             /* Un periodo de unos dos segundos y medio: mas rapido parpadea y
                molesta, mas lento no se nota que se mueve. */
             const float pulso = 0.5f + 0.5f * std::sin(fase() * 2.5f);
-            const unsigned char alpha = (unsigned char)(38.0f + 54.0f * pulso);
+            const unsigned char alpha = this->positive ? 60 : (unsigned char)(38.0f + 54.0f * pulso);
 
             const float holguraX = 16.0f;
             const float holguraY = 9.0f;
@@ -102,7 +119,7 @@ void PackListItem::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned h
             const float bw = anchoTexto + holguraX * 2.0f;
             const float bh = altoTexto + holguraY * 2.0f;
 
-            const NVGcolor base = colorAviso();
+            const NVGcolor base = this->positive ? colorPositivo() : colorAviso();
 
             nvgBeginPath(vg);
             nvgRoundedRect(vg, bx, by, bw, bh, bh / 2.0f);

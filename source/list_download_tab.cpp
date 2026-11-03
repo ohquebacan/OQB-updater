@@ -15,6 +15,7 @@
 #include "extract.hpp"
 #include "forwarder.hpp"
 #include "fs.hpp"
+#include "pack_list_item.hpp"
 #include "progress_event.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
@@ -130,14 +131,32 @@ void ListDownloadTab::createList(contentType type)
                     }
                 }
             }
-            listItem = new brls::ListItem(link.first);
-            listItem->setHeight(LISTITEM_HEIGHT);
-            // Marcar las apps que ya están en la SD. Sólo se puede saber para
-            // los .nro: los .zip no dicen dónde terminan sus archivos.
-            if (type == contentType::apps && url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
-                if (std::filesystem::exists(util::resolveNroDestination(url.substr(url.rfind('/') + 1)))) {
-                    listItem->setValue("menus/apps/installed"_i18n, true);
+            /* Una etiqueta del catalogo junto al nombre (firmwares_etiquetas de
+               nx-links.json): {"etiqueta", "nota"}. La nota va en la confirmacion. */
+            std::string etiqueta;
+            if (type == contentType::fw) {
+                const auto etiquetas = this->nxlinks.find("firmwares_etiquetas");
+                if (etiquetas != this->nxlinks.end() && etiquetas->is_object() && etiquetas->contains(title) && (*etiquetas)[title].is_object()) {
+                    const auto& e = (*etiquetas)[title];
+                    if (e.contains("etiqueta") && e["etiqueta"].is_string())
+                        etiqueta = e["etiqueta"].get<std::string>();
+                    if (e.contains("nota") && e["nota"].is_string() && !e["nota"].get<std::string>().empty())
+                        text += "\n\n" + e["nota"].get<std::string>();
                 }
+            }
+            if (!etiqueta.empty()) {
+                PackListItem* item = new PackListItem(link.first);
+                item->setPositiveValue(etiqueta);
+                listItem = item;
+            }
+            else {
+                listItem = new brls::ListItem(link.first);
+            }
+            listItem->setHeight(LISTITEM_HEIGHT);
+            // Marcar las apps que ya están en la SD: su .nro o, para un zip, lo
+            // que el catálogo dice que deja (app-versions.json).
+            if (type == contentType::apps && appUpdates::isInstalled(this->nxlinks, url)) {
+                listItem->setValue("menus/apps/installed"_i18n, true);
             }
             // Sin atenuar, para que se distinga de "Instalada".
             if (nueva) {

@@ -23,6 +23,10 @@ public:
     // El valor que se muestra a la derecha, marcado como aviso.
     void setWarningValue(const std::string& value);
 
+    // El mismo marco, pero en verde y quieto: una buena noticia, no un aviso
+    // (por ejemplo, los firmwares compatibles con Nextendo).
+    void setPositiveValue(const std::string& value);
+
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 
     /* Recoloca el valor. Borealis lo pone a la altura del subtitulo y pegado al
@@ -32,4 +36,5 @@ public:
 
 private:
     bool warning = false;
+    bool positive = false;
 };

@@ -146,6 +146,31 @@ namespace appUpdates {
         return !publicada.empty() && publicada != anotada->get<std::string>();
     }
 
+    bool isInstalled(const nlohmann::ordered_json& nxlinks, const std::string& url)
+    {
+        std::error_code ec;
+        if (url.size() > 4 && url.substr(url.size() - 4) == ".nro")
+            return std::filesystem::exists(util::resolveNroDestination(url.substr(url.rfind('/') + 1)), ec);
+        const nlohmann::ordered_json* app = entry(nxlinks, url);
+        if (!app)
+            return false;
+        const auto nros = app->find("nros");
+        if (nros != app->end() && nros->is_array()) {
+            for (const auto& n : *nros) {
+                if (n.is_object() && std::filesystem::exists(text(n, "ruta"), ec))
+                    return true;
+            }
+        }
+        const auto marcas = app->find("marcas");
+        if (marcas != app->end() && marcas->is_array()) {
+            for (const auto& m : *marcas) {
+                if (m.is_string() && std::filesystem::exists(m.get<std::string>(), ec))
+                    return true;
+            }
+        }
+        return false;
+    }
+
     nlohmann::ordered_json installed()
     {
         nlohmann::ordered_json registro = fs::parseJsonFile(APP_VERSIONS_PATH);
