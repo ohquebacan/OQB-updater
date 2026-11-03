@@ -281,6 +281,10 @@
         "support_text": "If you want to support the project, you can donate by scanning this code with your phone. It is optional and for any amount you like."
     },
     "nextendo": {
+        "see_more": "See more",
+        "confirmed": "Confirmed by you",
+        "done_yes": "I have done it",
+        "done_no": "Not yet",
         "online": "Who is playing now",
         "online_sub": "Players connected to Nextendo right now, by game, and every compatible game.",
         "online_error": "Could not reach Nextendo. Check your internet connection.",
@@ -304,7 +308,6 @@
         "ok": "Done",
         "check": "Check",
         "missing": "Not installed",
-        "manual": "Check it yourself",
         "check_firmware": "Firmware {}",
         "check_firmware_sub": "Compatible with Nextendo: {}.",
         "check_prelude": "Prelude installed and up to date",

@@ -9,9 +9,11 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 
 #include "app_updates.hpp"
 #include "download.hpp"
+#include "fs.hpp"
 #include "donar_page.hpp"
 #include "pack_list_item.hpp"
 
@@ -37,33 +39,62 @@ namespace {
         return out;
     }
 
-    /* Texto que puede tener el foco: sin una vista con foco, borealis no
-       desplaza la lista y un texto largo queda cortado. */
-    class TextoAlcanzable : public brls::Label
-    {
-    public:
-        using brls::Label::Label;
-        brls::View* getDefaultFocus() override
-        {
-            return this;
-        }
-    };
-
-    // Una ventana con un texto y, si hay, el QR de un enlace debajo.
-    void abrirDetalle(const std::string& titulo, const std::string& cuerpo, const std::string& qr = "")
+    /* Una ventana con un texto, el QR de un enlace si hay, y botones al final.
+       Los botones son lo que recibe el foco: asi la lista baja hasta ellos,
+       pasando por todo el texto, sin enmarcar el texto en verde.
+       `alResponder`: si esta, los botones son "Ya lo hice" / "Aun no" y avisan
+       la respuesta; si no, uno solo para volver. */
+    void abrirDetalle(const std::string& titulo, const std::string& cuerpo, const std::string& qr = "",
+                      std::function<void(bool)> alResponder = nullptr)
     {
         brls::List* l = new brls::List();
-        l->addView(new TextoAlcanzable(brls::LabelStyle::REGULAR, cuerpo, true));
+        l->addView(new brls::Label(brls::LabelStyle::REGULAR, cuerpo, true));
         if (!qr.empty()) {
             l->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/scan"_i18n, true));
             QrCodeView* codigo = new QrCodeView(qr);
             codigo->setHeight(300);
-            codigo->setFocusable(true);
             l->addView(codigo);
+        }
+        if (alResponder) {
+            brls::ListItem* si = new brls::ListItem("menus/nextendo/done_yes"_i18n);
+            si->getClickEvent()->subscribe([alResponder](brls::View* view) {
+                alResponder(true);
+                brls::Application::popView();
+            });
+            l->addView(si);
+            brls::ListItem* no = new brls::ListItem("menus/nextendo/done_no"_i18n);
+            no->getClickEvent()->subscribe([alResponder](brls::View* view) {
+                alResponder(false);
+                brls::Application::popView();
+            });
+            l->addView(no);
+        }
+        else {
+            brls::ListItem* volver = new brls::ListItem("menus/common/back"_i18n);
+            volver->getClickEvent()->subscribe([](brls::View* view) { brls::Application::popView(); });
+            l->addView(volver);
         }
         brls::AppletFrame* frame = new brls::AppletFrame(true, true);
         frame->setContentView(l);
         brls::PopupFrame::open(titulo, frame, "", "");
+    }
+
+    // Lo que el usuario confirmo del checklist, por titulo.
+    constexpr const char CONFIRMADOS_PATH[] = "/config/aio-switch-updater/nextendo_checklist.json";
+
+    bool confirmado(const std::string& titulo)
+    {
+        const nlohmann::ordered_json j = fs::parseJsonFile(CONFIRMADOS_PATH);
+        return j.is_object() && j.contains(titulo) && j[titulo].is_boolean() && j[titulo].get<bool>();
+    }
+
+    void guardarConfirmado(const std::string& titulo, bool valor)
+    {
+        nlohmann::ordered_json j = fs::parseJsonFile(CONFIRMADOS_PATH);
+        if (!j.is_object())
+            j = nlohmann::ordered_json::object();
+        j[titulo] = valor;
+        fs::writeJsonToFile(j, CONFIRMADOS_PATH);
     }
 
     std::string vinetas(const std::vector<std::string>& pasos)
@@ -365,9 +396,22 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
     if (checklist != datos.end() && checklist->is_array()) {
         for (const auto& c : *checklist) {
             const std::string titulo = text(c, "titulo"), cuerpo = text(c, "texto"), qr = text(c, "qr");
+            /* "Confirmado por ti" en texto normal, no en la pildora verde de
+               "Listo": lo marca el usuario, no lo comprobo la app. */
             brls::ListItem* item = new brls::ListItem(titulo);
-            item->setValue("menus/nextendo/manual"_i18n, true);
-            item->getClickEvent()->subscribe([titulo, cuerpo, qr](brls::View* view) { abrirDetalle(titulo, cuerpo, qr); });
+            if (confirmado(titulo))
+                item->setValue("menus/nextendo/confirmed"_i18n, false, false);
+            else
+                item->setValue("menus/nextendo/see_more"_i18n, true, false);
+            item->getClickEvent()->subscribe([item, titulo, cuerpo, qr](brls::View* view) {
+                abrirDetalle(titulo, cuerpo, qr, [item, titulo](bool hecho) {
+                    guardarConfirmado(titulo, hecho);
+                    if (hecho)
+                        item->setValue("menus/nextendo/confirmed"_i18n, false, false);
+                    else
+                        item->setValue("menus/nextendo/see_more"_i18n, true, false);
+                });
+            });
             this->addView(item);
         }
     }
