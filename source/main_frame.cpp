@@ -49,11 +49,16 @@ MainFrame::MainFrame() : TabFrame()
         if (nxlinks.is_object())
             nxlinks[appUpdates::NXLINKS_KEY] = appUpdates::fetchPublished();
     }
+    if (nxlinks.is_object() && nxlinks.contains("enlaces") && nxlinks["enlaces"].is_object()) {
+        const auto& enlaces = nxlinks["enlaces"];
+        if (enlaces.contains("donar") && enlaces["donar"].is_string() && !enlaces["donar"].get<std::string>().empty())
+            this->donationUrl = enlaces["donar"].get<std::string>();
+    }
 
     bool erista = util::isErista();
 
     if (!util::getBoolValue(hideStatus, "about"))
-        this->addTab("menus/main/about"_i18n, new AboutTab(tag));
+        this->addTab("menus/main/about"_i18n, new AboutTab(tag, this->donationUrl));
 
     /* Separadores entre grupos. Siete pestanas seguidas se leen como una lista
        plana; partidas en estado, descargas y ajustes se ve de un vistazo que

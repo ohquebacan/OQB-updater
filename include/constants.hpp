@@ -57,6 +57,8 @@ constexpr const char PACK_VERSIONS_URL[] = "https://raw.githubusercontent.com/oh
 constexpr const char PACK_VERSIONS_PATH[] = "/config/aio-switch-updater/pack_versions.json";
 // Lo mismo para las apps del catalogo: URL -> fecha de subida de su archivo.
 // La app de PC/Mac escribe el mismo registro en la SD.
+// Donaciones (el QR de la invitacion). El catalogo puede cambiarlo: enlaces.donar.
+constexpr const char DONATION_URL[] = "https://www.paypal.com/ncp/payment/F8U8BWLLQ7MY6";
 constexpr const char APP_VERSIONS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/app-versions.json";
 constexpr const char APP_VERSIONS_PATH[] = "/config/aio-switch-updater/app_versions.json";
 

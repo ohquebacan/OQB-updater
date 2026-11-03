@@ -13,6 +13,7 @@
 #include "protection_page.hpp"
 #include "cliente.hpp"
 #include "cliente_page.hpp"
+#include "donar_page.hpp"
 #include "utils.hpp"
 
 namespace i18n = brls::i18n;
@@ -74,10 +75,22 @@ namespace {
 
 }  // namespace
 
-AboutTab::AboutTab(const std::string& tag) : brls::List()
+AboutTab::AboutTab(const std::string& tag, const std::string& donationUrl) : brls::List()
 {
     this->addStatusPanel(tag);
+    this->addSupport(donationUrl);
     this->addAppInfo();
+}
+
+void AboutTab::addSupport(const std::string& donationUrl)
+{
+    if (donationUrl.empty())
+        return;
+    this->addView(new brls::Header("menus/donar/support_title"_i18n));
+    this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/donar/support_text"_i18n, true));
+    QrCodeView* qr = new QrCodeView(donationUrl);
+    qr->setHeight(280);
+    this->addView(qr);
 }
 
 void AboutTab::addStatusPanel(const std::string& tag)

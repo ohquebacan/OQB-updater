@@ -265,7 +265,15 @@
         "count": "{} apps",
         "new_version": "New version",
         "new_count": "{} with a new version",
-        "new_version_text": "There is a new version of this app."
+        "new_version_text": "There is a new version of this app.",
+        "group_more": "More"
+    },
+    "donar": {
+        "title": "Buy us a coffee",
+        "text": "OQB Updater is free and will stay free. If it helped you and you want to support the project, scan the code with your phone and give whatever amount you like.\n\nIt is completely optional: you can keep using the app either way.",
+        "later": "Maybe later",
+        "support_title": "Support the project",
+        "support_text": "If you want to support the project, you can donate by scanning this code with your phone. It is optional and for any amount you like."
     },
     "forwarders": {
         "create_title": "Create HOME menu shortcut",

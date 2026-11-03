@@ -1,6 +1,7 @@
 #include "list_download_tab.hpp"
 
 #include <filesystem>
+#include <map>
 #include <fstream>
 #include <string>
 
@@ -74,10 +75,37 @@ void ListDownloadTab::createList(contentType type)
     // El registro de la SD, una vez para toda la lista.
     const nlohmann::ordered_json instaladas = type == contentType::apps ? appUpdates::installed() : nlohmann::ordered_json::object();
 
+    /* Apps que van juntas o son alternativas: un encabezado con su titulo
+       (apps_grupos de nx-links.json). Solo en una categoria y sin busqueda:
+       en los resultados de buscar, los grupos quedarian partidos. */
+    std::map<std::string, std::string> grupoDe;
+    if (type == contentType::apps && !this->jsonKey.empty() && this->filter.empty()) {
+        const auto grupos = this->nxlinks.find("apps_grupos");
+        if (grupos != this->nxlinks.end() && grupos->is_object() && grupos->contains(this->jsonKey) && (*grupos)[this->jsonKey].is_array()) {
+            for (const auto& g : (*grupos)[this->jsonKey]) {
+                if (!g.is_object() || !g.contains("titulo") || !g["titulo"].is_string() || !g.contains("apps") || !g["apps"].is_array())
+                    continue;
+                for (const auto& nombre : g["apps"]) {
+                    if (nombre.is_string())
+                        grupoDe[nombre.get<std::string>()] = g["titulo"].get<std::string>();
+                }
+            }
+        }
+    }
+    std::string grupoActual;
+
     if (links.size()) {
         for (const auto& link : links) {
             const std::string title = link.first;
             const std::string url = link.second;
+            if (!grupoDe.empty()) {
+                const auto g = grupoDe.find(title);
+                const std::string grupo = g != grupoDe.end() ? g->second : "menus/apps/group_more"_i18n;
+                if (grupo != grupoActual) {
+                    this->addView(new brls::Header(grupo));
+                    grupoActual = grupo;
+                }
+            }
             std::string text("menus/common/download"_i18n + link.first);
             const bool nueva = type == contentType::apps && appUpdates::hasUpdate(this->nxlinks, instaladas, url);
             const std::string fecha = type == contentType::apps ? appUpdates::published(this->nxlinks, url) : "";

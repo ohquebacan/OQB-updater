@@ -286,7 +286,15 @@
         "count": "{} apps",
         "new_version": "Versión nueva",
         "new_count": "{} con versión nueva",
-        "new_version_text": "Hay una versión nueva de esta app."
+        "new_version_text": "Hay una versión nueva de esta app.",
+        "group_more": "Más"
+    },
+    "donar": {
+        "title": "Invítanos un café",
+        "text": "OQB Updater es gratis y lo seguirá siendo. Si te ha servido y quieres apoyar el proyecto, escanea el código con tu teléfono y colabora con la cantidad que prefieras.\n\nEs totalmente voluntario: puedes seguir usando la app igual.",
+        "later": "En otra ocasión",
+        "support_title": "Apoya el proyecto",
+        "support_text": "Si quieres apoyar el proyecto, puedes hacer una donación escaneando este código con tu teléfono. Es voluntaria y por la cantidad que prefieras."
     },
     "forwarders": {
         "create_title": "Crear acceso directo en el menú HOME",

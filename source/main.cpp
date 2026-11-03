@@ -8,6 +8,7 @@
 #include "constants.hpp"
 #include "current_cfw.hpp"
 #include "fs.hpp"
+#include "donar_page.hpp"
 #include "main_frame.hpp"
 #include "ntp.hpp"
 #include "oqb_theme.hpp"
@@ -111,6 +112,11 @@ int main(int argc, char* argv[])
            queda debajo sin que se vea. El tag ya lo consulto MainFrame, asi que
            no se pregunta dos veces. */
         appUpdate::showNoticeIfAvailable(mainFrame->getLatestTag());
+
+        /* La invitacion a donar, de vez en cuando. Nunca junto con el aviso de
+           version nueva: una ventana emergente por vez. La apertura se cuenta
+           igual. */
+        donar::showIfDue(appUpdate::isAvailable(mainFrame->getLatestTag()) ? "" : mainFrame->getDonationUrl());
     }
     else {
         brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
