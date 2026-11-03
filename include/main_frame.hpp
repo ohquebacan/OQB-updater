@@ -17,8 +17,13 @@ private:
     // El enlace de donacion: el del catalogo (enlaces.donar), o el de siempre.
     std::string donationUrl = DONATION_URL;
 
+    // La pestana Apps, si hay versiones nuevas: se le dibuja encima el aviso.
+    brls::View* appsItem = nullptr;
+
 public:
     MainFrame();
+
+    void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 
     const std::string& getLatestTag() const
     {

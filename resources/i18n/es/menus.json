@@ -285,7 +285,9 @@
         "sec_todas": "Todas las aplicaciones",
         "count": "{} apps",
         "new_version": "Versión nueva",
-        "new_count": "{} con versión nueva",
+        "new_count": "{} apps con versiones nuevas",
+        "new_count_one": "1 app con versión nueva",
+        "pending_short": "Nuevas",
         "new_version_text": "Hay una versión nueva de esta app.",
         "group_more": "Más"
     },

@@ -1,5 +1,7 @@
 #include "main_frame.hpp"
 
+#include <chrono>
+#include <cmath>
 #include <fstream>
 #include <json.hpp>
 
@@ -96,8 +98,9 @@ MainFrame::MainFrame() : TabFrame()
                     ++nuevas;
             }
         }
-        const std::string nombre = "menus/main/apps"_i18n;
-        this->addTab(nuevas ? fmt::format("{} ({})", nombre, nuevas) : nombre, new AppsTab(nxlinks));
+        this->addTab("menus/main/apps"_i18n, new AppsTab(nxlinks));
+        if (nuevas)
+            this->appsItem = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
     }
 
     /* Mira los dos grupos anteriores, no solo el de descargas: ocultandolas
@@ -114,4 +117,52 @@ MainFrame::MainFrame() : TabFrame()
         this->addTab("menus/tools/language"_i18n, new LanguageTab());
 
     this->registerAction("", brls::Key::B, [this] { return true; });
+}
+
+void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    brls::TabFrame::draw(vg, x, y, width, height, style, ctx);
+    if (!this->appsItem)
+        return;
+
+    /* "Nuevas" a la derecha de Apps, con el mismo halo que pulsa en los packs
+       pero en verde. Una palabra corta en todos los idiomas, y si aun asi no
+       cabe junto al nombre, solo el punto: nunca se corta. */
+    static const auto inicio = std::chrono::steady_clock::now();
+    const float fase = std::chrono::duration<float>(std::chrono::steady_clock::now() - inicio).count();
+    const float pulso = 0.5f + 0.5f * std::sin(fase * 2.5f);
+    const bool oscuro = brls::Application::getThemeVariant() == brls::ThemeVariant::DARK;
+    const NVGcolor verde = oscuro ? nvgRGB(52, 213, 131) : nvgRGB(20, 140, 80);
+
+    brls::View* item = this->appsItem;
+    const float cy = item->getY() + item->getHeight() / 2.0f;
+    const float derecha = item->getX() + item->getWidth() - style->Sidebar.Item.padding - 10.0f;
+
+    nvgFontFaceId(vg, ctx->fontStash->regular);
+    nvgFontSize(vg, style->Sidebar.Item.textSize);
+    const std::string nombre = "menus/main/apps"_i18n;
+    const float finNombre = item->getX() + style->Sidebar.Item.textOffsetX + style->Sidebar.Item.padding + nvgTextBounds(vg, 0, 0, nombre.c_str(), nullptr, nullptr);
+
+    const std::string texto = "menus/apps/pending_short"_i18n;
+    nvgFontSize(vg, 15.0f);
+    const float anchoTexto = nvgTextBounds(vg, 0, 0, texto.c_str(), nullptr, nullptr);
+    const float alto = 26.0f, holgura = 11.0f;
+    const float ancho = anchoTexto + holgura * 2.0f;
+
+    if (derecha - ancho > finNombre + 12.0f) {
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, derecha - ancho, cy - alto / 2.0f, ancho, alto, alto / 2.0f);
+        nvgFillColor(vg, this->a(nvgRGBA(verde.r * 255, verde.g * 255, verde.b * 255, (unsigned char)(38.0f + 54.0f * pulso))));
+        nvgFill(vg);
+        nvgFillColor(vg, this->a(verde));
+        nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+        nvgBeginPath(vg);
+        nvgText(vg, derecha - ancho / 2.0f, cy, texto.c_str(), nullptr);
+    }
+    else {
+        nvgBeginPath(vg);
+        nvgCircle(vg, derecha - 6.0f, cy, 6.0f + 2.0f * pulso);
+        nvgFillColor(vg, this->a(verde));
+        nvgFill(vg);
+    }
 }

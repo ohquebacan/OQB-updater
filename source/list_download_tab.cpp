@@ -1,5 +1,6 @@
 #include "list_download_tab.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <map>
 #include <fstream>
@@ -74,6 +75,13 @@ void ListDownloadTab::createList(contentType type)
 
     // El registro de la SD, una vez para toda la lista.
     const nlohmann::ordered_json instaladas = type == contentType::apps ? appUpdates::installed() : nlohmann::ordered_json::object();
+
+    // En "Todas las aplicaciones", primero las que tienen version nueva.
+    if (type == contentType::apps && this->jsonKey.empty()) {
+        std::stable_partition(links.begin(), links.end(), [this, &instaladas](const auto& link) {
+            return appUpdates::hasUpdate(this->nxlinks, instaladas, link.second);
+        });
+    }
 
     /* Apps que van juntas o son alternativas: un encabezado con su titulo
        (apps_grupos de nx-links.json). Solo en una categoria y sin busqueda:
