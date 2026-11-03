@@ -234,6 +234,9 @@
         "delete_custom_link": "Borrar"
     },
     "firmware": {
+        "offer_app": "¿Quieres instalar también {} para jugar en línea con Nextendo Network? Se descarga junto con el firmware.",
+        "tutorial_title": "Cómo usar Nextendo",
+        "tutorial_text": "Escanea el código con tu teléfono para ver el video tutorial: cómo configurar Nextendo Network y jugar en línea sin cuenta de Nintendo.",
         "launch_daybreak": "¿Quieres ejecutar Daybreak para instalar la actualización de firmware descargada?"
     },
     "net": {

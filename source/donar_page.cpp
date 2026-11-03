@@ -134,6 +134,75 @@ DonarPage::~DonarPage()
     delete this->button;
 }
 
+QrStagePage::QrStagePage(brls::StagedAppletFrame* frame, const std::string& title, const std::string& text, const std::string& url) : frame(frame)
+{
+    this->qr = new QrCodeView(url);
+    this->qr->setParent(this);
+    this->title = new brls::Label(brls::LabelStyle::DIALOG, title, true);
+    this->title->setHorizontalAlign(NVG_ALIGN_LEFT);
+    this->title->setParent(this);
+    this->label = new brls::Label(brls::LabelStyle::REGULAR, text, true);
+    this->label->setHorizontalAlign(NVG_ALIGN_LEFT);
+    this->label->setParent(this);
+    this->button = (new brls::Button(brls::ButtonStyle::PRIMARY))->setLabel("menus/common/continue"_i18n);
+    this->button->setParent(this);
+    this->button->getClickEvent()->subscribe([this](View* view) {
+        if (!this->frame->isLastStage())
+            this->frame->nextStage();
+    });
+}
+
+void QrStagePage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    this->qr->frame(ctx);
+    this->title->frame(ctx);
+    this->label->frame(ctx);
+    this->button->frame(ctx);
+}
+
+brls::View* QrStagePage::getDefaultFocus()
+{
+    return this->button;
+}
+
+void QrStagePage::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash)
+{
+    // Igual que la invitacion a donar: QR a la izquierda, texto a la derecha.
+    const int qrSide = std::min<int>(this->height * 0.5f, 300);
+    const int gap = 50;
+    const int textWidth = std::min<int>(this->width * 0.5f, 560);
+    const int left = this->x + (this->width - (qrSide + gap + textWidth)) / 2;
+    const int area = this->height - style->CrashFrame.buttonHeight * 3;
+
+    this->title->setWidth(textWidth);
+    this->title->invalidate(true);
+    this->label->setWidth(textWidth);
+    this->label->invalidate(true);
+    const int textHeight = this->title->getHeight() + 24 + this->label->getHeight();
+    const int alto = std::max(textHeight, qrSide);
+    const int top = this->y + (area - alto) / 2;
+
+    this->qr->setBoundaries(left, top + (alto - qrSide) / 2, qrSide, qrSide);
+    const int textTop = top + (alto - textHeight) / 2;
+    this->title->setBoundaries(left + qrSide + gap, textTop, textWidth, this->title->getHeight());
+    this->label->setBoundaries(left + qrSide + gap, textTop + this->title->getHeight() + 24, textWidth, this->label->getHeight());
+
+    this->button->setBoundaries(
+        this->x + this->width / 2 - style->CrashFrame.buttonWidth / 2,
+        this->y + (this->height - style->CrashFrame.buttonHeight * 2),
+        style->CrashFrame.buttonWidth,
+        style->CrashFrame.buttonHeight);
+    this->button->invalidate();
+}
+
+QrStagePage::~QrStagePage()
+{
+    delete this->qr;
+    delete this->title;
+    delete this->label;
+    delete this->button;
+}
+
 namespace donar {
 
     void showIfDue(const std::string& url)

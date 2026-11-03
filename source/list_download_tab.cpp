@@ -11,6 +11,7 @@
 #include "confirm_page.hpp"
 #include "current_cfw.hpp"
 #include "dialogue_page.hpp"
+#include "donar_page.hpp"
 #include "download.hpp"
 #include "extract.hpp"
 #include "forwarder.hpp"
@@ -134,6 +135,9 @@ void ListDownloadTab::createList(contentType type)
             /* Una etiqueta del catalogo junto al nombre (firmwares_etiquetas de
                nx-links.json): {"etiqueta", "nota"}. La nota va en la confirmacion. */
             std::string etiqueta;
+            /* Lo que se ofrece junto con este firmware: una app del catalogo
+               ("app", por su nombre) y un video tutorial ("video", va en QR). */
+            std::string ofertaNombre, ofertaUrl, video;
             if (type == contentType::fw) {
                 const auto etiquetas = this->nxlinks.find("firmwares_etiquetas");
                 if (etiquetas != this->nxlinks.end() && etiquetas->is_object() && etiquetas->contains(title) && (*etiquetas)[title].is_object()) {
@@ -142,6 +146,20 @@ void ListDownloadTab::createList(contentType type)
                         etiqueta = e["etiqueta"].get<std::string>();
                     if (e.contains("nota") && e["nota"].is_string() && !e["nota"].get<std::string>().empty())
                         text += "\n\n" + e["nota"].get<std::string>();
+                    if (e.contains("video") && e["video"].is_string())
+                        video = e["video"].get<std::string>();
+                    if (e.contains("app") && e["app"].is_string()) {
+                        const std::string nombre = e["app"].get<std::string>();
+                        const auto apps = this->nxlinks.find("apps");
+                        if (apps != this->nxlinks.end() && apps->is_object() && apps->contains(nombre) && (*apps)[nombre].is_string()) {
+                            const std::string u = (*apps)[nombre].get<std::string>();
+                            // Solo un .nro suelto, y si no esta ya en la SD.
+                            if (u.size() > 4 && u.substr(u.size() - 4) == ".nro" && !appUpdates::isInstalled(this->nxlinks, u)) {
+                                ofertaNombre = nombre;
+                                ofertaUrl = u;
+                            }
+                        }
+                    }
                 }
             }
             if (!etiqueta.empty()) {
@@ -162,7 +180,7 @@ void ListDownloadTab::createList(contentType type)
             if (nueva) {
                 listItem->setValue("menus/apps/new_version"_i18n, false);
             }
-            listItem->getClickEvent()->subscribe([this, type, text, url, title, fecha](brls::View* view) {
+            listItem->getClickEvent()->subscribe([this, type, text, url, title, fecha, ofertaNombre, ofertaUrl, video](brls::View* view) {
                 brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                 stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
                 stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
@@ -173,6 +191,11 @@ void ListDownloadTab::createList(contentType type)
                             stagedFrame->addStage(new DialoguePage_confirm(stagedFrame, "menus/main/theme_warning"_i18n));
                         }
                     }
+                }
+                // Firmware compatible con Nextendo: ofrecer la app de una vez.
+                auto llevarOferta = std::make_shared<bool>(false);
+                if (type == contentType::fw && !ofertaUrl.empty()) {
+                    stagedFrame->addStage(new DialoguePage_optional(stagedFrame, fmt::format("menus/firmware/offer_app"_i18n, ofertaNombre), llevarOferta));
                 }
                 if (type == contentType::apps) {
                     // La ruta del NRO se conoce de entrada si el link es un .nro;
@@ -218,6 +241,21 @@ void ListDownloadTab::createList(contentType type)
                     fs::createTree(BOOTLOADER_PATH);
                     std::string path = std::string(BOOTLOADER_PATH) + title;
                     stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() { download::downloadFile(url, path, OFF); }));
+                }
+
+                if (type == contentType::fw && !ofertaUrl.empty()) {
+                    const std::string destino = util::resolveNroDestination(ofertaUrl.substr(ofertaUrl.rfind('/') + 1));
+                    const std::string fechaOferta = appUpdates::published(this->nxlinks, ofertaUrl);
+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [llevarOferta, ofertaUrl, destino, fechaOferta]() {
+                        if (!*llevarOferta)
+                            return;
+                        fs::createTree(destino.substr(0, destino.rfind('/') + 1));
+                        if (download::downloadFile(ofertaUrl, destino, OFF) == 200)
+                            appUpdates::recordInstalled(ofertaUrl, fechaOferta);
+                    }));
+                }
+                if (type == contentType::fw && !video.empty()) {
+                    stagedFrame->addStage(new QrStagePage(stagedFrame, "menus/firmware/tutorial_title"_i18n, "menus/firmware/tutorial_text"_i18n, video));
                 }
 
                 std::string doneMsg = "menus/common/all_done"_i18n;

@@ -234,6 +234,9 @@
         "delete_custom_link": "Delete"
     },
     "firmware": {
+        "offer_app": "Do you also want to install {} to play online with Nextendo Network? It downloads along with the firmware.",
+        "tutorial_title": "How to use Nextendo",
+        "tutorial_text": "Scan the code with your phone to watch the video tutorial: how to set up Nextendo Network and play online without a Nintendo account.",
         "launch_daybreak": "Do you want to launch Daybreak to install the downloaded sysupdate?"
     },
     "net": {
