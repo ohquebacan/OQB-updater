@@ -3,6 +3,8 @@
 #include <switch.h>
 
 #include <algorithm>
+#include <cstring>
+#include <memory>
 #include <utility>
 #include <vector>
 #include <cctype>
@@ -16,6 +18,9 @@
 #include "fs.hpp"
 #include "donar_page.hpp"
 #include "pack_list_item.hpp"
+#include "confirm_page.hpp"
+#include "utils.hpp"
+#include "worker_page.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -45,16 +50,12 @@ namespace {
        `alResponder`: si esta, los botones son "Ya lo hice" / "Aun no" y avisan
        la respuesta; si no, uno solo para volver. */
     void abrirDetalle(const std::string& titulo, const std::string& cuerpo, const std::string& qr = "",
-                      std::function<void(bool)> alResponder = nullptr)
+                      std::function<void(bool)> alResponder = nullptr, const std::string& qrTexto = "")
     {
         brls::List* l = new brls::List();
         l->addView(new brls::Label(brls::LabelStyle::REGULAR, cuerpo, true));
-        if (!qr.empty()) {
-            l->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/scan"_i18n, true));
-            QrCodeView* codigo = new QrCodeView(qr);
-            codigo->setHeight(300);
-            l->addView(codigo);
-        }
+        if (!qr.empty())
+            l->addView(new QrFilaView(qr, qrTexto.empty() ? "menus/nextendo/scan_page"_i18n : qrTexto));
         if (alResponder) {
             brls::ListItem* si = new brls::ListItem("menus/nextendo/done_yes"_i18n);
             si->getClickEvent()->subscribe([alResponder](brls::View* view) {
@@ -148,6 +149,107 @@ void NextendoTab::willAppear(bool resetState)
 
 namespace {
 
+    /* Instala o actualiza un .nro del catalogo, con el mismo flujo que la
+       pestana de apps: confirmar, descargar, anotar la fecha y listo. */
+    void instalarApp(const nlohmann::ordered_json& nxlinks, const std::string& nombre, const std::string& url)
+    {
+        const std::string destino = util::resolveNroDestination(url.substr(url.rfind('/') + 1));
+        const std::string fecha = appUpdates::published(nxlinks, url);
+        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+        frame->setTitle(nombre);
+        frame->addStage(new ConfirmPage(frame, "menus/common/download"_i18n + nombre));
+        frame->addStage(new WorkerPage(frame, "menus/common/downloading"_i18n, [url, destino, fecha]() {
+            fs::createTree(destino.substr(0, destino.rfind('/') + 1));
+            if (download::downloadFile(url, destino, OFF) == 200)
+                appUpdates::recordInstalled(url, fecha);
+        }));
+        frame->addStage(new ConfirmPage_Done(frame, "menus/common/all_done"_i18n));
+        brls::Application::pushView(frame);
+    }
+
+    // La version del juego instalado (la que muestra el menu HOME), o vacia.
+    std::string versionInstalada(const std::string& tidHex)
+    {
+        const u64 tid = std::strtoull(tidHex.c_str(), nullptr, 16);
+        auto control = std::make_unique<NsApplicationControlData>();
+        u64 size = 0;
+        if (R_FAILED(nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, control.get(), sizeof(NsApplicationControlData), &size)) ||
+            size < sizeof(control->nacp))
+            return "";
+        return std::string(control->nacp.display_version, strnlen(control->nacp.display_version, sizeof(control->nacp.display_version)));
+    }
+
+    // Las versiones que pide un "requiere" ("Version del juego 2026.19.0 o 2026.18.0").
+    std::vector<std::string> versionesPedidas(const std::string& requiere)
+    {
+        std::vector<std::string> out;
+        std::string actual;
+        for (char c : requiere + " ") {
+            if (std::isdigit(static_cast<unsigned char>(c)) || (c == '.' && !actual.empty()))
+                actual += c;
+            else {
+                while (!actual.empty() && actual.back() == '.')
+                    actual.pop_back();
+                if (actual.find('.') != std::string::npos)
+                    out.push_back(actual);
+                actual.clear();
+            }
+        }
+        return out;
+    }
+
+    // "Tienes la 1.4.0" o "Tienes la 1.3.0; pide la 1.4.0", o vacio si no esta instalado.
+    std::string comparacion(const std::string& tid, const std::string& requiere, bool* correcta = nullptr)
+    {
+        const std::string tengo = versionInstalada(tid);
+        if (correcta)
+            *correcta = false;
+        if (tengo.empty())
+            return "";
+        const std::vector<std::string> pide = versionesPedidas(requiere);
+        const bool ok = pide.empty() || std::find(pide.begin(), pide.end(), tengo) != pide.end();
+        if (correcta)
+            *correcta = ok;
+        if (ok || pide.empty())
+            return fmt::format("menus/nextendo/you_have"_i18n, tengo);
+        return fmt::format("menus/nextendo/you_have_wrong"_i18n, tengo, pide.front());
+    }
+
+    /* Tus juegos compatibles instalados, con la version que tienes y la que
+       pide Nextendo. */
+    void abrirTusJuegos(const nlohmann::ordered_json& datos)
+    {
+        const nlohmann::ordered_json juegos = datos.contains("juegos") ? datos["juegos"] : nlohmann::ordered_json::object();
+        brls::List* l = new brls::List();
+        l->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/your_games_intro"_i18n, true));
+        int n = 0;
+        for (auto it = juegos.begin(); it != juegos.end(); ++it) {
+            if (!it.value().is_object())
+                continue;
+            const std::string tengo = versionInstalada(it.key());
+            if (tengo.empty())
+                continue;
+            ++n;
+            const std::string requiere = text(it.value(), "requiere");
+            bool ok = false;
+            comparacion(it.key(), requiere, &ok);
+            PackListItem* item = new PackListItem(text(it.value(), "nombre"), "",
+                                                  requiere.empty() ? "menus/nextendo/no_requirement"_i18n : requiere);
+            if (requiere.empty())
+                item->setValue(fmt::format("menus/nextendo/version"_i18n, tengo));
+            else if (ok)
+                item->setPositiveValue(fmt::format("menus/nextendo/version"_i18n, tengo));
+            else
+                item->setWarningValue(fmt::format("menus/nextendo/version"_i18n, tengo));
+            l->addView(item);
+        }
+        if (n == 0)
+            l->addView(new brls::Label(brls::LabelStyle::REGULAR, "menus/nextendo/your_games_none"_i18n, true));
+        brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+        frame->setContentView(l);
+        brls::PopupFrame::open("menus/nextendo/your_games"_i18n, frame, "", "");
+    }
+
     /* Quien esta jugando ahora: se pregunta a Nextendo al abrirlo (no al
        arrancar la app), igual que hace CardsNX. Su API da solo el ID de cada
        juego; los nombres y el estado vienen del catalogo. */
@@ -186,7 +288,12 @@ namespace {
             l->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/online_nobody"_i18n, true));
         for (const auto& [n, tid] : jugando) {
             const std::string nombre = nombreDe(tid);
-            PackListItem* item = new PackListItem(nombre.empty() ? tid : nombre);
+            const std::string requiere = juegos.contains(tid) && juegos[tid].is_object() ? text(juegos[tid], "requiere") : "";
+            const std::string mia = comparacion(tid, requiere);
+            std::string sub = requiere;
+            if (!mia.empty())
+                sub += (sub.empty() ? "" : " · ") + mia;
+            PackListItem* item = new PackListItem(nombre.empty() ? tid : nombre, "", sub);
             item->setPositiveValue(n == 1 ? "menus/nextendo/players_one"_i18n : fmt::format("menus/nextendo/players"_i18n, n));
             l->addView(item);
         }
@@ -197,7 +304,11 @@ namespace {
             if (!it.value().is_object())
                 continue;
             const std::string estado = text(it.value(), "estado"), requiere = text(it.value(), "requiere");
-            brls::ListItem* item = new brls::ListItem(text(it.value(), "nombre"), "", requiere);
+            const std::string mia = comparacion(it.key(), requiere);
+            std::string sub = requiere;
+            if (!mia.empty())
+                sub += (sub.empty() ? "" : " · ") + mia;
+            brls::ListItem* item = new brls::ListItem(text(it.value(), "nombre"), "", sub);
             if (!estado.empty())
                 item->setValue(estado, true);
             l->addView(item);
@@ -228,7 +339,7 @@ NextendoTab::NextendoTab(const nlohmann::ordered_json& nxlinks, bool activo) : b
         const std::string empezar = text(datos, "como_empezar");
         brls::ListItem* item = new brls::ListItem("menus/nextendo/how_to_start"_i18n);
         item->getClickEvent()->subscribe([empezar, video](brls::View* view) {
-            abrirDetalle("menus/nextendo/how_to_start"_i18n, empezar, video);
+            abrirDetalle("menus/nextendo/how_to_start"_i18n, empezar, video, nullptr, "menus/nextendo/scan_video"_i18n);
         });
         this->addView(item);
     }
@@ -282,14 +393,14 @@ NextendoTab::NextendoTab(const nlohmann::ordered_json& nxlinks, bool activo) : b
     if (!video.empty()) {
         brls::ListItem* item = new brls::ListItem("menus/nextendo/video"_i18n);
         item->getClickEvent()->subscribe([video](brls::View* view) {
-            abrirDetalle("menus/nextendo/video"_i18n, "menus/firmware/tutorial_text"_i18n, video);
+            abrirDetalle("menus/nextendo/video"_i18n, "menus/firmware/tutorial_text"_i18n, video, nullptr, "menus/nextendo/scan_video"_i18n);
         });
         this->addView(item);
     }
     if (!wiki.empty()) {
         brls::ListItem* item = new brls::ListItem("menus/nextendo/wiki"_i18n);
         item->getClickEvent()->subscribe([wiki](brls::View* view) {
-            abrirDetalle("menus/nextendo/wiki"_i18n, "menus/nextendo/wiki_text"_i18n, wiki);
+            abrirDetalle("menus/nextendo/wiki"_i18n, "menus/nextendo/wiki_text"_i18n, wiki, nullptr, "menus/nextendo/scan_wiki"_i18n);
         });
         this->addView(item);
     }
@@ -327,16 +438,6 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
 {
     this->addView(new brls::Header("menus/nextendo/checklist"_i18n));
 
-    // El modo en si: lo que el verificador ya sabe.
-    {
-        PackListItem* item = new PackListItem("menus/nextendo/check_mode"_i18n, "", "menus/nextendo/check_mode_sub"_i18n);
-        if (this->activo)
-            item->setPositiveValue("menus/nextendo/active"_i18n);
-        else
-            item->setWarningValue("menus/nextendo/inactive"_i18n);
-        this->addView(item);
-    }
-
     // Firmware: lo dice la consola.
     {
         std::string version;
@@ -366,13 +467,55 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
         if (!url.empty()) {
             const bool instalada = appUpdates::isInstalled(this->nxlinks, url);
             const bool nueva = instalada && appUpdates::hasUpdate(this->nxlinks, appUpdates::installed(), url);
-            PackListItem* item = new PackListItem("menus/nextendo/check_prelude"_i18n, "", "menus/nextendo/check_prelude_sub"_i18n);
+            /* Tambien es un atajo: con A se instala o se actualiza ahi mismo. */
+            const std::string sub = !instalada ? "menus/nextendo/prelude_install"_i18n
+                                    : nueva    ? "menus/nextendo/prelude_update"_i18n
+                                               : "menus/nextendo/prelude_reinstall"_i18n;
+            PackListItem* item = new PackListItem("menus/nextendo/check_prelude"_i18n, "", sub);
             if (instalada && !nueva)
                 item->setPositiveValue("menus/nextendo/ok"_i18n);
             else
                 item->setWarningValue(instalada ? "menus/apps/new_version"_i18n : "menus/nextendo/missing"_i18n);
+            const nlohmann::ordered_json links = this->nxlinks;
+            item->getClickEvent()->subscribe([links, nombre, url](brls::View* view) { instalarApp(links, nombre, url); });
             this->addView(item);
         }
+    }
+
+    // El modo en si: lo que el verificador ya sabe.
+    {
+        PackListItem* item = new PackListItem("menus/nextendo/check_mode"_i18n, "", "menus/nextendo/check_mode_sub"_i18n);
+        if (this->activo)
+            item->setPositiveValue("menus/nextendo/active"_i18n);
+        else
+            item->setWarningValue("menus/nextendo/inactive"_i18n);
+        this->addView(item);
+    }
+
+
+    // Tus juegos compatibles: si alguno no tiene la version que pide Nextendo.
+    {
+        const nlohmann::ordered_json juegos = datos.contains("juegos") ? datos["juegos"] : nlohmann::ordered_json::object();
+        int instalados = 0, mal = 0;
+        for (auto it = juegos.begin(); it != juegos.end(); ++it) {
+            if (!it.value().is_object() || versionInstalada(it.key()).empty())
+                continue;
+            ++instalados;
+            bool ok = false;
+            comparacion(it.key(), text(it.value(), "requiere"), &ok);
+            if (!ok)
+                ++mal;
+        }
+        PackListItem* item = new PackListItem("menus/nextendo/your_games"_i18n, "", "menus/nextendo/your_games_sub"_i18n);
+        if (instalados == 0)
+            item->setValue("menus/nextendo/see_more"_i18n, true, false);
+        else if (mal == 0)
+            item->setPositiveValue("menus/nextendo/ok"_i18n);
+        else
+            item->setWarningValue(mal == 1 ? "menus/nextendo/wrong_one"_i18n : fmt::format("menus/nextendo/wrong_many"_i18n, mal));
+        const nlohmann::ordered_json copia = datos;
+        item->getClickEvent()->subscribe([copia](brls::View* view) { abrirTusJuegos(copia); });
+        this->addView(item);
     }
 
     // Fecha y hora: sin poder compararla con nada, solo se muestra y se avisa si

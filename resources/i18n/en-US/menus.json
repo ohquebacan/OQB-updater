@@ -281,6 +281,22 @@
         "support_text": "If you want to support the project, you can donate by scanning this code with your phone. It is optional and for any amount you like."
     },
     "nextendo": {
+        "prelude_install": "Press A to install it now.",
+        "prelude_update": "Press A to update it now.",
+        "prelude_reinstall": "Press A if you want to reinstall it.",
+        "you_have": "You have version {}",
+        "you_have_wrong": "You have version {}; Nextendo needs {}",
+        "version": "Version {}",
+        "your_games": "Your games and their version",
+        "your_games_sub": "Each game only works on Nextendo with the version it asks for.",
+        "your_games_intro": "Your installed games that work with Nextendo, with the version you have. Green is the right one; amber is different from what Nextendo asks for.",
+        "your_games_none": "You have no Nextendo-compatible game installed.",
+        "no_requirement": "Nextendo does not list a version.",
+        "wrong_one": "1 game on another version",
+        "wrong_many": "{} games on another version",
+        "scan_video": "Scan this code with your phone's camera to watch the step-by-step video tutorial.",
+        "scan_page": "Scan this code with your phone's camera to open the page.",
+        "scan_wiki": "Scan this code with your phone's camera to open the Nextendo wiki.",
         "see_more": "See more",
         "confirmed": "Confirmed by you",
         "done_yes": "I have done it",
@@ -316,13 +332,12 @@
         "check_clock_sub": "If they are wrong, secure connections fail. Confirm them in the console settings.",
         "stages": "What failed?",
         "errors": "Error codes",
-        "notes": "Good to know",
+        "notes": "Useful information",
         "more": "More help",
         "what_to_do": "What to do:",
         "video": "Video tutorial",
         "wiki": "Nextendo error wiki",
-        "wiki_text": "Nextendo's full guide, with more detail on each error.",
-        "scan": "Scan with your phone:"
+        "wiki_text": "Nextendo's full guide, with more detail on each error."
     },
     "forwarders": {
         "create_title": "Create HOME menu shortcut",

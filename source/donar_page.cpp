@@ -47,6 +47,42 @@ void QrCodeView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
     nvgFill(vg);
 }
 
+QrFilaView::QrFilaView(const std::string& url, const std::string& texto) : qr(new QrCodeView(url)), texto(texto)
+{
+    this->qr->setParent(this);
+    this->setHeight(280);
+}
+
+QrFilaView::~QrFilaView()
+{
+    delete this->qr;
+}
+
+void QrFilaView::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash)
+{
+    const int margen = 20;
+    const int lado = this->height - margen * 2;
+    this->qr->setBoundaries(this->x + margen, this->y + margen, lado, lado);
+}
+
+void QrFilaView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    this->qr->frame(ctx);
+    const int margen = 20;
+    const int lado = height - margen * 2;
+    const float tx = x + margen + lado + 36;
+    const float ancho = width - (tx - x) - margen;
+    nvgFontFaceId(vg, ctx->fontStash->regular);
+    nvgFontSize(vg, style->Label.regularFontSize);
+    nvgTextLineHeight(vg, 1.4f);
+    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+    nvgFillColor(vg, this->a(ctx->theme->textColor));
+    float caja[4];
+    nvgTextBoxBounds(vg, 0, 0, ancho, this->texto.c_str(), nullptr, caja);
+    nvgBeginPath(vg);
+    nvgTextBox(vg, tx, y + (height - (caja[3] - caja[1])) / 2.0f, ancho, this->texto.c_str(), nullptr);
+}
+
 DonarPage::DonarPage(const std::string& url)
 {
     this->qr = new QrCodeView(url);
@@ -83,6 +119,16 @@ void DonarPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
     }
     this->button->invalidate();
 
+    // Fondo atenuado y el panel, con los colores de los dialogos del sistema.
+    nvgBeginPath(vg);
+    nvgFillColor(vg, this->a(ctx->theme->dialogBackdrop));
+    nvgRect(vg, x, y, width, height);
+    nvgFill(vg);
+    nvgBeginPath(vg);
+    nvgFillColor(vg, this->a(ctx->theme->dialogColor));
+    nvgRoundedRect(vg, this->panelX, this->panelY, this->panelW, this->panelH, style->Dialog.cornerRadius);
+    nvgFill(vg);
+
     this->qr->frame(ctx);
     this->title->frame(ctx);
     this->label->frame(ctx);
@@ -116,12 +162,21 @@ void DonarPage::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stas
     this->title->setBoundaries(left + qrSide + gap, textTop, textWidth, this->title->getHeight());
     this->label->setBoundaries(left + qrSide + gap, textTop + this->title->getHeight() + 24, textWidth, this->label->getHeight());
 
+    // El boton, debajo del contenido; y el panel, alrededor de todo.
+    const int margen = 40;
+    const int contenidoAlto = std::max(textHeight, qrSide);
+    const int botonY = top + contenidoAlto + margen;
     this->button->setBoundaries(
         this->x + this->width / 2 - style->CrashFrame.buttonWidth / 2,
-        this->y + (this->height - style->CrashFrame.buttonHeight * 2),
+        botonY,
         style->CrashFrame.buttonWidth,
         style->CrashFrame.buttonHeight);
     this->button->invalidate();
+
+    this->panelX = left - margen;
+    this->panelY = top - margen;
+    this->panelW = qrSide + gap + textWidth + margen * 2;
+    this->panelH = (botonY + style->CrashFrame.buttonHeight + margen) - this->panelY;
 
     start = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(150);
 }
