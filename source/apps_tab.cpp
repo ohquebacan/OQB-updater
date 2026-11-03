@@ -1,5 +1,7 @@
 #include "apps_tab.hpp"
 
+#include "app_updates.hpp"
+
 #include "download.hpp"
 #include "list_download_tab.hpp"
 #include "utils.hpp"
@@ -24,6 +26,20 @@ namespace {
         {"apps_sistema", "menus/apps/sec_sistema"},
     };
 
+    /* Cuantas apps de una lista tienen version nueva. */
+    size_t countUpdates(const nlohmann::ordered_json& nxlinks, const nlohmann::ordered_json& instaladas, const std::string& key)
+    {
+        size_t n = 0;
+        const auto seccion = nxlinks.find(key);
+        if (seccion == nxlinks.end() || !seccion->is_object())
+            return 0;
+        for (const auto& url : *seccion) {
+            if (url.is_string() && appUpdates::hasUpdate(nxlinks, instaladas, url.get<std::string>()))
+                ++n;
+        }
+        return n;
+    }
+
 }  // namespace
 
 AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(nxlinks)
@@ -41,9 +57,13 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
     }
     this->addView(search);
 
+    const nlohmann::ordered_json instaladas = appUpdates::installed();
+
     for (const auto& section : SECTIONS) {
         brls::ListItem* item = new brls::ListItem(i18n::getStr(section.label));
         item->setHeight(LISTITEM_HEIGHT);
+        if (const size_t nuevas = countUpdates(this->nxlinks, instaladas, section.jsonKey))
+            item->setValue(fmt::format("menus/apps/new_count"_i18n, nuevas), false);
 
         const nlohmann::ordered_json links = this->nxlinks;
         const std::string key = section.jsonKey;
@@ -71,6 +91,8 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
     // pack todavia no trae las claves nuevas.
     brls::ListItem* all = new brls::ListItem("menus/apps/sec_todas"_i18n);
     all->setHeight(LISTITEM_HEIGHT);
+    if (const size_t nuevas = countUpdates(this->nxlinks, instaladas, "apps"))
+        all->setValue(fmt::format("menus/apps/new_count"_i18n, nuevas), false);
     const nlohmann::ordered_json links = this->nxlinks;
     all->getClickEvent()->subscribe([links](brls::View* view) {
         brls::AppletFrame* frame = new brls::AppletFrame(true, true);

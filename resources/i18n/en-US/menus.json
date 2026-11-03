@@ -262,7 +262,10 @@
         "sec_instaladores": "Installers and managers",
         "sec_sistema": "System and utilities",
         "sec_todas": "All applications",
-        "count": "{} apps"
+        "count": "{} apps",
+        "new_version": "New version",
+        "new_count": "{} with a new version",
+        "new_version_text": "There is a new version of this app."
     },
     "forwarders": {
         "create_title": "Create HOME menu shortcut",

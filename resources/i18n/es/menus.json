@@ -283,7 +283,10 @@
         "sec_instaladores": "Instaladores y gestores",
         "sec_sistema": "Sistema y utilidades",
         "sec_todas": "Todas las aplicaciones",
-        "count": "{} apps"
+        "count": "{} apps",
+        "new_version": "Versión nueva",
+        "new_count": "{} con versión nueva",
+        "new_version_text": "Hay una versión nueva de esta app."
     },
     "forwarders": {
         "create_title": "Crear acceso directo en el menú HOME",

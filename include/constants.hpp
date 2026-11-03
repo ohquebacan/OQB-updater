@@ -55,6 +55,10 @@ constexpr const char DEEPSEA_PACKAGE_PATH[] = "/config/deepsea/customPackage.jso
 constexpr const char PACK_VERSIONS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/pack-versions.json";
 // Lo que el usuario instalo, por nombre de archivo.
 constexpr const char PACK_VERSIONS_PATH[] = "/config/aio-switch-updater/pack_versions.json";
+// Lo mismo para las apps del catalogo: URL -> fecha de subida de su archivo.
+// La app de PC/Mac escribe el mismo registro en la SD.
+constexpr const char APP_VERSIONS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/app-versions.json";
+constexpr const char APP_VERSIONS_PATH[] = "/config/aio-switch-updater/app_versions.json";
 
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
 constexpr const char CUSTOM_PACKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/custom_packs.json";

@@ -5,6 +5,7 @@
 
 #include "about_tab.hpp"
 #include "ams_tab.hpp"
+#include "app_updates.hpp"
 #include "apps_tab.hpp"
 #include "download.hpp"
 #include "fs.hpp"
@@ -43,8 +44,11 @@ MainFrame::MainFrame() : TabFrame()
 
     json hideStatus = fs::parseJsonFile(HIDE_TABS_JSON);
     nlohmann::ordered_json nxlinks;
-    if (conectado)
+    if (conectado) {
         download::getRequest(NXLINKS_URL, nxlinks);
+        if (nxlinks.is_object())
+            nxlinks[appUpdates::NXLINKS_KEY] = appUpdates::fetchPublished();
+    }
 
     bool erista = util::isErista();
 
@@ -77,7 +81,19 @@ MainFrame::MainFrame() : TabFrame()
         this->addTab("menus/main/download_cheats"_i18n, new ListDownloadTab(contentType::cheats));
 
     if (!util::getBoolValue(hideStatus, "apps"))
-        this->addTab("menus/main/apps"_i18n, new AppsTab(nxlinks));
+    {
+        // El numero junto al nombre: lo primero que se ve al abrir la app.
+        size_t nuevas = 0;
+        const nlohmann::ordered_json instaladas = appUpdates::installed();
+        if (nxlinks.is_object() && nxlinks.contains("apps") && nxlinks["apps"].is_object()) {
+            for (const auto& url : nxlinks["apps"]) {
+                if (url.is_string() && appUpdates::hasUpdate(nxlinks, instaladas, url.get<std::string>()))
+                    ++nuevas;
+            }
+        }
+        const std::string nombre = "menus/main/apps"_i18n;
+        this->addTab(nuevas ? fmt::format("{} ({})", nombre, nuevas) : nombre, new AppsTab(nxlinks));
+    }
 
     /* Mira los dos grupos anteriores, no solo el de descargas: ocultandolas
        todas, estado y ajustes quedarian pegados sin separador. Cada separador

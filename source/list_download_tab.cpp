@@ -5,6 +5,7 @@
 #include <string>
 
 #include "app_page.hpp"
+#include "app_updates.hpp"
 #include "confirm_page.hpp"
 #include "current_cfw.hpp"
 #include "dialogue_page.hpp"
@@ -70,11 +71,29 @@ void ListDownloadTab::createList(contentType type)
 
     links = this->applyFilter(links);
 
+    // El registro de la SD, una vez para toda la lista.
+    const nlohmann::ordered_json instaladas = type == contentType::apps ? appUpdates::installed() : nlohmann::ordered_json::object();
+
     if (links.size()) {
         for (const auto& link : links) {
             const std::string title = link.first;
             const std::string url = link.second;
-            const std::string text("menus/common/download"_i18n + link.first);
+            std::string text("menus/common/download"_i18n + link.first);
+            const bool nueva = type == contentType::apps && appUpdates::hasUpdate(this->nxlinks, instaladas, url);
+            const std::string fecha = type == contentType::apps ? appUpdates::published(this->nxlinks, url) : "";
+            if (nueva) {
+                text += "\n\n" + "menus/apps/new_version_text"_i18n;
+            }
+            // Qué hace cada app, si el catálogo lo trae: un pack viejo no tiene la clave.
+            if (type == contentType::apps) {
+                const auto descs = this->nxlinks.find("apps_descripciones");
+                if (descs != this->nxlinks.end() && descs->is_object()) {
+                    const auto desc = descs->find(title);
+                    if (desc != descs->end() && desc->is_string() && !desc->get<std::string>().empty()) {
+                        text += "\n\n" + desc->get<std::string>();
+                    }
+                }
+            }
             listItem = new brls::ListItem(link.first);
             listItem->setHeight(LISTITEM_HEIGHT);
             // Marcar las apps que ya están en la SD. Sólo se puede saber para
@@ -84,7 +103,11 @@ void ListDownloadTab::createList(contentType type)
                     listItem->setValue("menus/apps/installed"_i18n, true);
                 }
             }
-            listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
+            // Sin atenuar, para que se distinga de "Instalada".
+            if (nueva) {
+                listItem->setValue("menus/apps/new_version"_i18n, false);
+            }
+            listItem->getClickEvent()->subscribe([this, type, text, url, title, fecha](brls::View* view) {
                 brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                 stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
                 stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
@@ -105,14 +128,19 @@ void ListDownloadTab::createList(contentType type)
                         const std::string dest = util::resolveNroDestination(url.substr(url.rfind('/') + 1));
                         *nroPath = dest;
                         fs::createTree(dest.substr(0, dest.rfind('/') + 1));
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest]() { download::downloadFile(url, dest, OFF); }));
+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest, fecha]() {
+                            // Solo si bajo de verdad: un error deja el archivo viejo en su lugar.
+                            if (download::downloadFile(url, dest, OFF) == 200)
+                                appUpdates::recordInstalled(url, fecha);
+                        }));
                     }
                     else {
                         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() { util::downloadArchive(url, contentType::apps); }));
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [nroPath]() {
+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [nroPath, url, fecha]() {
                             // Se anota antes de extraer, mientras el zip sigue en disco.
                             *nroPath = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, extract::detectWrapperDir(CUSTOM_FILENAME));
                             util::extractArchive(contentType::apps);
+                            appUpdates::recordInstalled(url, fecha);
                         }));
                     }
 
