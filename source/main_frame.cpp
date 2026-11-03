@@ -13,6 +13,8 @@
 #include "fs.hpp"
 #include "language_tab.hpp"
 #include "list_download_tab.hpp"
+#include "nextendo_tab.hpp"
+#include "protection.hpp"
 #include "tools_tab.hpp"
 #include "utils.hpp"
 
@@ -102,6 +104,11 @@ MainFrame::MainFrame() : TabFrame()
         if (nuevas)
             this->appsItem = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
     }
+
+    /* Nextendo: solo con la consola en modo Nextendo, que es cuando sirve. */
+    if (!util::getBoolValue(hideStatus, "apps") && NextendoTab::available(nxlinks) &&
+        protection::failedOnlyByNextendo(protection::runOnConsole()))
+        this->addTab("Nextendo", new NextendoTab(nxlinks));
 
     /* Mira los dos grupos anteriores, no solo el de descargas: ocultandolas
        todas, estado y ajustes quedarian pegados sin separador. Cada separador
