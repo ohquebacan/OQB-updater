@@ -49,11 +49,44 @@ namespace {
        pasando por todo el texto, sin enmarcar el texto en verde.
        `alResponder`: si esta, los botones son "Ya lo hice" / "Aun no" y avisan
        la respuesta; si no, uno solo para volver. */
+    /* Un parrafo que puede tener el foco pero no muestra el marco: asi la lista
+       se puede recorrer parrafo a parrafo desde arriba, sin que el texto largo
+       quede cortado y sin enmarcarlo en verde. */
+    class Parrafo : public brls::Label
+    {
+    public:
+        using brls::Label::Label;
+
+        brls::View* getDefaultFocus() override
+        {
+            return this;
+        }
+
+        // Lo mismo que View::onFocusGained, sin animar el marco.
+        void onFocusGained() override
+        {
+            this->focused = true;
+            this->getFocusEvent()->fire(this);
+            if (this->hasParent())
+                this->getParent()->onChildFocusGained(this);
+        }
+    };
+
     void abrirDetalle(const std::string& titulo, const std::string& cuerpo, const std::string& qr = "",
                       std::function<void(bool)> alResponder = nullptr, const std::string& qrTexto = "")
     {
         brls::List* l = new brls::List();
-        l->addView(new brls::Label(brls::LabelStyle::REGULAR, cuerpo, true));
+        // Un parrafo por bloque: el primero toma el foco y la ventana abre arriba.
+        size_t desde = 0;
+        while (desde <= cuerpo.size()) {
+            const size_t hasta = cuerpo.find("\n\n", desde);
+            const std::string parrafo = cuerpo.substr(desde, hasta == std::string::npos ? std::string::npos : hasta - desde);
+            if (!parrafo.empty())
+                l->addView(new Parrafo(brls::LabelStyle::REGULAR, parrafo, true));
+            if (hasta == std::string::npos)
+                break;
+            desde = hasta + 2;
+        }
         if (!qr.empty())
             l->addView(new QrFilaView(qr, qrTexto.empty() ? "menus/nextendo/scan_page"_i18n : qrTexto));
         if (alResponder) {
@@ -236,7 +269,7 @@ namespace {
             PackListItem* item = new PackListItem(text(it.value(), "nombre"), "",
                                                   requiere.empty() ? "menus/nextendo/no_requirement"_i18n : requiere);
             if (requiere.empty())
-                item->setValue(fmt::format("menus/nextendo/version"_i18n, tengo));
+                item->setValue(fmt::format("menus/nextendo/version"_i18n, tengo), false, false);
             else if (ok)
                 item->setPositiveValue(fmt::format("menus/nextendo/version"_i18n, tengo));
             else
@@ -310,7 +343,7 @@ namespace {
                 sub += (sub.empty() ? "" : " · ") + mia;
             brls::ListItem* item = new brls::ListItem(text(it.value(), "nombre"), "", sub);
             if (!estado.empty())
-                item->setValue(estado, true);
+                item->setValue(estado, true, false);
             l->addView(item);
         }
 
@@ -530,7 +563,7 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
         if (local.tm_year + 1900 < 2026)
             item->setWarningValue(fecha);
         else
-            item->setValue(fecha);
+            item->setValue(fecha, false, false);
         this->addView(item);
     }
 
@@ -538,7 +571,7 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
     const auto checklist = datos.find("checklist");
     if (checklist != datos.end() && checklist->is_array()) {
         for (const auto& c : *checklist) {
-            const std::string titulo = text(c, "titulo"), cuerpo = text(c, "texto"), qr = text(c, "qr");
+            const std::string titulo = text(c, "titulo"), cuerpo = text(c, "texto"), qr = text(c, "qr"), qrTexto = text(c, "qr_texto");
             /* "Confirmado por ti" en texto normal, no en la pildora verde de
                "Listo": lo marca el usuario, no lo comprobo la app. */
             brls::ListItem* item = new brls::ListItem(titulo);
@@ -546,14 +579,14 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
                 item->setValue("menus/nextendo/confirmed"_i18n, false, false);
             else
                 item->setValue("menus/nextendo/see_more"_i18n, true, false);
-            item->getClickEvent()->subscribe([item, titulo, cuerpo, qr](brls::View* view) {
+            item->getClickEvent()->subscribe([item, titulo, cuerpo, qr, qrTexto](brls::View* view) {
                 abrirDetalle(titulo, cuerpo, qr, [item, titulo](bool hecho) {
                     guardarConfirmado(titulo, hecho);
                     if (hecho)
                         item->setValue("menus/nextendo/confirmed"_i18n, false, false);
                     else
                         item->setValue("menus/nextendo/see_more"_i18n, true, false);
-                });
+                }, qrTexto);
             });
             this->addView(item);
         }

@@ -174,11 +174,11 @@ void ListDownloadTab::createList(contentType type)
             // Marcar las apps que ya están en la SD: su .nro o, para un zip, lo
             // que el catálogo dice que deja (app-versions.json).
             if (type == contentType::apps && appUpdates::isInstalled(this->nxlinks, url)) {
-                listItem->setValue("menus/apps/installed"_i18n, true);
+                listItem->setValue("menus/apps/installed"_i18n, true, false);
             }
             // Sin atenuar, para que se distinga de "Instalada".
             if (nueva) {
-                listItem->setValue("menus/apps/new_version"_i18n, false);
+                listItem->setValue("menus/apps/new_version"_i18n, false, false);
             }
             listItem->getClickEvent()->subscribe([this, type, text, url, title, fecha, ofertaNombre, ofertaUrl, video](brls::View* view) {
                 brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();

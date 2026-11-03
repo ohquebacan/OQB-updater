@@ -63,7 +63,7 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
         brls::ListItem* item = new brls::ListItem(i18n::getStr(section.label));
         item->setHeight(LISTITEM_HEIGHT);
         if (const size_t nuevas = countUpdates(this->nxlinks, instaladas, section.jsonKey))
-            item->setValue(nuevas == 1 ? "menus/apps/new_count_one"_i18n : fmt::format("menus/apps/new_count"_i18n, nuevas), false);
+            item->setValue(nuevas == 1 ? "menus/apps/new_count_one"_i18n : fmt::format("menus/apps/new_count"_i18n, nuevas), false, false);
 
         const nlohmann::ordered_json links = this->nxlinks;
         const std::string key = section.jsonKey;
@@ -92,7 +92,7 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
     brls::ListItem* all = new brls::ListItem("menus/apps/sec_todas"_i18n);
     all->setHeight(LISTITEM_HEIGHT);
     if (const size_t nuevas = countUpdates(this->nxlinks, instaladas, "apps"))
-        all->setValue(nuevas == 1 ? "menus/apps/new_count_one"_i18n : fmt::format("menus/apps/new_count"_i18n, nuevas), false);
+        all->setValue(nuevas == 1 ? "menus/apps/new_count_one"_i18n : fmt::format("menus/apps/new_count"_i18n, nuevas), false, false);
     const nlohmann::ordered_json links = this->nxlinks;
     all->getClickEvent()->subscribe([links](brls::View* view) {
         brls::AppletFrame* frame = new brls::AppletFrame(true, true);
