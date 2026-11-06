@@ -185,12 +185,23 @@ void ListDownloadTab::createList(contentType type)
                 stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
                 stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
                 if (type == contentType::fw) {
-                    std::string contentsPath = util::getContentsPath();
+                    /* Un tema o un menu alternativo activo: romfs, exefs o exefs.nsp en la
+                       carpeta del menu HOME o de sus applets. Que la carpeta no este vacia no
+                       basta: el pack trae 0100000000001013 con un exefs.nsp1 desactivado, y el
+                       aviso salia siempre, incluso despues de que el pack lo hubiera limpiado.
+                       Un solo aviso aunque haya varias carpetas. */
+                    const std::string contentsPath = util::getContentsPath();
+                    bool hayTema = false;
+                    std::error_code ec;
                     for (const auto& tid : {"0100000000001000", "0100000000001007", "0100000000001013"}) {
-                        if (std::filesystem::exists(contentsPath + tid) && !std::filesystem::is_empty(contentsPath + tid)) {
-                            stagedFrame->addStage(new DialoguePage_confirm(stagedFrame, "menus/main/theme_warning"_i18n));
+                        const std::string base = contentsPath + tid + "/";
+                        for (const auto& activo : {"romfs", "exefs", "exefs.nsp"}) {
+                            if (std::filesystem::exists(base + activo, ec))
+                                hayTema = true;
                         }
                     }
+                    if (hayTema)
+                        stagedFrame->addStage(new DialoguePage_confirm(stagedFrame, "menus/main/theme_warning"_i18n));
                 }
                 // Firmware compatible con Nextendo: ofrecer la app de una vez.
                 auto llevarOferta = std::make_shared<bool>(false);

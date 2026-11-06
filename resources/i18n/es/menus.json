@@ -157,7 +157,7 @@
         "tools": "Herramientas",
         "launch_warning": "Por favor, presta atención a los siguientes puntos antes de usar la app:\n\n◆ Lee primero sobre cómo actualizar manualmente tu Switch. Esto te ayudará a entender mejor lo que hace esta app y sabrás qué hacer en caso de que algo salga mal.\n◆ Para evitar cualquier riesgo de corrupción de datos se desaconseja encarecidamente utilizar esta aplicación en una tarjeta SD exFAT.\n\n◆ La última información sobre las características introducidas y/o cambios está disponible en el menú Herramientas→Cambios.\n\nEsta pantalla no se mostrará de nuevo.",
         "footer_text": "v{} | {:.1f}GB Disponibles",
-        "theme_warning": "Parece que tienes instalado un tema personalizado. Al actualizar el firmware, un tema puede impedir que la consola arranque.\nTe recomendamos quitarlo antes de actualizar.\n\n¿Quieres continuar de todos modos?",
+        "theme_warning": "Tienes un tema o un menú alternativo instalado. Al actualizar el firmware, es probable que impida que la consola arranque. Te recomendamos quitarlo antes de actualizar; si ya lo hiciste, no tienes de qué preocuparte.\n\n¿Quieres continuar?",
         "payloads_label": "◆ Descarga 'RCM payloads' a {}",
         "hekate_ipl_label": "◆ Descarga un hekate_ipl.ini básico \"funcional\". Esto sobrescribirá tu hekate_ipl.ini actual.",
         "apps": "Apps",

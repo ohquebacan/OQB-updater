@@ -98,8 +98,12 @@ void PackListItem::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* s
     const int limite = izquierda - HALO - SEPARACION;
     for (brls::Label* etiqueta : {this->labelView, this->subLabelView}) {
         if (etiqueta && limite > etiqueta->getX()) {
+            /* Sin medir aqui: Label::layout toma el ancho que tiene como limite y
+               lo cambia por el del texto. Medida ahora, al dibujarla se volvia a
+               medir con ese ancho ya cambiado y el corte con "..." se perdia. Se
+               deja marcada y se mide una sola vez, al dibujar. */
             etiqueta->setBoundaries(etiqueta->getX(), etiqueta->getY(), limite - etiqueta->getX(), etiqueta->getHeight());
-            etiqueta->invalidate(true);
+            etiqueta->invalidate();
         }
     }
 }
