@@ -88,6 +88,20 @@ void PackListItem::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* s
     this->valueView->setHorizontalAlign(NVG_ALIGN_LEFT);
     this->valueView->setVerticalAlign(NVG_ALIGN_TOP);
     this->valueView->invalidate(true);
+
+    /* Con subtitulo, borealis deja que el nombre ocupe todo el ancho (solo le resta
+       el valor cuando no hay subtitulo), y al subir el aviso a la altura del nombre
+       quedaban encimados. El nombre y el subtitulo terminan antes del halo; si no
+       entran, la etiqueta los corta con "...". */
+    constexpr int HALO = 16;       // lo que el halo sobresale del texto (draw)
+    constexpr int SEPARACION = 20; // aire entre el nombre y el halo
+    const int limite = izquierda - HALO - SEPARACION;
+    for (brls::Label* etiqueta : {this->labelView, this->subLabelView}) {
+        if (etiqueta && limite > etiqueta->getX()) {
+            etiqueta->setBoundaries(etiqueta->getX(), etiqueta->getY(), limite - etiqueta->getX(), etiqueta->getHeight());
+            etiqueta->invalidate(true);
+        }
+    }
 }
 
 void PackListItem::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)

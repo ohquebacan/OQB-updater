@@ -129,7 +129,10 @@ brls::View* ConfirmPage::getDefaultFocus()
 
 void ConfirmPage::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash)
 {
-    this->label->setWidth(this->width);
+    /* Margen a los lados: a todo el ancho el texto llegaba casi al borde de la
+       pantalla y costaba leerlo. */
+    constexpr unsigned MARGEN = 120;
+    this->label->setWidth(this->width > MARGEN * 3 ? this->width - MARGEN * 2 : this->width);
     this->label->invalidate(true);
     // this->label->setBackground(brls::ViewBackground::DEBUG);
     this->label->setBoundaries(

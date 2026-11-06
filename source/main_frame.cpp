@@ -119,8 +119,10 @@ MainFrame::MainFrame() : TabFrame()
 
     /* Nextendo: solo con la consola en modo Nextendo, que es cuando sirve. */
     if (!util::getBoolValue(hideStatus, "apps") && NextendoTab::available(nxlinks)) {
-        this->addTab("Nextendo", new NextendoTab(nxlinks, protection::failedOnlyByNextendo(protection::runOnConsole())));
-        if (!NextendoTab::seen())
+        const bool activo = protection::failedOnlyByNextendo(protection::runOnConsole());
+        this->addTab("Nextendo", new NextendoTab(nxlinks, activo));
+        this->nextendoFunciona = NextendoTab::working(nxlinks, activo);
+        if (!NextendoTab::seen() || this->nextendoFunciona)
             this->nextendoItem = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
     }
 
@@ -147,10 +149,11 @@ void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
     /* Nextendo, mientras no se haya abierto: un punto violeta que respira
        lento. Otro color y otro ritmo que el aviso verde de las apps, para que
        se lea como una invitacion y no como algo pendiente. */
-    if (this->nextendoItem && !NextendoTab::seen()) {
+    /* Encendido y quieto cuando Nextendo esta funcionando: se ve que esta activo. */
+    if (this->nextendoItem && (!NextendoTab::seen() || this->nextendoFunciona)) {
         static const auto inicioN = std::chrono::steady_clock::now();
         const float t = std::chrono::duration<float>(std::chrono::steady_clock::now() - inicioN).count();
-        const float respiro = 0.5f + 0.5f * std::sin(t * 1.4f);
+        const float respiro = this->nextendoFunciona ? 1.0f : 0.5f + 0.5f * std::sin(t * 1.4f);
         brls::View* item = this->nextendoItem;
         const float cy = item->getY() + item->getHeight() / 2.0f;
         const float cx = item->getX() + item->getWidth() - style->Sidebar.Item.padding - 16.0f;

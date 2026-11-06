@@ -171,6 +171,28 @@ bool NextendoTab::seen()
     return visto == 1;
 }
 
+bool NextendoTab::working(const nlohmann::ordered_json& nxlinks, bool activo)
+{
+    if (!activo || !nxlinks.contains("nextendo"))
+        return false;
+    const nlohmann::ordered_json& datos = nxlinks["nextendo"];
+
+    // Firmware compatible: la misma cuenta que el checklist.
+    SetSysFirmwareVersion ver;
+    if (R_FAILED(setsysGetFirmwareVersion(&ver)))
+        return false;
+    const std::vector<std::string> compatibles = lista(datos, "firmwares");
+    if (std::find(compatibles.begin(), compatibles.end(), std::string(ver.display_version)) == compatibles.end())
+        return false;
+
+    // Prelude instalado y sin version nueva.
+    const std::string nombre = text(datos, "prelude");
+    if (!nxlinks.contains("apps") || !nxlinks["apps"].is_object() || !nxlinks["apps"].contains(nombre) || !nxlinks["apps"][nombre].is_string())
+        return false;
+    const std::string url = nxlinks["apps"][nombre].get<std::string>();
+    return appUpdates::isInstalled(nxlinks, url) && !appUpdates::hasUpdate(nxlinks, appUpdates::installed(), url);
+}
+
 void NextendoTab::willAppear(bool resetState)
 {
     if (!seen()) {

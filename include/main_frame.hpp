@@ -22,6 +22,8 @@ private:
 
     // La pestana Nextendo mientras nunca se abrio: lleva un punto que invita.
     brls::View* nextendoItem = nullptr;
+    // Nextendo funcionando (checks principales en verde): el punto queda encendido.
+    bool nextendoFunciona = false;
 
 public:
     MainFrame();

@@ -31,5 +31,10 @@ public:
        despues no insiste. */
     static bool seen();
 
+    /* Si Nextendo esta funcionando: modo activo, firmware compatible y Prelude
+       instalado y al dia (los checks principales). El menu lo marca con el punto
+       encendido, para saber de un vistazo que esta activo. */
+    static bool working(const nlohmann::ordered_json& nxlinks, bool activo);
+
     void willAppear(bool resetState = false) override;
 };
