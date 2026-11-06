@@ -262,6 +262,9 @@ void ListDownloadTab::createList(contentType type)
                 if (type == contentType::fw && std::filesystem::exists(DAYBREAK_PATH)) {
                     stagedFrame->addStage(new DialoguePage_fw(stagedFrame, doneMsg));
                 }
+                else if (type == contentType::apps) {
+                    stagedFrame->addStage((new ConfirmPage_Done(stagedFrame, doneMsg))->returnToList());
+                }
                 else {
                     stagedFrame->addStage(new ConfirmPage_Done(stagedFrame, doneMsg));
                 }
@@ -369,7 +372,7 @@ void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, s
 
         progress.setStep(progress.getMax());
     }));
-    stagedFrame->addStage(new ConfirmPage_Deferred(stagedFrame, forwarderResult));
+    stagedFrame->addStage((new ConfirmPage_Deferred(stagedFrame, forwarderResult))->returnToList());
 }
 
 void ListDownloadTab::displayNotFound()

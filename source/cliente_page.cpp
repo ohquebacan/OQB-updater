@@ -122,7 +122,7 @@ namespace {
 
         // Los tres programas que fallaron mas recientemente.
         nlohmann::ordered_json err = nlohmann::ordered_json::array();
-        const auto grupos = crash::group(crash::readAll(CRASH_REPORTS_PATH));
+        const auto grupos = crash::group(crash::readAll(std::vector<std::string>{CRASH_REPORTS_PATH, FATAL_REPORTS_PATH}));
         for (size_t i = 0; i < grupos.size() && i < 3; ++i)
             err.push_back({crashProgramName(grupos[i]), grupos[i].count, grupos[i].lastResult, crash::date(grupos[i].lastTimestamp)});
         d["err"] = err;

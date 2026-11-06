@@ -12,6 +12,8 @@ protected:
     brls::Label* label = nullptr;
     std::chrono::system_clock::time_point start = std::chrono::high_resolution_clock::now();
     bool done = false;
+    // Al terminar, volver a la pantalla de inicio. No, si el boton cierra la app o reinicia.
+    bool goHome = true;
 
 public:
     ConfirmPage(brls::StagedAppletFrame* frame, const std::string& text);
@@ -20,6 +22,10 @@ public:
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
     void layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash) override;
     brls::View* getDefaultFocus() override;
+
+    // Al terminar, volver a la lista desde donde se instaló (una sección del catálogo)
+    // en vez de al inicio, para seguir eligiendo cosas de ahí mismo.
+    ConfirmPage* returnToList();
 };
 
 class ConfirmPage_Done : public ConfirmPage

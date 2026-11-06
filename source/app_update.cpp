@@ -46,7 +46,7 @@ namespace appUpdate {
                                                  // forwarder lo mueve a su sitio y lanza el nuevo binario.
                                                  util::extractArchive(contentType::app);
                                              }));
-        stagedFrame->addStage(new ConfirmPage_AppUpdate(stagedFrame, "menus/common/all_done"_i18n));
+        stagedFrame->addStage(new ConfirmPage_AppUpdate(stagedFrame, util::isForwarder() ? "menus/app_update/done_reopen"_i18n : "menus/common/all_done"_i18n));
         brls::Application::pushView(stagedFrame);
     }
 

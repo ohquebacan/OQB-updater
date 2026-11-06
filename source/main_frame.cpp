@@ -40,7 +40,22 @@ MainFrame::MainFrame() : TabFrame()
        Preguntarle al sistema cuesta nada y ahorra esa espera. */
     const bool conectado = util::hayInternet();
 
-    std::string tag = conectado ? util::getLatestTag(TAGS_INFO) : "";
+    /* La pantalla de inicio se vuelve a armar cada vez que se termina una
+       descarga ("Volver al inicio"). Sin esto repetia las tres consultas a
+       internet y el boton tardaba varios segundos en responder. El catalogo no
+       cambia en una sesion, asi que se consulta una vez y se reutiliza. */
+    static bool consultado = false;
+    static std::string tagGuardado;
+    static nlohmann::ordered_json nxlinksGuardado;
+    if (conectado && !consultado) {
+        tagGuardado = util::getLatestTag(TAGS_INFO);
+        download::getRequest(NXLINKS_URL, nxlinksGuardado);
+        if (nxlinksGuardado.is_object())
+            nxlinksGuardado[appUpdates::NXLINKS_KEY] = appUpdates::fetchPublished();
+        consultado = nxlinksGuardado.is_object() && !nxlinksGuardado.empty();
+    }
+
+    std::string tag = conectado ? tagGuardado : "";
     this->latestTag = tag;
     this->setFooterText(fmt::format("menus/main/footer_text"_i18n,
                                     (!tag.empty() && tag != AppVersion) ? AppVersion + "menus/main/new_update"_i18n : AppVersion,
@@ -48,11 +63,8 @@ MainFrame::MainFrame() : TabFrame()
 
     json hideStatus = fs::parseJsonFile(HIDE_TABS_JSON);
     nlohmann::ordered_json nxlinks;
-    if (conectado) {
-        download::getRequest(NXLINKS_URL, nxlinks);
-        if (nxlinks.is_object())
-            nxlinks[appUpdates::NXLINKS_KEY] = appUpdates::fetchPublished();
-    }
+    if (conectado)
+        nxlinks = nxlinksGuardado;
     if (nxlinks.is_object() && nxlinks.contains("enlaces") && nxlinks["enlaces"].is_object()) {
         const auto& enlaces = nxlinks["enlaces"];
         if (enlaces.contains("donar") && enlaces["donar"].is_string() && !enlaces["donar"].get<std::string>().empty())

@@ -469,8 +469,68 @@ namespace util {
         return NRO_PATH;
     }
 
+    bool isForwarder()
+    {
+        /* Abierta desde su icono del menu HOME (un forwarder instalado): corre
+           como juego, no dentro del Album. */
+        return appletGetAppletType() == AppletType_Application;
+    }
+
+    bool installPendingAppUpdate()
+    {
+        /* Pone la version recien extraida en su sitio desde la propia app, sin
+           el forwarder de actualizacion. Desde el icono del menu HOME, cerrar la
+           app para saltar a otro NRO deja la consola en mal estado: la app se
+           cierra por error y despues todo lo que se abre tumba el menu HOME. El
+           NRO en uso ya esta cargado en memoria y su romfs se cierra antes. */
+        std::error_code ec;
+        const std::string destino = getAppPath();
+        // Registro de cada paso, para poder ver en la SD donde se corto.
+        FILE* log = fopen(APP_UPDATE_LOG_PATH, "w");
+        auto anotar = [log](const std::string& linea) {
+            if (log) {
+                fputs((linea + "\n").c_str(), log);
+                fflush(log);
+            }
+        };
+        anotar("argv: " + std::string(envHasArgv() ? (const char*)envGetArgv() : "(sin argv)"));
+        anotar("destino: " + destino);
+        const bool hay = std::filesystem::exists(APP_UPDATE_NRO_PATH, ec);
+        anotar(fmt::format("nuevo existe: {} ({})", hay, ec.message()));
+        if (!hay) {
+            if (log) fclose(log);
+            return false;
+        }
+        /* El romfs esta montado dos veces (borealis y main), y cada montaje
+           tiene abierto el propio .nro. Con uno solo abierto el borrado no hace
+           nada, asi que se desmontan todos. */
+        int montajes = 0;
+        while (R_SUCCEEDED(romfsExit()) && montajes < 8)
+            montajes++;
+        anotar(fmt::format("romfs desmontado: {}", montajes));
+        ec.clear();
+        std::filesystem::remove(destino, ec);
+        anotar("borrar destino: " + ec.message());
+        ec.clear();
+        std::filesystem::rename(APP_UPDATE_NRO_PATH, destino, ec);
+        anotar("mover: " + ec.message());
+        const bool ok = !ec;
+        if (ok) {
+            std::filesystem::remove(FORWARDER_PATH, ec);
+            anotar("listo");
+        }
+        if (log) fclose(log);
+        return ok;
+    }
+
     void restartApp()
     {
+        if (isForwarder()) {
+            // Sin saltar a otro NRO: se cierra al menu HOME y se vuelve a abrir.
+            romfsExit();
+            brls::Application::quit();
+            return;
+        }
         std::string path = "sdmc:" + getAppPath();
         std::string argv = "\"" + path + "\"";
         envSetNextLoad(path.c_str(), argv.c_str());

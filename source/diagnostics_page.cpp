@@ -41,7 +41,7 @@ DiagnosticsPage::DiagnosticsPage() : brls::AppletFrame(true, true)
 
 void DiagnosticsPage::build()
 {
-    const auto grupos = crash::group(crash::readAll(CRASH_REPORTS_PATH));
+    const auto grupos = crash::group(crash::readAll(std::vector<std::string>{CRASH_REPORTS_PATH, FATAL_REPORTS_PATH}));
 
     if (grupos.empty()) {
         this->list->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/diagnostics/none"_i18n, true));
@@ -50,7 +50,7 @@ void DiagnosticsPage::build()
 
     int total = 0;
     for (const auto& g : grupos) total += g.count;
-    const double mb = crash::totalSize(CRASH_REPORTS_PATH) / (1024.0 * 1024.0);
+    const double mb = (crash::totalSize(CRASH_REPORTS_PATH) + crash::totalSize(FATAL_REPORTS_PATH)) / (1024.0 * 1024.0);
     this->list->addView(new brls::Label(brls::LabelStyle::DESCRIPTION,
                                         fmt::format("menus/diagnostics/summary"_i18n, total, grupos.size(), mb), true));
 
@@ -73,7 +73,7 @@ void DiagnosticsPage::build()
         brls::Dialog* dialog = new brls::Dialog("menus/diagnostics/clear_confirm"_i18n);
         dialog->addButton("menus/common/yes"_i18n, [this, dialog](brls::View* v) {
             dialog->close([this]() {
-                const int n = crash::removeAll(CRASH_REPORTS_PATH);
+                const int n = crash::removeAll(CRASH_REPORTS_PATH) + crash::removeAll(FATAL_REPORTS_PATH);
                 brls::Application::notify(fmt::format("menus/diagnostics/cleared"_i18n, n));
                 brls::Application::popView();
             });

@@ -93,6 +93,34 @@ int main()
               crash::hint(grupos[1]).find("menú HOME") != std::string::npos,
           "el menu HOME trae su causa probable");
 
+    {
+        crash::Group carga;
+        carga.programId = "0100000000001000";
+        carga.lastResult = "2101-0001";
+        check(crash::hint(carga).find("chip de carga") != std::string::npos,
+              "2101 apunta al chip de carga aunque haya caido el menu HOME");
+        crash::Group audio;
+        audio.programId = "0100000000000023";
+        audio.lastResult = "2153-0321";
+        check(crash::hint(audio).find("audio") != std::string::npos, "2153 es audio");
+        check(crash::hint(audio).find("hardware y no de los archivos") != std::string::npos,
+              "si se repite, dice que es hardware y no los archivos");
+        crash::Group desconocido;
+        desconocido.programId = "0100000000000045";
+        desconocido.lastResult = "2345-0008";
+        check(crash::hint(desconocido).empty(), "un codigo que no conocemos queda sin causa");
+        crash::Group sysclk;
+        sysclk.programId = "00ff0000636c6bff";
+        sysclk.lastResult = "2133-0001";
+        check(crash::hint(sysclk).find("hardware") == std::string::npos,
+              "un sysmodule de homebrew con codigo de energia no se culpa al hardware");
+        crash::Group home;
+        home.programId = "0100000000001000";
+        home.lastResult = "2168-0002";
+        check(crash::hint(home).find("probable") != std::string::npos,
+              "el menu HOME habla de probabilidad, no de certeza");
+    }
+
     check(crash::totalSize(dir) > 100, "cuenta el tamano de .log y .jpg");
     check(crash::removeAll(dir) == 4, "borra los tres .log y el .jpg");
     check(std::filesystem::exists(dir + "/dumps/algo.bin"), "no toca dumps/");

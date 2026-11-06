@@ -78,6 +78,10 @@
         "extracting": "Extracting…",
         "all_done": "All done!",
         "back": "Back",
+        "go_home": "Back to home",
+        "back_to_list": "Back to the list",
+        "close_app": "Close the app",
+        "open_new_version": "Open the new version",
         "continue": "Continue",
         "download": "Downloading:\n",
         "from": "\n\nFrom:\n",
@@ -369,7 +373,8 @@
         "confirm_again": "Download and install OQB-updater {} again?",
         "notice": "OQB-updater {} is running, and {} is available.\n\nUpdating replaces the app only. Nothing else on the SD card is touched.",
         "notice_now": "Update now",
-        "notice_later": "Later"
+        "notice_later": "Later",
+        "done_reopen": "Done. The app will close when you press the button. Open it again from the HOME Menu to use the new version."
     },
     "search": {
         "entry": "Search",

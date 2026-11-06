@@ -28,6 +28,10 @@ namespace crash {
     // Todos los informes de una carpeta, del mas nuevo al mas viejo.
     std::vector<Report> readAll(const std::string& dir);
 
+    // Los de varias carpetas juntos (crash_reports y fatal_reports), del mas nuevo
+    // al mas viejo.
+    std::vector<Report> readAll(const std::vector<std::string>& dirs);
+
     struct Group
     {
         std::string programId;

@@ -1,5 +1,7 @@
 #include <switch.h>
 
+extern "C" u32 __nx_applet_exit_mode;
+
 #include <borealis.hpp>
 #include <filesystem>
 #include <json.hpp>
@@ -79,6 +81,13 @@ int main(int argc, char* argv[])
 #ifndef __SWITCH__
     brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
 #endif
+
+    /* Abierta desde su icono del menu HOME, la app corre como juego. Al
+       cerrarla, libnx la cierra al menu HOME por su cuenta, en vez de volver al
+       cargador del forwarder: ese regreso es lo que dejaba la consola en mal
+       estado. */
+    if (appletGetAppletType() == AppletType_Application)
+        __nx_applet_exit_mode = 1;
 
     setsysInitialize();
     plInitialize(PlServiceType_User);

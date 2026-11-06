@@ -17,7 +17,7 @@ ConfirmPage::ConfirmPage(brls::StagedAppletFrame* frame, const std::string& text
     this->button->getClickEvent()->subscribe([frame, this](View* view) {
         if (!frame->isLastStage())
             frame->nextStage();
-        else
+        else if (this->goHome)
             brls::Application::pushView(new MainFrame());
     });
 
@@ -26,15 +26,31 @@ ConfirmPage::ConfirmPage(brls::StagedAppletFrame* frame, const std::string& text
     this->label->setParent(this);
 }
 
+ConfirmPage* ConfirmPage::returnToList()
+{
+    this->goHome = false;
+    this->button->setLabel("menus/common/back_to_list"_i18n);
+    this->button->getClickEvent()->subscribe([](View* view) { brls::Application::popView(); });
+    return this;
+}
+
 ConfirmPage_Done::ConfirmPage_Done(brls::StagedAppletFrame* frame, const std::string& text) : ConfirmPage(frame, text)
 {
-    this->button->setLabel("menus/common/back"_i18n);
+    this->button->setLabel("menus/common/go_home"_i18n);
     this->done = true;
 }
 
 ConfirmPage_AppUpdate::ConfirmPage_AppUpdate(brls::StagedAppletFrame* frame, const std::string& text) : ConfirmPage_Done(frame, text)
 {
+    this->goHome = false;
+    this->button->setLabel(util::isForwarder() ? "menus/common/close_app"_i18n : "menus/common/open_new_version"_i18n);
     this->button->getClickEvent()->subscribe([](View* view) {
+        if (util::isForwarder()) {
+            // Se instala aqui mismo y la app se cierra; se abre de nuevo desde el menu.
+            util::installPendingAppUpdate();
+            brls::Application::quit();
+            return;
+        }
         envSetNextLoad(FORWARDER_PATH, FORWARDER_PATH);
         romfsExit();
         brls::Application::quit();
@@ -44,6 +60,7 @@ ConfirmPage_AppUpdate::ConfirmPage_AppUpdate(brls::StagedAppletFrame* frame, con
 
 ConfirmPage_SelfUpdate::ConfirmPage_SelfUpdate(brls::StagedAppletFrame* frame, const std::string& text) : ConfirmPage_Done(frame, text)
 {
+    this->goHome = false;
     this->button->setLabel("menus/common/ok"_i18n);
     this->button->getClickEvent()->subscribe([](View* view) {
         util::restartApp();
@@ -53,6 +70,8 @@ ConfirmPage_SelfUpdate::ConfirmPage_SelfUpdate(brls::StagedAppletFrame* frame, c
 
 ConfirmPage_AmsUpdate::ConfirmPage_AmsUpdate(brls::StagedAppletFrame* frame, const std::string& text, bool erista) : ConfirmPage_Done(frame, text)
 {
+    this->goHome = false;
+    this->button->setLabel(erista ? "menus/common/reboot"_i18n : "menus/common/shut_down"_i18n);
     this->button->getClickEvent()->subscribe([this, erista](View* view) {
         if (erista) {
             util::rebootToPayload(RCM_PAYLOAD_PATH);

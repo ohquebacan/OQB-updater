@@ -78,6 +78,10 @@
         "extracting": "Extrayendo…",
         "all_done": "¡Finalizado!",
         "back": "Atrás",
+        "go_home": "Volver al inicio",
+        "back_to_list": "Volver a la lista",
+        "close_app": "Cerrar la app",
+        "open_new_version": "Abrir la versión nueva",
         "continue": "Continuar",
         "download": "Descargando:\n",
         "from": "\n\nDesde:\n",
@@ -153,7 +157,7 @@
         "tools": "Herramientas",
         "launch_warning": "Por favor, presta atención a los siguientes puntos antes de usar la app:\n\n◆ Lee primero sobre cómo actualizar manualmente tu Switch. Esto te ayudará a entender mejor lo que hace esta app y sabrás qué hacer en caso de que algo salga mal.\n◆ Para evitar cualquier riesgo de corrupción de datos se desaconseja encarecidamente utilizar esta aplicación en una tarjeta SD exFAT.\n\n◆ La última información sobre las características introducidas y/o cambios está disponible en el menú Herramientas→Cambios.\n\nEsta pantalla no se mostrará de nuevo.",
         "footer_text": "v{} | {:.1f}GB Disponibles",
-        "theme_warning": "Parece que tienes instalado un tema personalizado. Esto puede causar que el sistema falle al inciar tras actualizar el firmware.\nPor favor, plantéate borrar el tema antes de actualizar.\n\nDo you wish to proceed regardless?",
+        "theme_warning": "Parece que tienes instalado un tema personalizado. Al actualizar el firmware, un tema puede impedir que la consola arranque.\nTe recomendamos quitarlo antes de actualizar.\n\n¿Quieres continuar de todos modos?",
         "payloads_label": "◆ Descarga 'RCM payloads' a {}",
         "hekate_ipl_label": "◆ Descarga un hekate_ipl.ini básico \"funcional\". Esto sobrescribirá tu hekate_ipl.ini actual.",
         "apps": "Apps",
@@ -390,7 +394,8 @@
         "confirm_again": "¿Volver a descargar e instalar OQB-updater {}?",
         "notice": "Tienes OQB-updater {} y está disponible la {}.\n\nActualizar cambia solo la app. No toca nada más de la SD.",
         "notice_now": "Actualizar ahora",
-        "notice_later": "Más tarde"
+        "notice_later": "Más tarde",
+        "done_reopen": "Listo. Al tocar el botón, la app se cerrará. Vuelve a abrirla desde el menú HOME para usar la versión nueva."
     },
     "search": {
         "entry": "Buscar",

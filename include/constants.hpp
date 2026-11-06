@@ -135,6 +135,9 @@ constexpr const char COPY_FILES_TXT[] = "/config/aio-switch-updater/copy_files.t
 // dejo otro pack y este reemplaza (sys-clk cuando se instala el de overclock).
 constexpr const char CLIENTE_PATH[] = "/config/oqb/cliente.json";
 constexpr const char CRASH_REPORTS_PATH[] = "/atmosphere/crash_reports";
+// Los errores que muestran la pantalla de error de Atmosphere (un sysmodule que
+// llama a fatal) dejan su informe aqui, no en crash_reports.
+constexpr const char FATAL_REPORTS_PATH[] = "/atmosphere/fatal_reports";
 constexpr const char PACK_REMOVE_TXT[] = "/config/aio-switch-updater/pack_remove.txt";
 constexpr const char LANGUAGE_JSON[] = "/config/aio-switch-updater/language.json";
 constexpr const char HOMEBREW[] = "/config/aio-switch-updater/language.json";
@@ -142,6 +145,9 @@ constexpr const char HOMEBREW[] = "/config/aio-switch-updater/language.json";
 constexpr const char ROMFS_PATH[] = "romfs:/";
 constexpr const char ROMFS_FORWARDER[] = "romfs:/aiosu-forwarder.nro";
 constexpr const char FORWARDER_PATH[] = "/config/aio-switch-updater/aiosu-forwarder.nro";
+// La version nueva tal como sale del zip de actualizacion.
+constexpr const char APP_UPDATE_NRO_PATH[] = "/config/aio-switch-updater/OQB-updater.nro";
+constexpr const char APP_UPDATE_LOG_PATH[] = "/config/aio-switch-updater/actualizacion.log";
 
 constexpr const char DAYBREAK_PATH[] = "/switch/daybreak.nro";
 
