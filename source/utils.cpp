@@ -9,6 +9,7 @@
 #include <thread>
 
 #include "current_cfw.hpp"
+#include "deep_clean.hpp"
 #include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
@@ -321,6 +322,13 @@ namespace util {
                     preservedBoot.insert(std::string(BOOTLOADER_PATH) + "payloads");
                     fs::removeDirContentsExcept(BOOTLOADER_PATH, preservedBoot);
                 }
+                /* Limpieza profunda de restos de otros packs (misma logica que el
+                   cliente PC): sincroniza atmosphere/ y config/ contra las rutas del
+                   zip, barre .nro/.ovl ajenos de /switch protegiendo carpetas con
+                   datos propios (Bacan-Shop, sphaira, aio-switch-updater) y quita
+                   ReiNX/sxos/sept de la raiz. Corre siempre, sin preguntar, igual
+                   que la limpieza de arriba. */
+                deep_clean::removeForeignPackLeftovers(AMS_FILENAME);
                 /* Una lista que haya quedado de antes (un pack copiado a mano no
                    la procesa) se aplicaria a este pack y podria borrar lo que
                    acaba de instalar. Solo vale la que traiga este zip. */
