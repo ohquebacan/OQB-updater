@@ -48,7 +48,8 @@ bool prefijoDeRuta(const std::string& prefijo, const std::string& ruta)
 // escribe el SO en caliente y no le corresponde al pack tocarlos.
 constexpr const char* SIEMPRE[] = {"/config/aio-switch-updater", "/config/sphaira", "/switch/Bacan-Shop", "/switch/oqb-updater.nro",
                                    "/atmosphere/automatic_backups", "/atmosphere/bluetooth_devices.db", "/atmosphere/erpt_reports",
-                                   "/atmosphere/logs", "/atmosphere/fatal_errors", "/atmosphere/flags"};
+                                   "/atmosphere/logs", "/atmosphere/fatal_errors", "/atmosphere/flags",
+                                   "/config/MissionControl/controllers"};
 // Carpetas de otros CFW/packs que a veces quedan en la raíz de la SD.
 constexpr const char* RAIZ_AJENA[] = {"ReiNX", "sxos", "sept"};
 
@@ -237,7 +238,7 @@ bool podarVacias(const std::string& carpeta, int profundidad)
 {
     if (profundidad == 0) return true;
     const auto nombres = nombresDe(carpeta);
-    if (nombres.empty()) return true;
+    if (nombres.empty()) return false;  // vacia: nada que conservar, se poda
     bool quedaAlgo = false;
     std::error_code ec;
     for (const auto& nombre : nombres) {
@@ -296,6 +297,17 @@ void deep_clean::removeForeignPackLeftovers(const std::string& archivePath)
     paso(conocidos.delCatalogo ? "catalogo: ok" : "catalogo: vacio");
     const std::set<std::string> blanca = rutasDelZip(archivePath);
     paso("zip: " + std::to_string(blanca.size()) + " rutas");
+    // Las apps del pack y del catalogo conservan tambien su carpeta de
+    // /config: si no, cada actualizacion del pack les resetea los ajustes al
+    // usuario.
+    auto protegeConfig = [&conservar](const std::string& baja) {
+        if (baja.size() > 4 && baja.ends_with(".nro")) {
+            const auto barra = baja.find_last_of('/');
+            conservar.insert("/config/" + baja.substr(barra + 1, baja.size() - 4 - barra - 1));
+        }
+    };
+    for (const auto& ruta : blanca) protegeConfig(ruta);
+    for (const auto& nombre : conocidos.nombres) protegeConfig(nombre);
     paso("sincronizando /atmosphere");
     sincronizar("/atmosphere", blanca, conocidos, conservar);
     paso("sincronizando /config");
