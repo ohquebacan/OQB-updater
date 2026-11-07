@@ -277,7 +277,10 @@ void deep_clean::logPaso(const std::string& paso)
     // fase se come el tiempo cuando algo tarda mas de lo debido.
     static const auto inicio = std::chrono::steady_clock::now();
     const float s = std::chrono::duration<float>(std::chrono::steady_clock::now() - inicio).count();
-    std::ofstream log(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::app);
+    // Cada corrida de instalacion empieza el registro de cero: si no, la
+    // ventana de log mostraria los restos de la corrida anterior.
+    const bool nuevaCorrida = paso.rfind("=== inicio", 0) == 0;
+    std::ofstream log(std::string(CONFIG_PATH) + "deep_clean.log", nuevaCorrida ? std::ios::trunc : std::ios::app);
     log << "[" << std::fixed << std::setprecision(1) << std::setw(6) << s << "s] " << paso << '\n';
 }
 

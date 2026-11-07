@@ -7,6 +7,7 @@
 #include "confirm_page.hpp"
 #include "current_cfw.hpp"
 #include "dialogue_page.hpp"
+#include "deep_clean.hpp"
 #include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
@@ -167,7 +168,10 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
     stagedFrame->addStage(
         new ConfirmPage(stagedFrame, text));
     stagedFrame->addStage(
-        new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [&, url]() { util::downloadArchive(url, this->type); }));
+        new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [&, url]() {
+            deep_clean::logPaso("=== inicio instalacion pack");
+            util::downloadArchive(url, this->type);
+        }));
     stagedFrame->addStage(
         new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, packKey, packDate]() {
             util::extractArchive(this->type);

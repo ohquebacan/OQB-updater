@@ -19,44 +19,32 @@ using namespace i18n::literals;
 
 namespace {
 
-// Un triangulo equilatero con el centroide en (cx, cy), apuntando arriba.
-void triangulo(NVGcontext* vg, float cx, float cy, float lado)
+// El icono de carga es el de la app PC (OQB-updater PC): la Trifuerza con
+// los tres triangulos encendiendose en secuencia — poder, valor, sabiduria.
+// Misma geometria del SVG (viewBox 36x32) y mismos colores: esmeralda al
+// encender, musgo apagado. No gira: el movimiento es el encendido.
+void drawIconoCarga(NVGcontext* vg, float cx, float cy, float t)
 {
-    const float h = lado * 0.8660254f;
-    nvgBeginPath(vg);
-    nvgMoveTo(vg, cx, cy - 2.0f * h / 3.0f);
-    nvgLineTo(vg, cx - lado / 2.0f, cy + h / 3.0f);
-    nvgLineTo(vg, cx + lado / 2.0f, cy + h / 3.0f);
-    nvgClosePath(vg);
-}
-
-// La Trifuerza: tres triangulos de oro girando lentamente y pulsando. Se
-// dibuja con el reloj del dibujo, no con eventos de progreso, asi que nunca
-// se congela aunque el trabajo de fondo no reporte nada (fase de limpieza).
-void drawTrifuerza(NVGcontext* vg, float cx, float cy, float t)
-{
-    const float lado = 26.0f;
-    const float R = lado * 0.5773503f;  // centroide grande -> de cada triangulo
-    const float giro = t * 40.0f;       // grados por segundo
-    const float pulso = 0.92f + 0.08f * sinf(t * 2.2f);
-
-    nvgSave(vg);
-    nvgTranslate(vg, cx, cy);
-    nvgRotate(vg, (giro - 90.0f) * NVG_PI / 180.0f);
-    nvgScale(vg, pulso, pulso);
-
+    const float k = 2.4f;  // escala del viewBox 36x32 (~86x77 px)
+    // Vertices de cada triangulo, como en el path del SVG de la PC.
+    const float verts[3][6] = {
+        {18, 1, 27, 16, 9, 16},   // arriba
+        {27, 16, 36, 31, 18, 31},  // abajo derecha
+        {9, 16, 18, 31, 0, 31},     // abajo izquierda
+    };
+    const float fase = fmodf(t, 1.5f) / 1.5f;  // ciclo de 1.5 s, como el CSS
     for (int i = 0; i < 3; ++i) {
-        const float ang = i * 2.0f * NVG_PI / 3.0f - NVG_PI / 2.0f;
-        triangulo(vg, R * cosf(ang), R * sinf(ang), lado);
+        const bool encendida = fase >= i / 3.0f && fase < (i + 1) / 3.0f;
+        nvgBeginPath(vg);
+        for (int v = 0; v < 3; ++v) {
+            const float px = cx + (verts[i][v * 2] - 18.0f) * k;
+            const float py = cy + (verts[i][v * 2 + 1] - 16.0f) * k;
+            if (v == 0) nvgMoveTo(vg, px, py); else nvgLineTo(vg, px, py);
+        }
+        nvgClosePath(vg);
+        nvgFillColor(vg, encendida ? nvgRGB(52, 213, 131) : nvgRGB(36, 43, 34));
+        nvgFill(vg);
     }
-    NVGpaint oro = nvgLinearGradient(vg, 0, -R - lado, 0, R + lado,
-        nvgRGBA(255, 216, 92, 255), nvgRGBA(214, 148, 18, 255));
-    nvgFillPaint(vg, oro);
-    nvgFill(vg);
-    nvgStrokeColor(vg, nvgRGBA(92, 60, 6, 255));
-    nvgStrokeWidth(vg, 2.0f);
-    nvgStroke(vg);
-    nvgRestore(vg);
 }
 
 // Las ultimas lineas del registro de la instalacion, para la ventana de log.
@@ -94,7 +82,7 @@ WorkerPage::WorkerPage(brls::StagedAppletFrame* frame, const std::string& text, 
     this->button->setParent(this);
 
     this->logLabel = new brls::Label(brls::LabelStyle::SMALL, "", true);
-    this->logLabel->setHorizontalAlign(NVG_ALIGN_CENTER);
+    this->logLabel->setHorizontalAlign(NVG_ALIGN_LEFT);
     this->logLabel->setColor(nvgRGBA(170, 175, 190, 255));
     this->logLabel->setParent(this);
 
@@ -167,18 +155,32 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
             }
             this->label->frame(ctx);
 
-            /* La Trifuerza gira siempre: su animacion depende solo del reloj
-               del dibujo, asi que muestra vida incluso en la fase de limpieza
-               profunda, que no reporta progreso a la barra. */
+            /* El icono de carga se dibuja con el reloj del dibujo, no con
+               eventos de progreso: se mueve aunque la fase (limpieza
+               profunda) no reporte nada a la barra. */
             const float tAnim = std::chrono::duration<float>(std::chrono::steady_clock::now() - this->inicioAnimacion).count();
-            drawTrifuerza(vg, this->x + this->width / 2.0f, this->y + this->height / 2.0f - 72.0f, tAnim);
+            drawIconoCarga(vg, this->x + this->width / 2.0f, this->y + this->height / 2.0f - 145.0f, tAnim);
 
             const auto ahora = std::chrono::steady_clock::now();
             if (ahora - this->ultimaLecturaLog > std::chrono::milliseconds(250)) {
                 this->ultimaLecturaLog = ahora;
                 this->logLabel->setText(colaDelLog());
             }
-            this->logLabel->frame(ctx);
+            if (!this->logLabel->getText().empty()) {
+                /* Panel con fondo: el log no flota suelto sobre la interfaz. */
+                const float px = this->logLabel->getX() - 18.0f;
+                const float py = this->logLabel->getY() - 12.0f;
+                const float pw = this->logLabel->getWidth() + 36.0f;
+                const float ph = this->logLabel->getHeight() + 24.0f;
+                nvgBeginPath(vg);
+                nvgRoundedRect(vg, px, py, pw, ph, 10.0f);
+                nvgFillColor(vg, nvgRGBA(14, 18, 14, 216));
+                nvgFill(vg);
+                nvgStrokeColor(vg, nvgRGBA(255, 255, 255, 16));
+                nvgStrokeWidth(vg, 1.5f);
+                nvgStroke(vg);
+                this->logLabel->frame(ctx);
+            }
         }
     }
 }
