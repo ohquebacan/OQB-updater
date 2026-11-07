@@ -7,7 +7,9 @@
 #include <cerrno>
 #include <dirent.h>
 #include <filesystem>
+#include <chrono>
 #include <fstream>
+#include <iomanip>
 #include <set>
 #include <string>
 #include <system_error>
@@ -270,8 +272,12 @@ bool podarVacias(const std::string& carpeta, int profundidad)
 
 void deep_clean::logPaso(const std::string& paso)
 {
+    // Segundos desde el primer paso de la sesion: asi el log muestra que
+    // fase se come el tiempo cuando algo tarda mas de lo debido.
+    static const auto inicio = std::chrono::steady_clock::now();
+    const float s = std::chrono::duration<float>(std::chrono::steady_clock::now() - inicio).count();
     std::ofstream log(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::app);
-    log << paso << '\n';
+    log << "[" << std::fixed << std::setprecision(1) << std::setw(6) << s << "s] " << paso << '\n';
 }
 
 void deep_clean::removeForeignPackLeftovers(const std::string& archivePath)

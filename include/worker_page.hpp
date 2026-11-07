@@ -1,6 +1,7 @@
 #pragma once
 
 #include <borealis.hpp>
+#include <chrono>
 #include <thread>
 
 typedef std::function<void()> worker_func_t;
@@ -12,6 +13,9 @@ private:
     brls::StagedAppletFrame* frame;
     brls::Button* button;
     brls::Label* label;
+    brls::Label* logLabel = nullptr;
+    std::chrono::steady_clock::time_point inicioAnimacion;
+    std::chrono::steady_clock::time_point ultimaLecturaLog {};
     std::string text;
     int progressValue = 0;
     bool workStarted = false;
