@@ -84,13 +84,28 @@ namespace appUpdates {
             return v != j.end() && v->is_string() ? v->get<std::string>() : "";
         }
 
+        // Copia en memoria del ultimo catalogo consultado, para consultas
+        // que ocurren lejos del arranque (la limpieza profunda del pack)
+        // sin volver a tocar la red.
+        nlohmann::ordered_json& catalogo()
+        {
+            static nlohmann::ordered_json j;
+            return j;
+        }
+
     }  // namespace
 
     nlohmann::ordered_json fetchPublished()
     {
         nlohmann::ordered_json res;
         download::getRequest(APP_VERSIONS_URL, res);
-        return res.is_object() ? res : nlohmann::ordered_json::object();
+        catalogo() = res.is_object() ? res : nlohmann::ordered_json::object();
+        return catalogo();
+    }
+
+    const nlohmann::ordered_json& catalogoGuardado()
+    {
+        return catalogo();
     }
 
     std::string published(const nlohmann::ordered_json& nxlinks, const std::string& url)

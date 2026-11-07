@@ -7,6 +7,7 @@
 #include <cerrno>
 #include <dirent.h>
 #include <filesystem>
+#include <fstream>
 #include <set>
 #include <string>
 #include <system_error>
@@ -15,7 +16,7 @@
 #include <minizip/unzip.h>
 
 #include "constants.hpp"
-#include "download.hpp"
+#include "app_updates.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
 
@@ -40,7 +41,7 @@ bool prefijoDeRuta(const std::string& prefijo, const std::string& ruta)
 
 // Rutas propias del ecosistema OQB: se conservan aunque no vengan en el pack
 // ni en el catálogo (registros, tienda, menú sphaira).
-constexpr const char* SIEMPRE[] = {"/config/aio-switch-updater", "/config/sphaira", "/switch/Bacan-Shop"};
+constexpr const char* SIEMPRE[] = {"/config/aio-switch-updater", "/config/sphaira", "/switch/Bacan-Shop", "/switch/oqb-updater.nro"};
 // Carpetas de otros CFW/packs que a veces quedan en la raíz de la SD.
 constexpr const char* RAIZ_AJENA[] = {"ReiNX", "sxos", "sept"};
 
@@ -72,18 +73,21 @@ std::set<std::string> rutasDelZip(const std::string& archivo)
 struct Conocidos {
     std::set<std::string> rutas;   // rutas completas en minúsculas (nros/marcas del catálogo)
     std::set<std::string> nombres;  // nombres de .nro/.ovl en minúsculas (una app reconocida vale donde esté)
+    bool delCatalogo = false;  // false = catálogo no disponible: no se sabe qué .nro son ajenos
 };
 
 // Lo que registra el catálogo (app-versions.json): las apps que se pueden
 // instalar desde el updater y, con rutas exactas, las que vienen en zip.
+// Se usa la copia que el arranque ya descargó: pedirla de nuevo acá era una
+// red bloqueante en medio de la instalación (y choca con el curl global de
+// otras descargas). Sin catálogo no se barre /switch: mejor no tocar nada
+// que borrar apps del usuario por no saber cuáles son ajenas.
 Conocidos conocidosDelCatalogo()
 {
     Conocidos c;
-    nlohmann::ordered_json versiones;
-    download::getRequest(APP_VERSIONS_URL, versiones);
-    // Sin red queda lo último que se anotó en la SD.
-    if (!versiones.is_object()) versiones = fs::parseJsonFile(APP_VERSIONS_PATH);
+    const nlohmann::ordered_json& versiones = appUpdates::catalogoGuardado();
     if (!versiones.is_object()) return c;
+    c.delCatalogo = true;
     for (const auto& [url, detalle] : versiones.items()) {
         if (!detalle.is_object()) continue;
         const auto barra = url.find_last_of('/');
@@ -153,8 +157,12 @@ bool sincronizar(const std::string& carpeta, const std::set<std::string>& blanca
         if (nombre.rfind("._", 0) == 0) continue;
         const std::string ruta = carpeta + "/" + nombre;
         const std::string baja = minusculas(ruta);
-        // /atmosphere/contents ya pasó por la limpieza de rutina (con preserve.txt).
-        if (baja == minusculas(AMS_CONTENTS)) {
+        // /atmosphere/contents ya pasó por la limpieza de rutina (con
+        // preserve.txt). Ojo: AMS_CONTENTS lleva '/' final y la ruta armada
+        // aquí no; comparando contra la constante tal cual nunca coincidía y
+        // se recorría (y borraba) todo contents, que puede tener miles de
+        // entradas — esa era la pantalla congelada en "extrayendo".
+        if (baja == "/atmosphere/contents") {
             conserva = true;
             continue;
         }
@@ -251,19 +259,35 @@ bool podarVacias(const std::string& carpeta, int profundidad)
 
 void deep_clean::removeForeignPackLeftovers(const std::string& archivePath)
 {
+    // Registro de pasos en la SD: si algo vuelve a frenar la instalación,
+    // este archivo dice exactamente dónde quedó (sobrevive: vive en una
+    // carpeta protegida).
+    std::ofstream log(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::trunc);
+    auto paso = [&log](const std::string& p) { log << p << '\n'; log.flush(); };
+
+    paso("inicio");
     std::set<std::string> conservar;
     for (const auto& c : fs::readLineByLine(FILES_IGNORE)) {
         conservar.insert(c.empty() || c[0] == '/' ? c : "/" + c);
     }
     const Conocidos conocidos = conocidosDelCatalogo();
+    paso(conocidos.delCatalogo ? "catalogo: ok" : "catalogo: vacio");
     const std::set<std::string> blanca = rutasDelZip(archivePath);
+    paso("zip: " + std::to_string(blanca.size()) + " rutas");
     for (const char* base : {"/atmosphere", "/config"}) {
         sincronizar(base, blanca, conocidos, conservar);
     }
-    quitarNrosAjenos("/switch", 3, conocidos, conservar);
+    paso("atmosphere y config sincronizados");
+    if (conocidos.delCatalogo) {
+        quitarNrosAjenos("/switch", 3, conocidos, conservar);
+        podarVacias("/switch", 3);
+        paso("switch barrido");
+    } else {
+        paso("switch sin barrer (sin catalogo)");
+    }
     std::error_code ec;
     for (const char* nombre : RAIZ_AJENA) {
         std::filesystem::remove_all(std::string("/") + nombre, ec);
     }
-    podarVacias("/switch", 3);
+    paso("fin");
 }

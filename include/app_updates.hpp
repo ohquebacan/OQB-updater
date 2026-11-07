@@ -20,8 +20,13 @@ namespace appUpdates {
     constexpr const char NXLINKS_KEY[] = "_app_versions";
 
     // Descarga el json publicado. Objeto vacio si no se pudo: sin conexion no
-    // se avisa de nada.
+    // se avisa de nada. Lo ultimo descargado queda en memoria para reutilizarlo
+    // sin tocar la red (deep_clean lo usa al instalar el pack).
     nlohmann::ordered_json fetchPublished();
+
+    // El ultimo catalogo descargado (objeto vacio si no se ha consultado o no
+    // hubo conexion). Referencia a almacenamiento estatico: no copia el JSON.
+    const nlohmann::ordered_json& catalogoGuardado();
 
     // La fecha publicada de esa URL, o vacia.
     std::string published(const nlohmann::ordered_json& nxlinks, const std::string& url);
