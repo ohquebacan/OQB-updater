@@ -1,3 +1,4 @@
+#include <curl/curl.h>
 #include <switch.h>
 
 extern "C" u32 __nx_applet_exit_mode;
@@ -94,6 +95,9 @@ int main(int argc, char* argv[])
     nsInitialize();
     socketInitializeDefault();
     nxlinkStdio();
+    /* curl se inicializa una vez aqui y se limpia al salir: init/cleanup por
+       peticion no es thread-safe y se cruzaba con el hilo de la hora. */
+    curl_global_init(CURL_GLOBAL_ALL);
     pmdmntInitialize();
     pminfoInitialize();
     splInitialize();
@@ -136,6 +140,8 @@ int main(int argc, char* argv[])
     // Antes de cerrar servicios: el hilo de la hora todavia puede estar usando
     // la red y el servicio de time.
     ntp::waitForBackgroundSync();
+
+    curl_global_cleanup();
 
     romfsExit();
     splExit();

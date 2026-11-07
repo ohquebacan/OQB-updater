@@ -4,6 +4,7 @@
 #include <cmath>
 #include <fstream>
 #include <json.hpp>
+#include <thread>
 
 #include "about_tab.hpp"
 #include "ams_tab.hpp"
@@ -48,10 +49,23 @@ MainFrame::MainFrame() : TabFrame()
     static std::string tagGuardado;
     static nlohmann::ordered_json nxlinksGuardado;
     if (conectado && !consultado) {
-        tagGuardado = util::getLatestTag(TAGS_INFO);
-        download::getRequest(NXLINKS_URL, nxlinksGuardado);
+        /* Las tres consultas van en paralelo: cada una es un viaje de ida y
+           vuelta a un servidor distinto, y en serie sumaban segundos de
+           pantalla negra antes del primer dibujo. En paralelo cuesta lo que
+           cuesta la mas lenta. curl ya es seguro entre hilos: el global se
+           inicializa una sola vez en main(). */
+        std::string tagObtenido;
+        nlohmann::ordered_json nxObtenido, catalogoObtenido;
+        std::thread h1([&] { tagObtenido = util::getLatestTag(TAGS_INFO); });
+        std::thread h2([&] { download::getRequest(NXLINKS_URL, nxObtenido); });
+        std::thread h3([&] { catalogoObtenido = appUpdates::fetchPublished(); });
+        h1.join();
+        h2.join();
+        h3.join();
+        tagGuardado = tagObtenido;
+        nxlinksGuardado = nxObtenido;
         if (nxlinksGuardado.is_object())
-            nxlinksGuardado[appUpdates::NXLINKS_KEY] = appUpdates::fetchPublished();
+            nxlinksGuardado[appUpdates::NXLINKS_KEY] = catalogoObtenido;
         consultado = nxlinksGuardado.is_object() && !nxlinksGuardado.empty();
     }
 
