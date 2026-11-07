@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "constants.hpp"
+#include "deep_clean.hpp"
 #include "download.hpp"
 #include "extract.hpp"
 #include "main_frame.hpp"
@@ -58,7 +59,7 @@ std::string colaDelLog()
     while (std::getline(f, l))
         lineas.push_back(l);
     std::string out;
-    const size_t desde = lineas.size() > 9 ? lineas.size() - 9 : 0;
+    const size_t desde = lineas.size() > 7 ? lineas.size() - 7 : 0;
     for (size_t i = desde; i < lineas.size(); ++i) {
         out += lineas[i];
         if (i + 1 < lineas.size())
@@ -203,13 +204,18 @@ void WorkerPage::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* sta
 
     this->logLabel->setBoundaries(
         this->x + this->width * 0.08f,
-        this->y + this->height / 2 + style->CrashFrame.buttonHeight + 20,
+        this->y + this->height / 2 + style->CrashFrame.buttonHeight + 16,
         this->width * 0.84f,
-        170);
+        132);
 }
 
 void WorkerPage::doWork()
 {
+    /* El registro es de esta tarea: se vacia al empezar para que la ventana
+       de log nunca muestre restos de una tarea distinta (instalacion del
+       pack, descarga de apps...). Las tareas que no escriben pasos dejan el
+       archivo vacio y la ventana simplemente no se dibuja. */
+    deep_clean::truncarLog();
     if (this->workerFunc)
         this->workerFunc();
 }

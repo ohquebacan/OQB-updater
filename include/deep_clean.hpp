@@ -15,4 +15,8 @@ void removeForeignPackLeftovers(const std::string& archivePath);
 // Escribe una linea en deep_clean.log (append), para seguir la instalacion
 // paso a paso desde la SD.
 void logPaso(const std::string& paso);
+
+// Vacia el registro. Cada tarea de WorkerPage lo llama al empezar, asi la
+// ventana de log nunca muestra restos de una tarea anterior distinta.
+void truncarLog();
 }  // namespace deep_clean

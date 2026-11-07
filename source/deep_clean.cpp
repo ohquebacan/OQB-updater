@@ -271,6 +271,11 @@ bool podarVacias(const std::string& carpeta, int profundidad)
 
 }  // namespace
 
+void deep_clean::truncarLog()
+{
+    std::ofstream(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::trunc);
+}
+
 void deep_clean::logPaso(const std::string& paso)
 {
     // Segundos desde el primer paso de la sesion: asi el log muestra que
