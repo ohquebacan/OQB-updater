@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <functional>
 #include <dirent.h>
 #include <filesystem>
 #include <chrono>
@@ -21,6 +24,7 @@
 #include "app_updates.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
+#include "utils.hpp"
 
 namespace {
 
@@ -41,24 +45,101 @@ bool prefijoDeRuta(const std::string& prefijo, const std::string& ruta)
     return prefijo.size() == ruta.size() || ruta[prefijo.size()] == '/';
 }
 
-// Rutas propias del ecosistema OQB: se conservan aunque no vengan en el pack
-// ni en el catálogo (registros, tienda, menú sphaira).
-// Los de atmosphere son del sistema, no de ningún pack: automatic_backups
-// guarda el PRODINFO del usuario (borrarlo sería un desastre), los demás los
-// escribe el SO en caliente y no le corresponde al pack tocarlos.
-constexpr const char* SIEMPRE[] = {"/config/aio-switch-updater", "/config/sphaira", "/switch/Bacan-Shop", "/switch/oqb-updater.nro",
-                                   "/atmosphere/automatic_backups", "/atmosphere/bluetooth_devices.db", "/atmosphere/erpt_reports",
-                                   "/atmosphere/logs", "/atmosphere/fatal_errors", "/atmosphere/flags",
-                                   "/config/MissionControl/controllers"};
+// Criterio (el mismo de OQB Updater PC), de lo que más choca a lo que menos:
+// - /atmosphere (fuera de contents) es lo que puede romper el arranque: queda
+//   igual a lo que trae el pack, salvo lo que escriben Atmosphère y la consola.
+// - /config: se conserva la carpeta de cada app que sigue en la SD, que trae el
+//   pack o que registra el catálogo. La de una app que ya no está es basura.
+// - /switch es del usuario: sus homebrew y ports se quedan aunque no los
+//   conozcamos. Solo cae la segunda copia de una app que el pack ya trae (mismo
+//   nombre dentro del .nro, otro archivo) y los .nro/.ovl vacíos o dañados. La
+//   basura conocida de otros packs se quita con pack_remove.txt.
+// - Las carpetas de otros CFW en la raíz (ReiNX, sxos, sept).
+
+// Rutas propias del ecosistema OQB y lo que escriben Atmosphère y la consola
+// (automatic_backups guarda el PRODINFO; los informes de error los lee el
+// diagnóstico de esta app).
+constexpr const char* SIEMPRE[] = {"/config/aio-switch-updater", "/config/sphaira", "/config/MissionControl", "/switch/Bacan-Shop",
+                                   "/atmosphere/automatic_backups", "/atmosphere/crash_reports", "/atmosphere/fatal_reports",
+                                   "/atmosphere/fatal_errors", "/atmosphere/erpt_reports", "/atmosphere/logs", "/atmosphere/flags",
+                                   "/atmosphere/bluetooth_devices.db"};
 // Carpetas de otros CFW/packs que a veces quedan en la raíz de la SD.
 constexpr const char* RAIZ_AJENA[] = {"ReiNX", "sxos", "sept"};
 
-std::set<std::string> rutasDelZip(const std::string& archivo)
+bool esApp(const std::string& baja)
 {
-    std::set<std::string> out;
+    return baja.ends_with(".nro") || baja.ends_with(".ovl");
+}
+
+std::string archivoDe(const std::string& ruta)
+{
+    const auto barra = ruta.find_last_of('/');
+    return barra == std::string::npos ? ruta : ruta.substr(barra + 1);
+}
+
+// Lector por desplazamiento: sirve igual para un archivo de la SD y para un
+// .nro leído del zip a memoria.
+using LeerEn = std::function<bool(u64 desde, void* destino, size_t largo)>;
+
+// ¿Es un NRO (también los .ovl)? Lleva "NRO0" en 0x10.
+bool esNro(const LeerEn& leer)
+{
+    char magia[4];
+    return leer(0x10, magia, 4) && std::memcmp(magia, "NRO0", 4) == 0;
+}
+
+// El nombre de la app dentro del NACP (el primer idioma que lo tenga), en
+// minúsculas; vacío si el NRO no trae metadatos.
+std::string nombreApp(const LeerEn& leer)
+{
+    u32 tamNro = 0;
+    char aset[0x38];
+    if (!leer(0x18, &tamNro, 4) || !leer(tamNro, aset, sizeof(aset)) || std::memcmp(aset, "ASET", 4) != 0) return "";
+    u64 inicio = 0, tam = 0;
+    std::memcpy(&inicio, aset + 0x18, 8);
+    std::memcpy(&tam, aset + 0x20, 8);
+    if (tam < 0x3000) return "";
+    std::vector<char> nacp(0x3000);
+    if (!leer(tamNro + inicio, nacp.data(), nacp.size())) return "";
+    for (size_t idioma = 0; idioma < 16; ++idioma) {
+        const char* n = nacp.data() + idioma * 0x300;
+        std::string nombre(n, strnlen(n, 0x200));
+        while (!nombre.empty() && std::isspace((unsigned char)nombre.back())) nombre.pop_back();
+        while (!nombre.empty() && std::isspace((unsigned char)nombre.front())) nombre.erase(0, 1);
+        if (!nombre.empty()) return minusculas(nombre);
+    }
+    return "";
+}
+
+LeerEn lectorDeMemoria(const std::vector<char>& datos)
+{
+    return [&datos](u64 desde, void* destino, size_t largo) {
+        if (desde + largo > datos.size()) return false;
+        std::memcpy(destino, datos.data() + desde, largo);
+        return true;
+    };
+}
+
+LeerEn lectorDeArchivo(FILE* f)
+{
+    return [f](u64 desde, void* destino, size_t largo) {
+        return std::fseek(f, (long)desde, SEEK_SET) == 0 && std::fread(destino, 1, largo, f) == largo;
+    };
+}
+
+// Lo que trae el zip del pack.
+struct DelZip {
+    std::set<std::string> rutas;        // todos sus archivos, en minúsculas
+    std::set<std::string> archivosApp;  // nombres de archivo de sus .nro/.ovl de /switch
+    std::set<std::string> apps;         // nombres de app (NACP) de esos .nro/.ovl
+};
+
+DelZip leerZip(const std::string& archivo)
+{
+    DelZip d;
     const std::string envoltorio = extract::detectWrapperDir(archivo);
     unzFile zip = unzOpen(archivo.c_str());
-    if (!zip) return out;
+    if (!zip) return d;
     if (unzGoToFirstFile(zip) == UNZ_OK) {
         do {
             unz_file_info info;
@@ -66,41 +147,48 @@ std::set<std::string> rutasDelZip(const std::string& archivo)
             if (unzGetCurrentFileInfo(zip, &info, nombre, sizeof(nombre), nullptr, 0, nullptr, 0) != UNZ_OK) continue;
             std::string n = nombre;
             if (n.empty() || n.back() == '/' || n.rfind("__MACOSX/", 0) == 0) continue;
-            const auto barra = n.find_last_of('/');
-            const std::string base = barra == std::string::npos ? n : n.substr(barra + 1);
+            const std::string base = archivoDe(n);
             if (base.rfind("._", 0) == 0 || base == ".DS_Store") continue;
             if (!envoltorio.empty() && n.rfind(envoltorio, 0) == 0) n = n.substr(envoltorio.size());
             if (n.empty()) continue;
-            out.insert(minusculas("/" + n));
+            const std::string ruta = minusculas("/" + n);
+            d.rutas.insert(ruta);
+            // Un .nro pesa unos pocos MB; con tope por si el zip trae algo raro.
+            if (ruta.rfind("/switch/", 0) == 0 && esApp(ruta)) {
+                d.archivosApp.insert(archivoDe(ruta));
+                if (info.uncompressed_size < (64u << 20) && unzOpenCurrentFile(zip) == UNZ_OK) {
+                    std::vector<char> datos(info.uncompressed_size);
+                    const int leidos = unzReadCurrentFile(zip, datos.data(), datos.size());
+                    unzCloseCurrentFile(zip);
+                    if (leidos == (int)datos.size()) {
+                        const std::string app = nombreApp(lectorDeMemoria(datos));
+                        if (!app.empty()) d.apps.insert(app);
+                    }
+                }
+            }
         } while (unzGoToNextFile(zip) == UNZ_OK);
     }
     unzClose(zip);
-    return out;
+    return d;
 }
 
+// Lo que registra el catálogo (app-versions.json). Solo suma protecciones: si
+// no se pudo descargar, la limpieza no borra más por eso. Se usa la copia que
+// el arranque ya descargó (pedirla acá era red bloqueante en plena instalación).
 struct Conocidos {
-    std::set<std::string> rutas;   // rutas completas en minúsculas (nros/marcas del catálogo)
-    std::set<std::string> nombres;  // nombres de .nro/.ovl en minúsculas (una app reconocida vale donde esté)
-    bool delCatalogo = false;  // false = catálogo no disponible: no se sabe qué .nro son ajenos
+    std::set<std::string> rutas;    // rutas completas en minúsculas (nros/marcas)
+    std::set<std::string> nombres;  // nombres de .nro/.ovl en minúsculas
 };
 
-// Lo que registra el catálogo (app-versions.json): las apps que se pueden
-// instalar desde el updater y, con rutas exactas, las que vienen en zip.
-// Se usa la copia que el arranque ya descargó: pedirla de nuevo acá era una
-// red bloqueante en medio de la instalación (y choca con el curl global de
-// otras descargas). Sin catálogo no se barre /switch: mejor no tocar nada
-// que borrar apps del usuario por no saber cuáles son ajenas.
 Conocidos conocidosDelCatalogo()
 {
     Conocidos c;
     const nlohmann::ordered_json& versiones = appUpdates::catalogoGuardado();
     if (!versiones.is_object()) return c;
-    c.delCatalogo = true;
     for (const auto& [url, detalle] : versiones.items()) {
         if (!detalle.is_object()) continue;
-        const auto barra = url.find_last_of('/');
-        const std::string baja = minusculas(barra == std::string::npos ? url : url.substr(barra + 1));
-        if (baja.size() > 4 && (baja.ends_with(".nro") || baja.ends_with(".ovl"))) c.nombres.insert(baja);
+        const std::string baja = minusculas(archivoDe(url));
+        if (baja.size() > 4 && esApp(baja)) c.nombres.insert(baja);
         auto agregaRuta = [&c](const nlohmann::ordered_json& item, bool conClave) {
             std::string ruta;
             if (conClave) {
@@ -112,7 +200,7 @@ Conocidos conocidosDelCatalogo()
             if (ruta[0] != '/') ruta = "/" + ruta;
             ruta = minusculas(ruta);
             if (ruta == "/") return;
-            c.nombres.insert(ruta.substr(ruta.find_last_of('/') + 1));
+            c.nombres.insert(archivoDe(ruta));
             c.rutas.insert(ruta);
         };
         if (detalle.contains("nros") && detalle["nros"].is_array()) {
@@ -125,24 +213,29 @@ Conocidos conocidosDelCatalogo()
     return c;
 }
 
-// ¿Esta ruta (ya normalizada y en minúsculas) se conserva en la limpieza?
-bool esConocida(const std::string& baja, const std::set<std::string>& blanca, const Conocidos& conocidos, const std::set<std::string>& conservar)
+// Protegida por SIEMPRE o por preserve.txt (en las dos direcciones: lo que está
+// dentro de algo conservado, y la carpeta que contiene algo conservado).
+bool protegida(const std::string& baja, const std::set<std::string>& conservar)
 {
-    if (blanca.count(baja) || conocidos.rutas.count(baja)) return true;
     for (const char* s : SIEMPRE) {
         if (prefijoDeRuta(s, baja)) return true;
     }
-    for (const auto& crudo : conservar) {
-        const std::string c = crudo.empty() || crudo[0] == '/' ? minusculas(crudo) : minusculas("/" + crudo);
+    for (const auto& c : conservar) {
         if (prefijoDeRuta(c, baja) || prefijoDeRuta(baja, c)) return true;
     }
     return false;
 }
 
-std::vector<std::string> nombresDe(const std::string& carpeta)
+bool conocida(const std::string& baja, const DelZip& zip, const Conocidos& conocidos, const std::set<std::string>& conservar)
+{
+    return zip.rutas.count(baja) || conocidos.rutas.count(baja) || protegida(baja, conservar);
+}
+
+std::vector<std::string> nombresDe(const std::string& carpeta, bool* existe = nullptr)
 {
     std::vector<std::string> out;
     DIR* dir = opendir(carpeta.c_str());
+    if (existe) *existe = dir != nullptr;
     if (!dir) return out;
     while (dirent* ent = readdir(dir)) {
         const std::string n = ent->d_name;
@@ -152,14 +245,21 @@ std::vector<std::string> nombresDe(const std::string& carpeta)
     return out;
 }
 
-// Sincroniza una carpeta de la SD con lo reconocido: lo que no es del pack,
-// del catálogo ni está protegido se borra en el acto. Devuelve true si la
-// carpeta (o algo de ella) se conserva.
-bool sincronizar(const std::string& carpeta, const std::set<std::string>& blanca, const Conocidos& conocidos, const std::set<std::string>& conservar)
+bool esCarpeta(const std::string& ruta)
 {
-    const auto nombres = nombresDe(carpeta);
-    if (nombres.empty() && errno == ENOENT) return esConocida(minusculas(carpeta), blanca, conocidos, conservar);
-    bool conserva = esConocida(minusculas(carpeta), blanca, conocidos, conservar);
+    std::error_code ec;
+    return std::filesystem::is_directory(ruta, ec);
+}
+
+// Deja /atmosphere igual a lo que trae el pack: borra en el acto lo que no viene
+// en el zip, no registra el catálogo ni está protegido. Devuelve true si la
+// carpeta (o algo de ella) se conserva.
+bool sincronizar(const std::string& carpeta, const DelZip& zip, const Conocidos& conocidos, const std::set<std::string>& conservar)
+{
+    bool existe = false;
+    const auto nombres = nombresDe(carpeta, &existe);
+    if (!existe) return true;
+    bool conserva = conocida(minusculas(carpeta), zip, conocidos, conservar);
     std::error_code ec;
     for (const auto& nombre : nombres) {
         const std::string ruta = carpeta + "/" + nombre;
@@ -169,23 +269,20 @@ bool sincronizar(const std::string& carpeta, const std::set<std::string>& blanca
         }
         const std::string baja = minusculas(ruta);
         // /atmosphere/contents ya pasó por la limpieza de rutina (con
-        // preserve.txt). Ojo: AMS_CONTENTS lleva '/' final y la ruta armada
-        // aquí no; comparando contra la constante tal cual nunca coincidía y
-        // se recorría (y borraba) todo contents, que puede tener miles de
-        // entradas — esa era la pantalla congelada en "extrayendo".
+        // preserve.txt). AMS_CONTENTS lleva '/' final y esta ruta no: por eso
+        // se compara con el texto, no con la constante.
         if (baja == "/atmosphere/contents") {
             conserva = true;
             continue;
         }
-        if (std::filesystem::is_directory(ruta, ec)) {
-            deep_clean::logPaso("-> " + ruta);
-            if (sincronizar(ruta, blanca, conocidos, conservar)) {
+        if (esCarpeta(ruta)) {
+            if (sincronizar(ruta, zip, conocidos, conservar)) {
                 conserva = true;
             } else {
                 deep_clean::logPaso("   borro dir " + ruta);
                 std::filesystem::remove_all(ruta, ec);
             }
-        } else if (esConocida(baja, blanca, conocidos, conservar)) {
+        } else if (conocida(baja, zip, conocidos, conservar)) {
             conserva = true;
         } else {
             deep_clean::logPaso("   borro " + ruta);
@@ -195,68 +292,131 @@ bool sincronizar(const std::string& carpeta, const std::set<std::string>& blanca
     return conserva;
 }
 
-// Quita de /switch los .nro y .ovl que no reconocemos. Si el .nro vive en una
-// carpeta con otros archivos (un port con sus datos, un bundle propio), se
-// respeta entero: solo caen las apps sueltas o carpetas que solo tienen apps.
-void quitarNrosAjenos(const std::string& carpeta, int profundidad, const Conocidos& conocidos, const std::set<std::string>& conservar)
+// "Sys-Clk_Overlay" -> "sysclkoverlay": para reconocer la carpeta de /config de
+// una app aunque se escriba distinto.
+std::string clave(const std::string& nombre)
+{
+    std::string out;
+    for (unsigned char c : nombre) {
+        if (std::isalnum(c)) out += (char)std::tolower(c);
+    }
+    return out;
+}
+
+std::string sinExtension(const std::string& nombre)
+{
+    const auto punto = nombre.find_last_of('.');
+    return punto == std::string::npos ? nombre : nombre.substr(0, punto);
+}
+
+// Iguales, o una empieza por la otra (sys-clk <-> sys-clk-overlay). Con un
+// mínimo de 4 letras, para que un nombre corto no reconozca medio /config.
+bool clavesCoinciden(const std::string& a, const std::string& b)
+{
+    return a.size() >= 4 && b.size() >= 4 && (a.rfind(b, 0) == 0 || b.rfind(a, 0) == 0);
+}
+
+// Recorre /switch (3 niveles). Borra la segunda copia de una app que el pack ya
+// trae (mismo nombre dentro del .nro, otro archivo) y los .nro/.ovl vacíos o que
+// no son un NRO. Lo demás es del usuario y se queda; sus nombres (carpetas y
+// archivos) se guardan en `claves` para reconocer su carpeta de /config. Un .nro
+// con el mismo nombre de archivo que uno del pack no cae: es donde la
+// extracción lo va a actualizar.
+void barrerSwitch(const std::string& carpeta, int profundidad, const DelZip& zip, const std::set<std::string>& conservar, std::vector<std::string>& claves)
 {
     if (profundidad == 0) return;
-    const auto nombres = nombresDe(carpeta);
-    if (nombres.empty()) return;
+    std::vector<std::string> nombres;
+    for (const auto& n : nombresDe(carpeta)) {
+        if (n.rfind("._", 0) != 0) nombres.push_back(n);
+    }
+    // Una carpeta con otros archivos además de apps es un port con sus datos
+    // (o algo del usuario): no se toca nada de ella.
     const bool conDatos = carpeta != "/switch" && carpeta != "/switch/.overlays" &&
-        std::any_of(nombres.begin(), nombres.end(), [](const std::string& n) {
-            const std::string b = minusculas(n);
-            return b.rfind("._", 0) != 0 && !b.ends_with(".nro") && !b.ends_with(".ovl");
+        std::any_of(nombres.begin(), nombres.end(), [&carpeta](const std::string& n) {
+            return !esApp(minusculas(n)) && !esCarpeta(carpeta + "/" + n);
         });
     std::error_code ec;
     for (const auto& nombre : nombres) {
-        if (nombre.rfind("._", 0) == 0) continue;
         const std::string ruta = carpeta + "/" + nombre;
         const std::string baja = minusculas(ruta);
-        bool protegida = false;
-        for (const char* s : SIEMPRE) {
-            if (prefijoDeRuta(s, baja)) protegida = true;
+        if (esCarpeta(ruta)) {
+            claves.push_back(clave(nombre));
+            barrerSwitch(ruta, profundidad - 1, zip, conservar, claves);
+            continue;
         }
-        if (!protegida) {
-            for (const auto& crudo : conservar) {
-                const std::string c = crudo.empty() || crudo[0] == '/' ? crudo : "/" + crudo;
-                if (prefijoDeRuta(c, ruta)) protegida = true;
-            }
+        if (!esApp(baja)) continue;
+        claves.push_back(clave(sinExtension(nombre)));
+        if (conDatos || protegida(baja, conservar) || zip.rutas.count(baja) || zip.archivosApp.count(minusculas(nombre))) continue;
+        // Esta misma app, desde donde se haya abierto: no se borra a sí misma.
+        if (baja == minusculas(util::getAppPath())) continue;
+        FILE* f = std::fopen(ruta.c_str(), "rb");
+        if (!f) continue;
+        const LeerEn leer = lectorDeArchivo(f);
+        const char* motivo = nullptr;
+        if (!esNro(leer)) {
+            motivo = "   borro (vacio o danado) ";
+        } else {
+            const std::string app = nombreApp(leer);
+            if (!app.empty() && zip.apps.count(app)) motivo = "   borro (copia repetida) ";
         }
-        if (protegida) continue;
-        if (std::filesystem::is_directory(ruta, ec)) {
-            quitarNrosAjenos(ruta, profundidad - 1, conocidos, conservar);
-        } else if (!conDatos && (baja.ends_with(".nro") || baja.ends_with(".ovl")) && !conocidos.nombres.count(minusculas(nombre))) {
+        std::fclose(f);
+        if (motivo) {
+            deep_clean::logPaso(motivo + ruta);
+            std::filesystem::remove(ruta, ec);
+        }
+    }
+}
+
+// /config: se conserva entera la carpeta de cada app que sigue en la SD, que
+// trae el pack o que registra el catálogo (con los ajustes del usuario). Lo
+// demás es de apps que ya no están.
+void sincronizarConfig(const DelZip& zip, const Conocidos& conocidos, const std::set<std::string>& conservar, const std::vector<std::string>& claves)
+{
+    std::error_code ec;
+    for (const auto& nombre : nombresDe("/config")) {
+        const std::string ruta = "/config/" + nombre;
+        if (nombre.rfind("._", 0) == 0) {
+            std::filesystem::remove(ruta, ec);
+            continue;
+        }
+        const std::string baja = minusculas(ruta);
+        if (conocida(baja, zip, conocidos, conservar)) continue;
+        if (esCarpeta(ruta)) {
+            const std::string dentro = baja + "/";
+            auto empiezaDentro = [&dentro](const std::string& r) { return r.rfind(dentro, 0) == 0; };
+            if (std::any_of(zip.rutas.begin(), zip.rutas.end(), empiezaDentro) ||
+                std::any_of(conocidos.rutas.begin(), conocidos.rutas.end(), empiezaDentro))
+                continue;
+            const std::string k = clave(nombre);
+            if (std::any_of(claves.begin(), claves.end(), [&k](const std::string& c) { return clavesCoinciden(k, c); })) continue;
+            deep_clean::logPaso("   borro dir " + ruta);
+            std::filesystem::remove_all(ruta, ec);
+        } else {
+            deep_clean::logPaso("   borro " + ruta);
             std::filesystem::remove(ruta, ec);
         }
     }
 }
 
 // Quita las carpetas de /switch que quedaron vacías (o solo con "._" del
-// Finder) tras quitar apps ajenas. Devuelve true si queda algo.
+// Finder). Devuelve true si queda algo.
 bool podarVacias(const std::string& carpeta, int profundidad)
 {
     if (profundidad == 0) return true;
     const auto nombres = nombresDe(carpeta);
-    if (nombres.empty()) return false;  // vacia: nada que conservar, se poda
     bool quedaAlgo = false;
     std::error_code ec;
     for (const auto& nombre : nombres) {
         const std::string ruta = carpeta + "/" + nombre;
-        const std::string baja = minusculas(ruta);
         if (nombre.rfind("._", 0) == 0) {
             std::filesystem::remove(ruta, ec);
             continue;
         }
-        bool protegida = false;
-        for (const char* s : SIEMPRE) {
-            if (prefijoDeRuta(s, baja)) protegida = true;
-        }
-        if (protegida) {
+        if (protegida(minusculas(ruta), {})) {
             quedaAlgo = true;
             continue;
         }
-        if (std::filesystem::is_directory(ruta, ec)) {
+        if (esCarpeta(ruta)) {
             if (podarVacias(ruta, profundidad - 1)) {
                 quedaAlgo = true;
             } else {
@@ -292,45 +452,40 @@ void deep_clean::logPaso(const std::string& paso)
 void deep_clean::removeForeignPackLeftovers(const std::string& archivePath)
 {
     // Registro de pasos en la SD: si algo vuelve a frenar la instalación,
-    // este archivo dice exactamente dónde quedó (sobrevive: vive en una
-    // carpeta protegida).
+    // este archivo dice exactamente dónde quedó (vive en una carpeta protegida).
     auto paso = [](const std::string& p) { deep_clean::logPaso(p); };
 
     paso("--- inicio deep_clean");
     std::set<std::string> conservar;
     for (const auto& c : fs::readLineByLine(FILES_IGNORE)) {
-        conservar.insert(c.empty() || c[0] == '/' ? c : "/" + c);
+        if (!c.empty()) conservar.insert(minusculas(c[0] == '/' ? c : "/" + c));
     }
     const Conocidos conocidos = conocidosDelCatalogo();
-    paso(conocidos.delCatalogo ? "catalogo: ok" : "catalogo: vacio");
-    const std::set<std::string> blanca = rutasDelZip(archivePath);
-    paso("zip: " + std::to_string(blanca.size()) + " rutas");
-    // Las apps del pack y del catalogo conservan tambien su carpeta de
-    // /config: si no, cada actualizacion del pack les resetea los ajustes al
-    // usuario.
-    auto protegeConfig = [&conservar](const std::string& baja) {
-        if (baja.size() > 4 && baja.ends_with(".nro")) {
-            const auto barra = baja.find_last_of('/');
-            conservar.insert("/config/" + baja.substr(barra + 1, baja.size() - 4 - barra - 1));
-        }
-    };
-    for (const auto& ruta : blanca) protegeConfig(ruta);
-    for (const auto& nombre : conocidos.nombres) protegeConfig(nombre);
-    paso("sincronizando /atmosphere");
-    sincronizar("/atmosphere", blanca, conocidos, conservar);
-    paso("sincronizando /config");
-    sincronizar("/config", blanca, conocidos, conservar);
-    paso("atmosphere y config sincronizados");
-    if (conocidos.delCatalogo) {
-        quitarNrosAjenos("/switch", 3, conocidos, conservar);
-        podarVacias("/switch", 3);
-        paso("switch barrido");
-    } else {
-        paso("switch sin barrer (sin catalogo)");
+    paso(conocidos.rutas.empty() && conocidos.nombres.empty() ? "catalogo: vacio" : "catalogo: ok");
+    const DelZip zip = leerZip(archivePath);
+    paso("zip: " + std::to_string(zip.rutas.size()) + " rutas, " + std::to_string(zip.apps.size()) + " apps");
+    if (zip.rutas.empty()) {
+        // Sin saber qué trae el pack, sincronizar /atmosphere lo vaciaría.
+        paso("zip ilegible: no se limpia nada");
+        return;
     }
+    paso("sincronizando /atmosphere");
+    sincronizar("/atmosphere", zip, conocidos, conservar);
+    paso("barriendo /switch");
+    std::vector<std::string> claves;
+    barrerSwitch("/switch", 3, zip, conservar, claves);
+    podarVacias("/switch", 3);
+    for (const auto& n : zip.archivosApp) claves.push_back(clave(sinExtension(n)));
+    for (const auto& n : zip.apps) claves.push_back(clave(n));
+    for (const auto& n : conocidos.nombres) claves.push_back(clave(sinExtension(n)));
+    paso("sincronizando /config");
+    sincronizarConfig(zip, conocidos, conservar, claves);
     std::error_code ec;
     for (const char* nombre : RAIZ_AJENA) {
-        std::filesystem::remove_all(std::string("/") + nombre, ec);
+        if (esCarpeta(std::string("/") + nombre)) {
+            paso(std::string("   borro dir /") + nombre);
+            std::filesystem::remove_all(std::string("/") + nombre, ec);
+        }
     }
     paso("fin");
 }
