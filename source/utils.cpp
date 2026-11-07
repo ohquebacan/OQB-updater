@@ -29,8 +29,7 @@ namespace {
 // deep_clean: la instalación completa queda en un solo archivo.
 void pasoInstalacion(const char* p)
 {
-    std::ofstream f(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::app);
-    f << p << '\n';
+    deep_clean::logPaso(p);
 }
 
 }  // namespace

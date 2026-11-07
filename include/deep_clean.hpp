@@ -11,4 +11,8 @@ namespace deep_clean {
 // preserve.txt). La limpieza de rutina (/SaltySD, /atmosphere/contents,
 // /bootloader) corre antes, en utils::extractArchive.
 void removeForeignPackLeftovers(const std::string& archivePath);
+
+// Escribe una linea en deep_clean.log (append), para seguir la instalacion
+// paso a paso desde la SD.
+void logPaso(const std::string& paso);
 }  // namespace deep_clean

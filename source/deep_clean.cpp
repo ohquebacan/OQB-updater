@@ -41,7 +41,12 @@ bool prefijoDeRuta(const std::string& prefijo, const std::string& ruta)
 
 // Rutas propias del ecosistema OQB: se conservan aunque no vengan en el pack
 // ni en el catálogo (registros, tienda, menú sphaira).
-constexpr const char* SIEMPRE[] = {"/config/aio-switch-updater", "/config/sphaira", "/switch/Bacan-Shop", "/switch/oqb-updater.nro"};
+// Los de atmosphere son del sistema, no de ningún pack: automatic_backups
+// guarda el PRODINFO del usuario (borrarlo sería un desastre), los demás los
+// escribe el SO en caliente y no le corresponde al pack tocarlos.
+constexpr const char* SIEMPRE[] = {"/config/aio-switch-updater", "/config/sphaira", "/switch/Bacan-Shop", "/switch/oqb-updater.nro",
+                                   "/atmosphere/automatic_backups", "/atmosphere/bluetooth_devices.db", "/atmosphere/erpt_reports",
+                                   "/atmosphere/logs", "/atmosphere/fatal_errors", "/atmosphere/flags"};
 // Carpetas de otros CFW/packs que a veces quedan en la raíz de la SD.
 constexpr const char* RAIZ_AJENA[] = {"ReiNX", "sxos", "sept"};
 
@@ -154,8 +159,11 @@ bool sincronizar(const std::string& carpeta, const std::set<std::string>& blanca
     bool conserva = esConocida(minusculas(carpeta), blanca, conocidos, conservar);
     std::error_code ec;
     for (const auto& nombre : nombres) {
-        if (nombre.rfind("._", 0) == 0) continue;
         const std::string ruta = carpeta + "/" + nombre;
+        if (nombre.rfind("._", 0) == 0) {
+            std::filesystem::remove(ruta, ec);  // basura del Finder/Mac
+            continue;
+        }
         const std::string baja = minusculas(ruta);
         // /atmosphere/contents ya pasó por la limpieza de rutina (con
         // preserve.txt). Ojo: AMS_CONTENTS lleva '/' final y la ruta armada
@@ -167,14 +175,17 @@ bool sincronizar(const std::string& carpeta, const std::set<std::string>& blanca
             continue;
         }
         if (std::filesystem::is_directory(ruta, ec)) {
+            deep_clean::logPaso("-> " + ruta);
             if (sincronizar(ruta, blanca, conocidos, conservar)) {
                 conserva = true;
             } else {
+                deep_clean::logPaso("   borro dir " + ruta);
                 std::filesystem::remove_all(ruta, ec);
             }
         } else if (esConocida(baja, blanca, conocidos, conservar)) {
             conserva = true;
         } else {
+            deep_clean::logPaso("   borro " + ruta);
             std::filesystem::remove(ruta, ec);
         }
     }
@@ -257,13 +268,18 @@ bool podarVacias(const std::string& carpeta, int profundidad)
 
 }  // namespace
 
+void deep_clean::logPaso(const std::string& paso)
+{
+    std::ofstream log(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::app);
+    log << paso << '\n';
+}
+
 void deep_clean::removeForeignPackLeftovers(const std::string& archivePath)
 {
     // Registro de pasos en la SD: si algo vuelve a frenar la instalación,
     // este archivo dice exactamente dónde quedó (sobrevive: vive en una
     // carpeta protegida).
-    std::ofstream log(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::app);
-    auto paso = [&log](const std::string& p) { log << p << '\n'; log.flush(); };
+    auto paso = [](const std::string& p) { deep_clean::logPaso(p); };
 
     paso("--- inicio deep_clean");
     std::set<std::string> conservar;
