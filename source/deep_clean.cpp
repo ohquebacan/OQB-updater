@@ -262,10 +262,10 @@ void deep_clean::removeForeignPackLeftovers(const std::string& archivePath)
     // Registro de pasos en la SD: si algo vuelve a frenar la instalación,
     // este archivo dice exactamente dónde quedó (sobrevive: vive en una
     // carpeta protegida).
-    std::ofstream log(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::trunc);
+    std::ofstream log(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::app);
     auto paso = [&log](const std::string& p) { log << p << '\n'; log.flush(); };
 
-    paso("inicio");
+    paso("--- inicio deep_clean");
     std::set<std::string> conservar;
     for (const auto& c : fs::readLineByLine(FILES_IGNORE)) {
         conservar.insert(c.empty() || c[0] == '/' ? c : "/" + c);
@@ -274,9 +274,10 @@ void deep_clean::removeForeignPackLeftovers(const std::string& archivePath)
     paso(conocidos.delCatalogo ? "catalogo: ok" : "catalogo: vacio");
     const std::set<std::string> blanca = rutasDelZip(archivePath);
     paso("zip: " + std::to_string(blanca.size()) + " rutas");
-    for (const char* base : {"/atmosphere", "/config"}) {
-        sincronizar(base, blanca, conocidos, conservar);
-    }
+    paso("sincronizando /atmosphere");
+    sincronizar("/atmosphere", blanca, conocidos, conservar);
+    paso("sincronizando /config");
+    sincronizar("/config", blanca, conocidos, conservar);
     paso("atmosphere y config sincronizados");
     if (conocidos.delCatalogo) {
         quitarNrosAjenos("/switch", 3, conocidos, conservar);

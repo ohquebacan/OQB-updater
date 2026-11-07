@@ -22,6 +22,19 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
+namespace {
+
+// Registro de pasos de la instalación del pack, para diagnosticar en la SD
+// donde se quedó si algo frena. Apunta al mismo deep_clean.log que usa
+// deep_clean: la instalación completa queda en un solo archivo.
+void pasoInstalacion(const char* p)
+{
+    std::ofstream f(std::string(CONFIG_PATH) + "deep_clean.log", std::ios::app);
+    f << p << '\n';
+}
+
+}  // namespace
+
 namespace util {
 
     bool isArchive(const std::string& path)
@@ -294,6 +307,7 @@ namespace util {
                    que lo que sobrevive es lo que el pack trae o lo que el usuario
                    pidio conservar, y apagarlo seria romperlo a proposito. */
                 constexpr bool preserveInis = false;
+                pasoInstalacion("=== inicio instalacion pack");
                 // Limpiar antes de extraer el HATS pack para evitar conflictos de arranque.
                 // preserve.txt ya se respetaba al extraer, pero no acá: lo que
                 // estuviera listado se borraba igual antes de llegar a esa parte.
@@ -322,6 +336,7 @@ namespace util {
                     preservedBoot.insert(std::string(BOOTLOADER_PATH) + "payloads");
                     fs::removeDirContentsExcept(BOOTLOADER_PATH, preservedBoot);
                 }
+                pasoInstalacion("limpieza previa ok");
                 /* Limpieza profunda de restos de otros packs (misma logica que el
                    cliente PC): sincroniza atmosphere/ y config/ contra las rutas del
                    zip, barre .nro/.ovl ajenos de /switch protegiendo carpetas con
@@ -329,12 +344,15 @@ namespace util {
                    ReiNX/sxos/sept de la raiz. Corre siempre, sin preguntar, igual
                    que la limpieza de arriba. */
                 deep_clean::removeForeignPackLeftovers(AMS_FILENAME);
+                pasoInstalacion("deep_clean ok");
                 /* Una lista que haya quedado de antes (un pack copiado a mano no
                    la procesa) se aplicaria a este pack y podria borrar lo que
                    acaba de instalar. Solo vale la que traiga este zip. */
                 std::filesystem::remove(PACK_REMOVE_TXT);
                 extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
+                pasoInstalacion("extract ok");
                 removePackLeftovers();
+                pasoInstalacion("=== fin instalacion pack");
                 break;
             }
             case contentType::apps: {
