@@ -1,15 +1,12 @@
 #include "main_frame.hpp"
 
-#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <fstream>
 #include <json.hpp>
-#include <thread>
 
 #include "about_tab.hpp"
 #include "ams_tab.hpp"
-#include "app_update.hpp"
 #include "app_updates.hpp"
 #include "apps_tab.hpp"
 #include "download.hpp"
@@ -28,17 +25,6 @@ using json = nlohmann::ordered_json;
 namespace {
     constexpr const char AppTitle[] = APP_TITLE;
     constexpr const char AppVersion[] = APP_VERSION;
-
-    // Estado de la consulta de red, compartido por todas las MainFrame de la
-    // sesion (la ventana se reconstruye al volver al inicio). Los datos los
-    // escribe el hilo; la reconstruccion se decide en draw(), del hilo de
-    // dibujo, con el flag rojo como barrera.
-    bool consultado = false;
-    std::string tagGuardado;
-    nlohmann::ordered_json nxlinksGuardado;
-    std::atomic<bool> hiloLanzado {false};
-    std::atomic<bool> redLista {false};
-    bool reconstruido = false;  // una sola reconstruccion automatica por sesion
 }  // namespace
 
 MainFrame::MainFrame() : TabFrame()
@@ -48,25 +34,26 @@ MainFrame::MainFrame() : TabFrame()
 
     s64 freeStorage;
 
-    /* Las consultas de red (tag, nx-links, catalogo) corren en un hilo:
-       antes eran sincronas aqui y la app arrancaba con pantalla negra
-       varios segundos esperando a los servidores. El primer dibujo sale al
-       instante con lo que haya offline; cuando el hilo termina, draw()
-       reconstruye la ventana con los datos. */
-    if (!consultado && !hiloLanzado.exchange(true)) {
-        std::thread([] {
-            if (util::hayInternet()) {
-                tagGuardado = util::getLatestTag(TAGS_INFO);
-                download::getRequest(NXLINKS_URL, nxlinksGuardado);
-                if (nxlinksGuardado.is_object())
-                    nxlinksGuardado[appUpdates::NXLINKS_KEY] = appUpdates::fetchPublished();
-            }
-            consultado = nxlinksGuardado.is_object() && !nxlinksGuardado.empty();
-            redLista = true;
-        }).detach();
-    }
+    /* Las dos peticiones de abajo son sincronas y ocurren antes de dibujar
+       nada: sin conexion la app se quedaba hasta un minuto en negro esperando
+       que vencieran los timeouts, que para el usuario es la app colgada.
+       Preguntarle al sistema cuesta nada y ahorra esa espera. */
+    const bool conectado = util::hayInternet();
 
-    const bool conectado = consultado;
+    /* La pantalla de inicio se vuelve a armar cada vez que se termina una
+       descarga ("Volver al inicio"). Sin esto repetia las tres consultas a
+       internet y el boton tardaba varios segundos en responder. El catalogo no
+       cambia en una sesion, asi que se consulta una vez y se reutiliza. */
+    static bool consultado = false;
+    static std::string tagGuardado;
+    static nlohmann::ordered_json nxlinksGuardado;
+    if (conectado && !consultado) {
+        tagGuardado = util::getLatestTag(TAGS_INFO);
+        download::getRequest(NXLINKS_URL, nxlinksGuardado);
+        if (nxlinksGuardado.is_object())
+            nxlinksGuardado[appUpdates::NXLINKS_KEY] = appUpdates::fetchPublished();
+        consultado = nxlinksGuardado.is_object() && !nxlinksGuardado.empty();
+    }
 
     std::string tag = conectado ? tagGuardado : "";
     this->latestTag = tag;
@@ -158,22 +145,6 @@ MainFrame::MainFrame() : TabFrame()
 void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
     brls::TabFrame::draw(vg, x, y, width, height, style, ctx);
-
-    /* La red llego despues del primer dibujo: se reemplaza la ventana por una
-       armada con los datos (una sola vez por sesion, y solo si el usuario
-       sigue en el inicio con esta ventana arriba: si abrio otra cosa, se
-       respetará y la proxima vez que vuelva al inicio ya vera los datos). */
-    /* Ojo: draw() solo se ejecuta mientras esta ventana se esta dibujando,
-       o sea que llegar aqui ya dice que el usuario sigue en el inicio (si
-       hubiera otra vista encima, esta no dibujaria). Por eso no hace falta
-       preguntarle a la pila de vistas. */
-    if (redLista && consultado && !reconstruido) {
-        reconstruido = true;
-        MainFrame* nuevo = new MainFrame();
-        brls::Application::pushView(nuevo);
-        appUpdate::showNoticeIfAvailable(nuevo->getLatestTag());
-        return;
-    }
 
     /* Nextendo, mientras no se haya abierto: un punto violeta que respira
        lento. Otro color y otro ritmo que el aviso verde de las apps, para que
