@@ -6,9 +6,12 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <thread>
+#include <set>
 
 #include "current_cfw.hpp"
+#include "actividad.hpp"
 #include "deep_clean.hpp"
 #include "download.hpp"
 #include "extract.hpp"
@@ -185,6 +188,7 @@ namespace util {
     {
         if (!std::filesystem::exists(PACK_REMOVE_TXT))
             return;
+        actividad::paso(actividad::texto("obsoletos"));
 
         std::ifstream lista(PACK_REMOVE_TXT);
         std::string linea;
@@ -307,6 +311,7 @@ namespace util {
                    pidio conservar, y apagarlo seria romperlo a proposito. */
                 constexpr bool preserveInis = false;
                 pasoInstalacion("=== inicio instalacion pack");
+                actividad::paso(actividad::texto("quitando_anterior"));
                 // Limpiar antes de extraer el HATS pack para evitar conflictos de arranque.
                 // preserve.txt ya se respetaba al extraer, pero no acá: lo que
                 // estuviera listado se borraba igual antes de llegar a esa parte.
@@ -457,11 +462,22 @@ namespace util {
 
     std::string getCheatsVersion()
     {
-        std::string res = util::downloadFileToString(CHEATS_URL_VERSION);
+        /* Se consulta una vez por sesion: la arma la precarga del arranque, en
+           segundo plano. Antes la pestana Trucos la pedia al armarse, en el
+           hilo de la interfaz (0.6 s de cada apertura), y sin conexion se
+           quedaba esperando los timeouts. */
+        static std::mutex candado;
+        static std::string guardada;
+        std::lock_guard<std::mutex> l(candado);
+        if (!guardada.empty())
+            return guardada;
+        if (!hayInternet())
+            return "";
+        guardada = util::downloadFileToString(CHEATS_URL_VERSION);
         /* if (res == "" && isArchive(CHEATS_FILENAME)) {
             res = "offline";
         } */
-        return res;
+        return guardada;
     }
 
     void saveToFile(const std::string& text, const std::string& path)
@@ -642,6 +658,78 @@ namespace util {
     // Muchas apps viven en /switch/<app>/<app>.nro y guardan su configuración y
     // sus datos al lado. Si bajáramos siempre a /switch/<app>.nro quedarían dos
     // copias: la suelta se abre sin sus datos y el acceso directo apunta a ella.
+    namespace {
+        // El índice de /switch de la LecturaSwitch activa.
+        struct IndiceSwitch {
+            int activas = 0;
+            int generacion = 0;
+            std::set<std::string> rutas;          // archivos y carpetas, en minúsculas (FAT no distingue)
+            std::vector<std::string> carpetas;    // subcarpetas de /switch, en el orden del disco
+        } indice;
+
+        std::string minus(std::string s)
+        {
+            std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+            return s;
+        }
+
+        // ¿La ruta está dentro de lo que el índice conoce? /switch/x y /switch/x/y.
+        bool cubiertaPorIndice(const std::string& baja)
+        {
+            const std::string base = minus(APP_PATH);
+            if (baja.rfind(base, 0) != 0)
+                return false;
+            const std::string resto = baja.substr(base.size());
+            return !resto.empty() && std::count(resto.begin(), resto.end(), '/') <= 1 && resto.back() != '/';
+        }
+    }  // namespace
+
+    LecturaSwitch::LecturaSwitch()
+    {
+        if (indice.activas++ > 0)
+            return;
+        indice.generacion++;
+        indice.rutas.clear();
+        indice.carpetas.clear();
+        std::error_code ec;
+        for (const auto& entry : std::filesystem::directory_iterator(APP_PATH, ec)) {
+            if (ec) break;
+            const std::string ruta = std::string(APP_PATH) + entry.path().filename().string();
+            indice.rutas.insert(minus(ruta));
+            if (!entry.is_directory(ec)) continue;
+            indice.carpetas.push_back(ruta);
+            std::error_code ec2;
+            for (const auto& hijo : std::filesystem::directory_iterator(ruta, ec2)) {
+                if (ec2) break;
+                indice.rutas.insert(minus(ruta + "/" + hijo.path().filename().string()));
+            }
+        }
+    }
+
+    LecturaSwitch::~LecturaSwitch()
+    {
+        if (--indice.activas == 0) {
+            indice.rutas.clear();
+            indice.carpetas.clear();
+        }
+    }
+
+    int generacionLectura()
+    {
+        return indice.activas > 0 ? indice.generacion : 0;
+    }
+
+    bool existeEnSd(const std::string& ruta)
+    {
+        if (indice.activas > 0) {
+            const std::string baja = minus(ruta);
+            if (cubiertaPorIndice(baja))
+                return indice.rutas.count(baja) > 0;
+        }
+        std::error_code ec;
+        return std::filesystem::exists(ruta, ec);
+    }
+
     std::string resolveNroDestination(const std::string& filename)
     {
         std::error_code ec;
@@ -649,18 +737,25 @@ namespace util {
 
         // 1. Su carpeta propia, la convención de hbmenu.
         const std::string inOwnDir = std::string(APP_PATH) + stem + "/" + filename;
-        if (std::filesystem::exists(inOwnDir, ec)) {
+        if (existeEnSd(inOwnDir)) {
             return inOwnDir;
         }
 
         // 2. Ya estaba suelto en /switch/.
         const std::string flat = std::string(APP_PATH) + filename;
-        if (std::filesystem::exists(flat, ec)) {
+        if (existeEnSd(flat)) {
             return flat;
         }
 
         // 3. En una carpeta con otro nombre (p. ej. /switch/thegoonies/TheGooniesInstaller.nro).
-        if (std::filesystem::exists(APP_PATH, ec)) {
+        if (indice.activas > 0) {
+            for (const auto& carpeta : indice.carpetas) {
+                const std::string candidate = carpeta + "/" + filename;
+                if (existeEnSd(candidate))
+                    return candidate;
+            }
+        }
+        else if (std::filesystem::exists(APP_PATH, ec)) {
             for (const auto& entry : std::filesystem::directory_iterator(APP_PATH, ec)) {
                 if (ec) break;
                 if (!entry.is_directory(ec)) continue;

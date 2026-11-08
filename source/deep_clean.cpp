@@ -21,6 +21,7 @@
 #include <minizip/unzip.h>
 
 #include "constants.hpp"
+#include "actividad.hpp"
 #include "app_updates.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
@@ -280,12 +281,14 @@ bool sincronizar(const std::string& carpeta, const DelZip& zip, const Conocidos&
                 conserva = true;
             } else {
                 deep_clean::logPaso("   borro dir " + ruta);
+                actividad::detalle(actividad::texto("quitado", ruta));
                 std::filesystem::remove_all(ruta, ec);
             }
         } else if (conocida(baja, zip, conocidos, conservar)) {
             conserva = true;
         } else {
             deep_clean::logPaso("   borro " + ruta);
+            actividad::detalle(actividad::texto("quitado", ruta));
             std::filesystem::remove(ruta, ec);
         }
     }
@@ -362,6 +365,7 @@ void barrerSwitch(const std::string& carpeta, int profundidad, const DelZip& zip
         std::fclose(f);
         if (motivo) {
             deep_clean::logPaso(motivo + ruta);
+            actividad::detalle(actividad::texto("quitado", ruta));
             std::filesystem::remove(ruta, ec);
         }
     }
@@ -390,9 +394,11 @@ void sincronizarConfig(const DelZip& zip, const Conocidos& conocidos, const std:
             const std::string k = clave(nombre);
             if (std::any_of(claves.begin(), claves.end(), [&k](const std::string& c) { return clavesCoinciden(k, c); })) continue;
             deep_clean::logPaso("   borro dir " + ruta);
+            actividad::detalle(actividad::texto("quitado", ruta));
             std::filesystem::remove_all(ruta, ec);
         } else {
             deep_clean::logPaso("   borro " + ruta);
+            actividad::detalle(actividad::texto("quitado", ruta));
             std::filesystem::remove(ruta, ec);
         }
     }
@@ -456,6 +462,7 @@ void deep_clean::removeForeignPackLeftovers(const std::string& archivePath)
     auto paso = [](const std::string& p) { deep_clean::logPaso(p); };
 
     paso("--- inicio deep_clean");
+    actividad::paso(actividad::texto("buscando_restos"));
     std::set<std::string> conservar;
     for (const auto& c : fs::readLineByLine(FILES_IGNORE)) {
         if (!c.empty()) conservar.insert(minusculas(c[0] == '/' ? c : "/" + c));

@@ -75,9 +75,9 @@ namespace {
 
 }  // namespace
 
-AboutTab::AboutTab(const std::string& tag, const std::string& donationUrl) : brls::List()
+AboutTab::AboutTab(const std::string& tag, const std::string& donationUrl, const std::vector<protection::Check>& checks) : brls::List()
 {
-    this->addStatusPanel(tag);
+    this->addStatusPanel(tag, checks);
     this->addSupport(donationUrl);
     this->addAppInfo();
 }
@@ -146,7 +146,7 @@ void AboutTab::addSupport(const std::string& donationUrl)
     this->addView(new ApoyoView(donationUrl));
 }
 
-void AboutTab::addStatusPanel(const std::string& tag)
+void AboutTab::addStatusPanel(const std::string& tag, const std::vector<protection::Check>& checks)
 {
     this->addView(new brls::Header("menus/about/status_title"_i18n));
 
@@ -173,7 +173,6 @@ void AboutTab::addStatusPanel(const std::string& tag)
        rotar el package3 puede dejar la consola sin bloqueo DNS sin avisar, y
        nadie entra a mirarlo si no se le dice que hay algo que mirar. La fila
        abre el verificador completo. */
-    const std::vector<protection::Check> checks = protection::runOnConsole();
     const bool failed = protection::anyFailed(checks);
     const size_t failures = std::count_if(checks.begin(), checks.end(),
                                           [](const protection::Check& c) {

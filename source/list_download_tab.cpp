@@ -1,3 +1,4 @@
+#include "actividad.hpp"
 #include "list_download_tab.hpp"
 
 #include <algorithm>
@@ -24,8 +25,47 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
+void ListDownloadTab::ponerIcono(brls::ListItem* item, const nlohmann::ordered_json& nxlinks, const std::string& url)
+{
+    // 68 px de alto: icono de 46 px (borealis le deja 11 px arriba y abajo). Con
+    // subtitulo se deja la altura que ya tenia: el icono crece con la fila.
+    if (item->getSubLabel().empty())
+        item->setHeight(68);
+    const std::string ruta = appUpdates::rutaIcono(nxlinks, url);
+    if (!ruta.empty()) {
+        item->setThumbnail(ruta);
+        return;
+    }
+    std::vector<uint8_t> propio = appUpdates::iconoInstalado(nxlinks, url);
+    if (!propio.empty()) {
+        item->setThumbnail(propio.data(), propio.size());
+        return;
+    }
+    item->setThumbnail("romfs:/iconos/generico.png");
+}
+
+void ListDownloadTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    // Termino una instalacion: se vuelve a marcar cada app (la recien
+    // actualizada deja de decir "Version nueva").
+    if (const int gen = appUpdates::generacionInstalaciones(); gen != this->genInstalaciones) {
+        this->genInstalaciones = gen;
+        const nlohmann::ordered_json instaladas = appUpdates::installed();
+        for (auto& [item, url] : this->filasApps) {
+            if (appUpdates::hasUpdate(this->nxlinks, instaladas, url))
+                item->setValue("menus/apps/new_version"_i18n, false, false);
+            else if (appUpdates::isInstalled(this->nxlinks, url))
+                item->setValue("menus/apps/installed"_i18n, true, false);
+            else
+                item->setValue("", false, false);
+        }
+    }
+    brls::List::draw(vg, x, y, width, height, style, ctx);
+}
+
 ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey, const std::string& filter) : brls::List(), type(type), nxlinks(nxlinks), jsonKey(jsonKey), filter(filter)
 {
+    this->genInstalaciones = appUpdates::generacionInstalaciones();
     this->setDescription();
 
     this->createList();
@@ -171,6 +211,10 @@ void ListDownloadTab::createList(contentType type)
                 listItem = new brls::ListItem(link.first);
             }
             listItem->setHeight(LISTITEM_HEIGHT);
+            if (type == contentType::apps) {
+                ListDownloadTab::ponerIcono(listItem, this->nxlinks, url);
+                this->filasApps.emplace_back(listItem, url);
+            }
             // Marcar las apps que ya están en la SD: su .nro o, para un zip, lo
             // que el catálogo dice que deja (app-versions.json).
             if (type == contentType::apps && appUpdates::isInstalled(this->nxlinks, url)) {
@@ -351,6 +395,7 @@ void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, s
             fwd::Config config;
             Result rc = fwd::configFromNro(*nroPath, config);
             if (R_SUCCEEDED(rc)) {
+                actividad::paso(actividad::texto("acceso_directo", config.name));
                 rc = fwd::install(config, [](int step, int total) {
                     ProgressEvent::instance().setTotalSteps(total);
                     ProgressEvent::instance().setStep(step);

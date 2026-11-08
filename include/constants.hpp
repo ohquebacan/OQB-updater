@@ -26,6 +26,8 @@ constexpr const char TAGS_INFO[] = "https://api.github.com/repos/ohquebacan/OQB-
 constexpr const char APP_FILENAME[] = "/config/aio-switch-updater/app.zip";
 
 constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/nx-links.json";
+// Partidas completas de juegos (se restauran con JKSV BACAN). Viaja dentro de nxlinks como "_partidas".
+constexpr const char PARTIDAS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/partidas.json";
 
 constexpr const char CUSTOM_FILENAME[] = "/config/aio-switch-updater/custom.zip";
 constexpr const char HEKATE_IPL_PATH[] = "/bootloader/hekate_ipl.ini";
@@ -61,6 +63,10 @@ constexpr const char PACK_VERSIONS_PATH[] = "/config/aio-switch-updater/pack_ver
 constexpr const char DONATION_URL[] = "https://www.paypal.com/ncp/payment/F8U8BWLLQ7MY6";
 constexpr const char APP_VERSIONS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/app-versions.json";
 constexpr const char APP_VERSIONS_PATH[] = "/config/aio-switch-updater/app_versions.json";
+// Iconos de las apps del catalogo: un zip con todos (pocos KB cada uno), que se
+// baja solo cuando falta alguno de los que nombra app-versions.json ("icono").
+constexpr const char ICONOS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/iconos.zip";
+constexpr const char ICONOS_PATH[] = "/config/aio-switch-updater/iconos/";
 
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
 constexpr const char CUSTOM_PACKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/custom_packs.json";

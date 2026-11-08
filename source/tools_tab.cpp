@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <vector>
 
 #include "JC_page.hpp"
@@ -17,6 +18,7 @@
 #include "forwarder_page.hpp"
 #include "fs.hpp"
 #include "hide_tabs_page.hpp"
+#include "limpieza_mac.hpp"
 #include "net_page.hpp"
 #include "ntp.hpp"
 #include "payload_page.hpp"
@@ -353,6 +355,25 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     cleanUp->setHeight(LISTITEM_HEIGHT);
 
+    /* Basura de macOS en la SD (archivos "._", .DS_Store, .Spotlight-V100...), con el
+       mismo criterio que la app de PC. Se confirma, se limpia con la cascada del
+       registro a la vista y al final se dice cuanto se quito. */
+    brls::ListItem* cleanMac = new brls::ListItem("menus/tools/clean_mac"_i18n);
+    cleanMac->getClickEvent()->subscribe([](brls::View* view) {
+        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+        frame->setTitle("menus/tools/clean_mac"_i18n);
+        frame->addStage(new ConfirmPage(frame, "menus/tools/clean_mac_confirm"_i18n));
+        auto mensaje = std::make_shared<std::string>();
+        frame->addStage(new WorkerPage(frame, "menus/tools/clean_mac_trabajando"_i18n, [mensaje]() {
+            const limpiezaMac::Resultado r = limpiezaMac::limpiar();
+            *mensaje = limpiezaMac::resumen(r);
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+        }));
+        frame->addStage(new ConfirmPage_Deferred(frame, mensaje));
+        brls::Application::pushView(frame);
+    });
+    cleanMac->setHeight(LISTITEM_HEIGHT);
+
     brls::ListItem* language = new brls::ListItem("menus/tools/language"_i18n);
     language->getClickEvent()->subscribe([](brls::View* view) {
         std::vector<std::pair<std::string, std::string>> languages{
@@ -492,6 +513,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
 
     siVisible(archivos, "move", move);
     siVisible(archivos, "cleanup", cleanUp);
+    siVisible(archivos, "cleanup", cleanMac);
 
     siVisible(inicio, "createforwarder", createForwarder);
     siVisible(inicio, "manageforwarders", manageForwarders);

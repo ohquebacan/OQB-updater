@@ -27,6 +27,9 @@ public:
     // (por ejemplo, los firmwares compatibles con Nextendo).
     void setPositiveValue(const std::string& value);
 
+    // Sin valor y sin el marco de aviso (una app que se acaba de actualizar).
+    void clearValue();
+
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 
     /* Recoloca el valor. Borealis lo pone a la altura del subtitulo y pegado al

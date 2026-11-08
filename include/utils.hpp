@@ -65,6 +65,25 @@ namespace util {
     std::string getContentsPath();
     // Dónde guardar (o actualizar) un .nro: respeta la carpeta propia de la app si ya existe.
     std::string resolveNroDestination(const std::string& filename);
+
+    // Mientras exista uno de estos, lo que se pregunta sobre /switch sale de una
+    // sola lectura de la carpeta (y de sus subcarpetas). Para armar ventanas:
+    // preguntaban por cada app del catálogo, varias veces, si existía en cada
+    // carpeta de /switch, y eran miles de consultas a la SD (unos 7 s al abrir).
+    // Solo mientras se arma: lo que se instale después no estaría en el índice.
+    class LecturaSwitch
+    {
+    public:
+        LecturaSwitch();
+        ~LecturaSwitch();
+        LecturaSwitch(const LecturaSwitch&) = delete;
+        LecturaSwitch& operator=(const LecturaSwitch&) = delete;
+    };
+    // Como std::filesystem::exists, pero con el índice si hay una LecturaSwitch.
+    bool existeEnSd(const std::string& ruta);
+    // Distinto de 0 mientras haya una LecturaSwitch; cambia con cada una. Para
+    // que otros guarden lo leído solo durante esa lectura.
+    int generacionLectura();
     // Todas las ubicaciones donde ese .nro pudo haber vivido alguna vez, en el
     // mismo orden que mira resolveNroDestination. Se construyen, no se
     // descubren: la ubicación vieja puede ya no existir en disco y es

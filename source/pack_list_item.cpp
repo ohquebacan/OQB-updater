@@ -47,6 +47,15 @@ void PackListItem::setWarningValue(const std::string& value)
         this->valueView->setColor(colorAviso());
 }
 
+void PackListItem::clearValue()
+{
+    this->warning = false;
+    this->positive = false;
+    this->setValue("", false, false);
+    if (this->valueView)
+        this->valueView->unsetColor();
+}
+
 void PackListItem::setPositiveValue(const std::string& value)
 {
     this->setValue(value, false, false);

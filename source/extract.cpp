@@ -1,4 +1,5 @@
 #include "extract.hpp"
+#include "actividad.hpp"
 
 #include <dirent.h>
 #include <sys/stat.h>
@@ -208,6 +209,8 @@ namespace extract {
 
         ProgressEvent::instance().setTotalSteps(gi.number_entry);
         ProgressEvent::instance().setStep(0);
+        actividad::paso(actividad::texto("abriendo", actividad::nombre(archivePath)));
+        size_t copiados = 0;
 
         std::set<std::string> ignoreList = fs::readLineByLine(FILES_IGNORE);
         std::string appPath = util::getAppPath();
@@ -289,10 +292,19 @@ namespace extract {
                                                                                                                     u8 res = filename.find(ignored);
                                                                                                                     return (res == 0 || res == 1); }) != ignoreList.end())) {
                     if (!std::filesystem::exists(filename)) {
+                        actividad::detalle(actividad::texto("copiando", filename));
                         extractEntry(filename, zfile);
+                        copiados++;
+                    }
+                    else if (filename.back() != '/') {
+                        actividad::detalle(actividad::texto("conserva", filename));
                     }
                 }
                 else {
+                    if (filename.back() != '/') {
+                        actividad::detalle(actividad::texto("copiando", filename));
+                        copiados++;
+                    }
                     if ((filename == "/atmosphere/package3") || (filename == "/atmosphere/stratosphere.romfs")) {
                         extractEntry(filename + ".aio", zfile);
                     }
@@ -311,6 +323,7 @@ namespace extract {
                                que se copia siempre. */
                             if (CurrentCfw::running_cfw == CFW::ams) {
                                 fs::copyFile(UPDATE_BIN_PATH, REBOOT_PAYLOAD_PATH);
+                                actividad::paso(actividad::texto("hekate"));
                             }
                         }
                     }
@@ -321,6 +334,7 @@ namespace extract {
             unzGoToNextFile(zfile);
         }
         unzClose(zfile);
+        actividad::paso(actividad::texto("copiados", std::to_string(copiados)));
         ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
     }
 

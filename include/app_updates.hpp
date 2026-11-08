@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <json.hpp>
 #include <string>
+#include <vector>
 
 // Versiones nuevas de las apps del catalogo.
 //
@@ -38,10 +40,31 @@ namespace appUpdates {
     // propio de un zip sin .nro ("marcas"). Sin datos del catalogo, solo .nro.
     bool isInstalled(const nlohmann::ordered_json& nxlinks, const std::string& url);
 
+    // La version interna (NACP) del .nro instalado de esa app, o vacia.
+    std::string installedVersion(const std::string& url);
+    // La version interna publicada en el catalogo ("nro_version"), o vacia.
+    std::string publishedVersion(const nlohmann::ordered_json& nxlinks, const std::string& url);
+
     // El registro de la SD, para leerlo una vez por lista.
     nlohmann::ordered_json installed();
 
     // Se llama al terminar de instalar, con la fecha que estaba publicada.
     void recordInstalled(const std::string& url, const std::string& date);
+
+    // Sube cada vez que termina una instalacion. Lo que muestra "version nueva"
+    // (el punto del menu, la ficha de Bacán Shop, las filas de las listas) se
+    // calcula al armar la ventana: al ver que cambio, se vuelve a calcular, y
+    // asi una app recien actualizada deja de figurar como pendiente sin tener
+    // que cerrar OQB Updater.
+    int generacionInstalaciones();
+
+    // Iconos. El catalogo nombra el de cada app ("icono") y los publica todos en
+    // un zip; si falta alguno en la SD, se baja el zip (una sola peticion) y se
+    // guardan en ICONOS_PATH. En segundo plano: las listas se arman sin esperar.
+    void asegurarIconos(const nlohmann::ordered_json& catalogo);
+    // La ruta del icono de esa app en la SD, o vacia si no hay.
+    std::string rutaIcono(const nlohmann::ordered_json& nxlinks, const std::string& url);
+    // Sin icono del catalogo: el del .nro que ya esta instalado (vacio si no).
+    std::vector<uint8_t> iconoInstalado(const nlohmann::ordered_json& nxlinks, const std::string& url);
 
 }  // namespace appUpdates

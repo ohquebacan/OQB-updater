@@ -2,6 +2,8 @@
 
 #include <borealis.hpp>
 #include <chrono>
+#include <deque>
+#include <string>
 #include <thread>
 
 typedef std::function<void()> worker_func_t;
@@ -13,9 +15,12 @@ private:
     brls::StagedAppletFrame* frame;
     brls::Button* button;
     brls::Label* label;
-    brls::Label* logLabel = nullptr;
     std::chrono::steady_clock::time_point inicioAnimacion;
-    std::chrono::steady_clock::time_point ultimaLecturaLog {};
+    // Las tres lineas en cascada: la mas nueva primero; una cuarta mientras
+    // sale. `cambio` es cuando entro la ultima, para la animacion.
+    std::deque<std::string> cascada;
+    std::chrono::steady_clock::time_point cambio {};
+    void drawCascada(NVGcontext* vg, float cx, float y, float ancho, brls::FrameContext* ctx);
     std::string text;
     int progressValue = 0;
     bool workStarted = false;

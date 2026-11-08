@@ -12,6 +12,7 @@
 #include <string>
 #include <thread>
 
+#include "actividad.hpp"
 #include "fs.hpp"
 #include "progress_event.hpp"
 #include "utils.hpp"
@@ -359,6 +360,8 @@ namespace download {
                 }
 
                 if (can_download) {
+                    if (*out != 0)
+                        actividad::paso(actividad::texto("descargando", actividad::nombre(is_mega ? output : url)));
                     curl_easy_setopt(curl, CURLOPT_URL, real_url.c_str());
                     curl_easy_setopt(curl, CURLOPT_USERAGENT, API_AGENT);
                     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -382,6 +385,11 @@ namespace download {
 
                     if (fp && chunk.offset && can_download)
                         fwrite(chunk.data, 1, chunk.offset, fp);
+                    if (*out != 0 && rc == CURLE_OK && status_code < 400) {
+                        curl_off_t bajados = 0;
+                        curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &bajados);
+                        actividad::paso(actividad::texto("descargado", actividad::nombre(output), fmt::format("{:.1f}", bajados / 1048576.0)));
+                    }
 
                     curl_easy_cleanup(curl);
                     ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());

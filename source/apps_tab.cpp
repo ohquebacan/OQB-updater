@@ -42,8 +42,23 @@ namespace {
 
 }  // namespace
 
+void AppsTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    // Termino una instalacion: el "N nuevas" de cada seccion se vuelve a contar.
+    if (const int gen = appUpdates::generacionInstalaciones(); gen != this->genInstalaciones) {
+        this->genInstalaciones = gen;
+        const nlohmann::ordered_json instaladas = appUpdates::installed();
+        for (auto& [item, key] : this->secciones) {
+            const size_t nuevas = countUpdates(this->nxlinks, instaladas, key);
+            item->setValue(nuevas == 0 ? "" : nuevas == 1 ? "menus/apps/new_count_one"_i18n : fmt::format("menus/apps/new_count"_i18n, nuevas), false, false);
+        }
+    }
+    brls::List::draw(vg, x, y, width, height, style, ctx);
+}
+
 AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(nxlinks)
 {
+    this->genInstalaciones = appUpdates::generacionInstalaciones();
     /* Primero el buscador, antes que las secciones: cuando se busca una app por
        nombre no se sabe en que seccion cayo, y tener que adivinarla para poder
        buscar es justo el paso que sobra. Busca en todo el catalogo. */
@@ -64,6 +79,7 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
         item->setHeight(LISTITEM_HEIGHT);
         if (const size_t nuevas = countUpdates(this->nxlinks, instaladas, section.jsonKey))
             item->setValue(nuevas == 1 ? "menus/apps/new_count_one"_i18n : fmt::format("menus/apps/new_count"_i18n, nuevas), false, false);
+        this->secciones.emplace_back(item, section.jsonKey);
 
         const nlohmann::ordered_json links = this->nxlinks;
         const std::string key = section.jsonKey;
@@ -80,6 +96,7 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
         item->getClickEvent()->subscribe([links, key, title, subtitle](brls::View* view) {
             /* PopupFrame necesita un AppletFrame, asi que la lista va dentro de uno. */
             brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+            util::LecturaSwitch lectura;  // /switch se lee una vez para toda la lista
             frame->setContentView(new ListDownloadTab(contentType::apps, links, key));
             brls::PopupFrame::open(title, frame, subtitle, "");
         });
@@ -96,6 +113,7 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
     const nlohmann::ordered_json links = this->nxlinks;
     all->getClickEvent()->subscribe([links](brls::View* view) {
         brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+        util::LecturaSwitch lectura;  // /switch se lee una vez para toda la lista
         frame->setContentView(new ListDownloadTab(contentType::apps, links));
         brls::PopupFrame::open("menus/apps/sec_todas"_i18n, frame, "", "");
     });

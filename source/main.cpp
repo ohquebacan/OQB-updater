@@ -3,14 +3,20 @@
 
 extern "C" u32 __nx_applet_exit_mode;
 
+#include <atomic>
 #include <borealis.hpp>
+#include <chrono>
+#include <cmath>
 #include <filesystem>
+#include <thread>
 #include <json.hpp>
 
 #include "app_update.hpp"
+#include "arranque.hpp"
 #include "constants.hpp"
 #include "current_cfw.hpp"
 #include "fs.hpp"
+#include "icono_carga.hpp"
 #include "donar_page.hpp"
 #include "main_frame.hpp"
 #include "ntp.hpp"
@@ -47,10 +53,107 @@ namespace {
         }
         return "en-US";
     }
+
+    /* Lo primero que se ve al abrir: fondo negro, la Trifuerza de la app PC
+       encendiendose y el nombre en Upheaval, mientras se consulta internet en
+       segundo plano. Antes la app armaba la ventana con la red de por medio y
+       hasta entonces la pantalla quedaba en negro, que para el usuario es la
+       app colgada. */
+    class PantallaCarga : public brls::View
+    {
+    private:
+        std::chrono::steady_clock::time_point inicio = std::chrono::steady_clock::now();
+        bool vista = false;
+        int fuenteTitulo = -1;
+        bool fuenteIntentada = false;
+
+    public:
+        // Segundos desde que se ve (la animacion empieza con el primer cuadro).
+        float tiempo() const
+        {
+            return this->vista ? std::chrono::duration<float>(std::chrono::steady_clock::now() - this->inicio).count() : 0.0f;
+        }
+
+        // Los tres triangulos ya encendidos.
+        bool encendida() const
+        {
+            return this->tiempo() >= duracionEncendido();
+        }
+
+        /* Translucida a proposito: asi la ventana principal entra encima con
+           su propio fundido, sin que borealis tenga que ocultar esta antes.
+           Ese ocultar terminaba aplicandose al aviso de version (que se abre
+           enseguida) y la ventana principal quedaba invisible. Debajo de una
+           vista opaca borealis no la dibuja, asi que no cuesta nada. */
+        bool isTranslucent() override
+        {
+            return true;
+        }
+
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override
+        {
+            if (!this->vista) {
+                this->vista = true;
+                this->inicio = std::chrono::steady_clock::now();
+                arranque::marca("pantalla de carga visible");
+            }
+            if (!this->fuenteIntentada) {
+                this->fuenteIntentada = true;
+                this->fuenteTitulo = nvgCreateFont(vg, "upheaval", "romfs:/fonts/upheavtt.ttf");
+            }
+
+            const float t = this->tiempo();
+            const float cx = x + width / 2.0f;
+            const float cy = y + height / 2.0f - 70.0f;
+
+            nvgBeginPath(vg);
+            nvgRect(vg, x, y, width, height);
+            nvgFillColor(vg, this->a(nvgRGB(0, 0, 0)));
+            nvgFill(vg);
+
+            // Resplandor esmeralda detras: crece con cada triangulo y, con los
+            // tres encendidos, respira despacio si la red todavia tarda.
+            const float avance = std::fmin(t / duracionEncendido(), 1.0f);
+            const float respiro = avance < 1.0f ? avance : 0.85f + 0.15f * std::cos((t - duracionEncendido()) * 2.2f);
+            nvgBeginPath(vg);
+            nvgCircle(vg, cx, cy, 230.0f);
+            nvgFillPaint(vg, nvgRadialGradient(vg, cx, cy, 20.0f, 230.0f, this->a(nvgRGBA(52, 213, 131, (unsigned char)(46 * respiro))), this->a(nvgRGBA(52, 213, 131, 0))));
+            nvgFill(vg);
+
+            drawTrifuerzaEncendido(vg, cx, cy, t, 3.4f);
+
+            // El nombre, en Upheaval como en la app PC (tamanos multiplos de 20).
+            const float yTitulo = cy + 100.0f;
+            nvgFontFaceId(vg, this->fuenteTitulo >= 0 ? this->fuenteTitulo : ctx->fontStash->regular);
+            nvgFontSize(vg, 60.0f);
+            nvgTextLetterSpacing(vg, 3.0f);
+            nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+            nvgFillColor(vg, this->a(nvgRGB(238, 242, 227)));
+            nvgBeginPath(vg);
+            nvgText(vg, cx, yTitulo, "OQB UPDATER", nullptr);
+            nvgTextLetterSpacing(vg, 0.0f);
+
+            // Raya esmeralda y la version, discretas.
+            nvgBeginPath(vg);
+            nvgRect(vg, cx - 40.0f, yTitulo + 78.0f, 80.0f, 4.0f);
+            nvgFillColor(vg, this->a(nvgRGB(52, 213, 131)));
+            nvgFill(vg);
+
+            const std::string version = std::string("v") + APP_VERSION;
+            nvgFontFaceId(vg, ctx->fontStash->regular);
+            nvgFontSize(vg, 20.0f);
+            nvgFillColor(vg, this->a(nvgRGB(126, 138, 128)));
+            nvgBeginPath(vg);
+            nvgText(vg, cx, yTitulo + 98.0f, version.c_str(), nullptr);
+        }
+
+        void layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash) override {}
+    };
 }  // namespace
 
 int main(int argc, char* argv[])
 {
+    arranque::marca("inicio");
     // Init the app
     // El tema y las medidas propias. Sin el tema, borealis usa el suyo y toda
     // la interfaz sale en los colores del menu de la Switch; sin las medidas,
@@ -75,6 +178,7 @@ int main(int argc, char* argv[])
         brls::Logger::info("Sin traduccion para {}, se usa {}", idiomaPedido, idioma);
 
     i18n::loadTranslations(idioma);
+    arranque::marca("interfaz y traducciones listas");
 
         // appletInitializeGamePlayRecording();
 
@@ -116,9 +220,33 @@ int main(int argc, char* argv[])
     brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
     brls::Logger::debug("Start");
 
+    bool seguir = true;
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
+        /* La red y las protecciones corren en un hilo; mientras, el bucle de
+           la interfaz sigue y se ve la pantalla de carga. La ventana se arma
+           aqui, en el hilo de la interfaz, cuando el hilo termina: armarla
+           desde otro hilo o desde draw() es lo que rompio el intento anterior. */
+        arranque::marca("servicios listos");
+        PantallaCarga* carga = new PantallaCarga();
+        brls::Application::pushView(carga);
+        std::atomic<bool> listo{false};
+        std::thread precarga([&listo] {
+            MainFrame::precargar();
+            listo = true;
+        });
+        /* Se espera tambien a que terminen de encenderse los tres triangulos
+           (menos de un segundo): con la red rapida la ventana llegaba antes y
+           la animacion se cortaba a medias. */
+        while ((!listo || !carga->encendida()) && (seguir = brls::Application::mainLoop()))
+            ;
+        precarga.join();
+    }
+
+    if (seguir && std::filesystem::exists(HIDDEN_AIO_FILE)) {
         MainFrame* mainFrame = new MainFrame();
         brls::Application::pushView(mainFrame);
+        arranque::marca("ventana principal armada");
+        arranque::guardar();
 
         /* El aviso de version nueva va aqui, despues de empujar la ventana: si
            se abriera desde el constructor, MainFrame se empuja encima y el aviso
@@ -131,11 +259,11 @@ int main(int argc, char* argv[])
            igual. */
         donar::showIfDue(appUpdate::isAvailable(mainFrame->getLatestTag()) ? "" : mainFrame->getDonationUrl());
     }
-    else {
+    else if (seguir) {
         brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
     }
 
-    while (brls::Application::mainLoop());
+    while (seguir && brls::Application::mainLoop());
 
     // Antes de cerrar servicios: el hilo de la hora todavia puede estar usando
     // la red y el servicio de time.

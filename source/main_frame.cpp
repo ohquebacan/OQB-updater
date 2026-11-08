@@ -7,9 +7,11 @@
 #include <thread>
 
 #include "about_tab.hpp"
+#include "arranque.hpp"
 #include "ams_tab.hpp"
 #include "app_updates.hpp"
 #include "apps_tab.hpp"
+#include "bacan_shop_tab.hpp"
 #include "download.hpp"
 #include "fs.hpp"
 #include "language_tab.hpp"
@@ -26,47 +28,113 @@ using json = nlohmann::ordered_json;
 namespace {
     constexpr const char AppTitle[] = APP_TITLE;
     constexpr const char AppVersion[] = APP_VERSION;
+
+    /* Lo que la pantalla de inicio pide a internet. La pantalla se vuelve a
+       armar cada vez que se termina una descarga ("Volver al inicio"); el
+       catalogo no cambia en una sesion, asi que se consulta una vez y se
+       reutiliza (antes el boton tardaba varios segundos en responder). */
+    bool consultado = false;
+    std::string tagGuardado;
+    nlohmann::ordered_json nxlinksGuardado;
+
+    /* Las protecciones de la primera ventana, calculadas en segundo plano
+       mientras se ve la pantalla de carga. Solo valen para esa ventana: al
+       volver al inicio se vuelven a mirar, por si se cambio algo en Ajustes. */
+    bool hayPrecargadas = false;
+    std::vector<protection::Check> precargadas;
+
+    /* Las consultas van en paralelo: cada una es un viaje de ida y vuelta
+       a un servidor distinto y en paralelo cuesta lo que la mas lenta. curl es
+       seguro entre hilos: el global se inicializa una sola vez en main(). */
+    void consultarRed()
+    {
+        if (consultado || !util::hayInternet())
+            return;
+        std::string tagObtenido;
+        nlohmann::ordered_json nxObtenido, catalogoObtenido, partidasObtenidas;
+        std::thread h1([&] {
+            tagObtenido = util::getLatestTag(TAGS_INFO);
+            arranque::marca("red: tag listo");
+        });
+        std::thread h2([&] {
+            download::getRequest(NXLINKS_URL, nxObtenido);
+            arranque::marca("red: nx-links listo");
+        });
+        std::thread h3([&] {
+            catalogoObtenido = appUpdates::fetchPublished();
+            arranque::marca("red: catalogo listo");
+        });
+        std::thread h4([] {
+            util::getCheatsVersion();  // queda guardada para la pestana Trucos
+            arranque::marca("red: version de trucos lista");
+        });
+        std::thread h5([&] {
+            // Pocos KB. Si todavia no existe (404) queda vacio y no se muestra nada.
+            if (download::getRequest(PARTIDAS_URL, partidasObtenidas) != 200)
+                partidasObtenidas = nlohmann::ordered_json::object();
+            arranque::marca("red: partidas listas");
+        });
+        h1.join();
+        h2.join();
+        h3.join();
+        h4.join();
+        h5.join();
+        // Los iconos de las apps, en segundo plano: solo baja algo si falta alguno.
+        if (catalogoObtenido.is_object() && !catalogoObtenido.empty())
+            std::thread([c = catalogoObtenido] { appUpdates::asegurarIconos(c); }).detach();
+        tagGuardado = tagObtenido;
+        nxlinksGuardado = nxObtenido;
+        if (nxlinksGuardado.is_object()) {
+            nxlinksGuardado[appUpdates::NXLINKS_KEY] = catalogoObtenido;
+            nxlinksGuardado["_partidas"] = partidasObtenidas;
+        }
+        consultado = nxlinksGuardado.is_object() && !nxlinksGuardado.empty();
+    }
 }  // namespace
+
+void MainFrame::precargar()
+{
+    arranque::marca("precarga: inicio");
+    /* La comprobacion de protecciones hace una consulta DNS: va en su propio
+       hilo, a la par de la red. */
+    std::thread prot([] {
+        precargadas = protection::runOnConsole();
+        hayPrecargadas = true;
+        arranque::marca("precarga: protecciones listas");
+    });
+    consultarRed();
+    prot.join();
+    arranque::marca("precarga: fin");
+}
 
 MainFrame::MainFrame() : TabFrame()
 {
     this->setIcon("romfs:/gui_icon.png");
     this->setTitle(AppTitle);
 
+    /* Las pestañas preguntan por cada app del catálogo si está en /switch:
+       con esto /switch se lee una sola vez para toda la ventana. */
+    util::LecturaSwitch lecturaSwitch;
+    arranque::marca("ventana: /switch indexado");
+
     s64 freeStorage;
 
-    /* Las dos peticiones de abajo son sincronas y ocurren antes de dibujar
-       nada: sin conexion la app se quedaba hasta un minuto en negro esperando
-       que vencieran los timeouts, que para el usuario es la app colgada.
-       Preguntarle al sistema cuesta nada y ahorra esa espera. */
-    const bool conectado = util::hayInternet();
+    /* Normalmente ya lo hizo precargar() con la pantalla de carga a la vista.
+       Si al abrir no habia internet, se reintenta al volver al inicio.
+       hayInternet() le pregunta al sistema antes: sin conexion la app se
+       quedaba hasta un minuto esperando que vencieran los timeouts. */
+    consultarRed();
+    const bool conectado = consultado;
 
-    /* La pantalla de inicio se vuelve a armar cada vez que se termina una
-       descarga ("Volver al inicio"). Sin esto repetia las tres consultas a
-       internet y el boton tardaba varios segundos en responder. El catalogo no
-       cambia en una sesion, asi que se consulta una vez y se reutiliza. */
-    static bool consultado = false;
-    static std::string tagGuardado;
-    static nlohmann::ordered_json nxlinksGuardado;
-    if (conectado && !consultado) {
-        /* Las tres consultas van en paralelo: cada una es un viaje de ida y
-           vuelta a un servidor distinto, y en serie sumaban segundos de
-           pantalla negra antes del primer dibujo. En paralelo cuesta lo que
-           cuesta la mas lenta. curl ya es seguro entre hilos: el global se
-           inicializa una sola vez en main(). */
-        std::string tagObtenido;
-        nlohmann::ordered_json nxObtenido, catalogoObtenido;
-        std::thread h1([&] { tagObtenido = util::getLatestTag(TAGS_INFO); });
-        std::thread h2([&] { download::getRequest(NXLINKS_URL, nxObtenido); });
-        std::thread h3([&] { catalogoObtenido = appUpdates::fetchPublished(); });
-        h1.join();
-        h2.join();
-        h3.join();
-        tagGuardado = tagObtenido;
-        nxlinksGuardado = nxObtenido;
-        if (nxlinksGuardado.is_object())
-            nxlinksGuardado[appUpdates::NXLINKS_KEY] = catalogoObtenido;
-        consultado = nxlinksGuardado.is_object() && !nxlinksGuardado.empty();
+    /* Una sola comprobacion por ventana: antes la hacian Estado y Nextendo
+       por separado, con una consulta DNS cada una. */
+    std::vector<protection::Check> checks;
+    if (hayPrecargadas) {
+        checks = std::move(precargadas);
+        hayPrecargadas = false;
+    }
+    else {
+        checks = protection::runOnConsole();
     }
 
     std::string tag = conectado ? tagGuardado : "";
@@ -88,7 +156,8 @@ MainFrame::MainFrame() : TabFrame()
     bool erista = util::isErista();
 
     if (!util::getBoolValue(hideStatus, "about"))
-        this->addTab("menus/main/about"_i18n, new AboutTab(tag, this->donationUrl));
+        this->addTab("menus/main/about"_i18n, new AboutTab(tag, this->donationUrl, checks));
+    arranque::marca("ventana: pestaña estado");
 
     /* Separadores entre grupos. Siete pestanas seguidas se leen como una lista
        plana; partidas en estado, descargas y ajustes se ve de un vistazo que
@@ -108,12 +177,21 @@ MainFrame::MainFrame() : TabFrame()
 
     if (!util::getBoolValue(hideStatus, "atmosphere"))
         this->addTab("menus/main/update_ams"_i18n, new AmsTab_Regular(nxlinks, erista));
+    arranque::marca("ventana: pestaña packs");
 
     if (!util::getBoolValue(hideStatus, "firmwares"))
         this->addTab("menus/main/download_firmware"_i18n, new ListDownloadTab(contentType::fw, nxlinks));
+    arranque::marca("ventana: pestaña firmwares");
 
-    if (!util::getBoolValue(hideStatus, "cheats"))
+    /* Con Bacán Shop, los trucos van dentro de su seccion: es lo que se usa
+       despues de instalar un juego. Sin ella (sin conexion, o el catalogo no
+       la trae) siguen en su pestana. */
+    const bool conBacan = !util::getBoolValue(hideStatus, "apps") && BacanShopTab::available(nxlinks);
+    const bool conTrucos = !util::getBoolValue(hideStatus, "cheats");
+    if (conTrucos && !conBacan) {
         this->addTab("menus/main/download_cheats"_i18n, new ListDownloadTab(contentType::cheats));
+        arranque::marca("ventana: pestaña trucos");
+    }
 
     if (!util::getBoolValue(hideStatus, "apps"))
     {
@@ -127,18 +205,37 @@ MainFrame::MainFrame() : TabFrame()
             }
         }
         this->addTab("menus/main/apps"_i18n, new AppsTab(nxlinks));
+        arranque::marca("ventana: pestaña apps");
+        this->appsSidebar = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
         if (nuevas)
-            this->appsItem = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
+            this->appsItem = this->appsSidebar;
     }
 
     /* Nextendo: solo con la consola en modo Nextendo, que es cuando sirve. */
     if (!util::getBoolValue(hideStatus, "apps") && NextendoTab::available(nxlinks)) {
-        const bool activo = protection::failedOnlyByNextendo(protection::runOnConsole());
+        const bool activo = protection::failedOnlyByNextendo(checks);
         this->addTab("Nextendo", new NextendoTab(nxlinks, activo));
+        arranque::marca("ventana: pestaña nextendo");
         this->nextendoFunciona = NextendoTab::working(nxlinks, activo);
         if (!NextendoTab::seen() || this->nextendoFunciona)
             this->nextendoItem = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
     }
+
+    /* Bacán Shop, debajo de Nextendo. Punto dorado si hay version nueva de la
+       tienda o de los trucos, o si no esta instalada y nunca se abrio. */
+    if (conBacan) {
+        this->addTab("Bacán Shop", new BacanShopTab(nxlinks, checks, conTrucos));
+        arranque::marca("ventana: pestaña bacan shop");
+        const std::string urlTienda = BacanShopTab::url(nxlinks);
+        const bool instalada = appUpdates::isInstalled(nxlinks, urlTienda);
+        this->bacanNueva = instalada && appUpdates::hasUpdate(nxlinks, appUpdates::installed(), urlTienda);
+        this->bacanTrucos = conTrucos && BacanShopTab::trucosNuevos();
+        this->bacanSidebar = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
+        if (this->bacanNueva || this->bacanTrucos || (!instalada && !BacanShopTab::seen()))
+            this->bacanItem = this->bacanSidebar;
+    }
+    this->catalogo = nxlinks;
+    this->genInstalaciones = appUpdates::generacionInstalaciones();
 
     /* Mira los dos grupos anteriores, no solo el de descargas: ocultandolas
        todas, estado y ajustes quedarian pegados sin separador. Cada separador
@@ -149,16 +246,46 @@ MainFrame::MainFrame() : TabFrame()
 
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
+    arranque::marca("ventana: pestaña ajustes");
 
     if (!util::getBoolValue(hideStatus, "language"))
         this->addTab("menus/tools/language"_i18n, new LanguageTab());
+    arranque::marca("ventana: pestaña idioma");
 
     this->registerAction("", brls::Key::B, [this] { return true; });
+}
+
+void MainFrame::recalcularAvisos()
+{
+    const nlohmann::ordered_json& nxlinks = this->catalogo;
+    const nlohmann::ordered_json instaladas = appUpdates::installed();
+    if (this->appsSidebar) {
+        size_t nuevas = 0;
+        if (nxlinks.is_object() && nxlinks.contains("apps") && nxlinks["apps"].is_object()) {
+            for (const auto& url : nxlinks["apps"]) {
+                if (url.is_string() && appUpdates::hasUpdate(nxlinks, instaladas, url.get<std::string>()))
+                    ++nuevas;
+            }
+        }
+        this->appsItem = nuevas ? this->appsSidebar : nullptr;
+    }
+    if (this->bacanSidebar) {
+        const std::string urlTienda = BacanShopTab::url(nxlinks);
+        const bool instalada = appUpdates::isInstalled(nxlinks, urlTienda);
+        this->bacanNueva = instalada && appUpdates::hasUpdate(nxlinks, instaladas, urlTienda);
+        this->bacanItem = (this->bacanNueva || this->bacanTrucos || (!instalada && !BacanShopTab::seen())) ? this->bacanSidebar : nullptr;
+    }
 }
 
 void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
     brls::TabFrame::draw(vg, x, y, width, height, style, ctx);
+
+    // Termino una instalacion: lo que ya esta al dia deja de figurar pendiente.
+    if (const int gen = appUpdates::generacionInstalaciones(); gen != this->genInstalaciones) {
+        this->genInstalaciones = gen;
+        this->recalcularAvisos();
+    }
 
     /* Nextendo, mientras no se haya abierto: un punto violeta que respira
        lento. Otro color y otro ritmo que el aviso verde de las apps, para que
@@ -178,6 +305,25 @@ void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         nvgBeginPath(vg);
         nvgCircle(vg, cx, cy, 5.0f);
         nvgFillColor(vg, this->a(nvgRGB(160, 132, 255)));
+        nvgFill(vg);
+    }
+
+    /* Bacán Shop: dorado, como las particulas de la app PC. Late mientras no
+       se haya abierto, haya una version nueva o trucos nuevos. */
+    if (this->bacanItem && (this->bacanNueva || this->bacanTrucos || !BacanShopTab::seen())) {
+        static const auto inicioB = std::chrono::steady_clock::now();
+        const float t = std::chrono::duration<float>(std::chrono::steady_clock::now() - inicioB).count();
+        const float respiro = 0.5f + 0.5f * std::sin(t * 1.8f);
+        brls::View* item = this->bacanItem;
+        const float cy = item->getY() + item->getHeight() / 2.0f;
+        const float cx = item->getX() + item->getWidth() - style->Sidebar.Item.padding - 16.0f;
+        nvgBeginPath(vg);
+        nvgCircle(vg, cx, cy, 9.0f + 3.0f * respiro);
+        nvgFillColor(vg, this->a(nvgRGBA(230, 185, 92, (unsigned char)(30 + 40 * respiro))));
+        nvgFill(vg);
+        nvgBeginPath(vg);
+        nvgCircle(vg, cx, cy, 5.0f);
+        nvgFillColor(vg, this->a(nvgRGB(230, 185, 92)));
         nvgFill(vg);
     }
 

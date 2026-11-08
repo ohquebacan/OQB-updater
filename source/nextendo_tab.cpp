@@ -16,6 +16,7 @@
 #include "app_updates.hpp"
 #include "download.hpp"
 #include "fs.hpp"
+#include "instalar_app.hpp"
 #include "donar_page.hpp"
 #include "pack_list_item.hpp"
 #include "confirm_page.hpp"
@@ -203,24 +204,6 @@ void NextendoTab::willAppear(bool resetState)
 }
 
 namespace {
-
-    /* Instala o actualiza un .nro del catalogo, con el mismo flujo que la
-       pestana de apps: confirmar, descargar, anotar la fecha y listo. */
-    void instalarApp(const nlohmann::ordered_json& nxlinks, const std::string& nombre, const std::string& url)
-    {
-        const std::string destino = util::resolveNroDestination(url.substr(url.rfind('/') + 1));
-        const std::string fecha = appUpdates::published(nxlinks, url);
-        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
-        frame->setTitle(nombre);
-        frame->addStage(new ConfirmPage(frame, "menus/common/download"_i18n + nombre));
-        frame->addStage(new WorkerPage(frame, "menus/common/downloading"_i18n, [url, destino, fecha]() {
-            fs::createTree(destino.substr(0, destino.rfind('/') + 1));
-            if (download::downloadFile(url, destino, OFF) == 200)
-                appUpdates::recordInstalled(url, fecha);
-        }));
-        frame->addStage(new ConfirmPage_Done(frame, "menus/common/all_done"_i18n));
-        brls::Application::pushView(frame);
-    }
 
     // La version del juego instalado (la que muestra el menu HOME), o vacia.
     std::string versionInstalada(const std::string& tidHex)
@@ -532,7 +515,7 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
             else
                 item->setWarningValue(instalada ? "menus/apps/new_version"_i18n : "menus/nextendo/missing"_i18n);
             const nlohmann::ordered_json links = this->nxlinks;
-            item->getClickEvent()->subscribe([links, nombre, url](brls::View* view) { instalarApp(links, nombre, url); });
+            item->getClickEvent()->subscribe([links, nombre, url](brls::View* view) { instalarAppDelCatalogo(links, nombre, url); });
             this->addView(item);
         }
     }

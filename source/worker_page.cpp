@@ -1,5 +1,8 @@
 #include "worker_page.hpp"
 
+#include <cstring>
+#include <new>
+
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -8,7 +11,9 @@
 #include <vector>
 
 #include "constants.hpp"
+#include "actividad.hpp"
 #include "deep_clean.hpp"
+#include "icono_carga.hpp"
 #include "download.hpp"
 #include "extract.hpp"
 #include "main_frame.hpp"
@@ -20,59 +25,51 @@ using namespace i18n::literals;
 
 namespace {
 
-// El icono de carga es el de la app PC (OQB-updater PC): la Trifuerza con
-// los tres triangulos encendiendose en secuencia — poder, valor, sabiduria.
-// Misma geometria del SVG (viewBox 36x32) y mismos colores: esmeralda al
-// encender, musgo apagado. No gira: el movimiento es el encendido.
-void drawIconoCarga(NVGcontext* vg, float cx, float cy, float t)
+// ease-out cubico, 0..1
+float suave(float x)
 {
-    const float k = 2.4f;  // escala del viewBox 36x32 (~86x77 px)
-    // Vertices de cada triangulo, como en el path del SVG de la PC.
-    const float verts[3][6] = {
-        {18, 1, 27, 16, 9, 16},   // arriba
-        {27, 16, 36, 31, 18, 31},  // abajo derecha
-        {9, 16, 18, 31, 0, 31},     // abajo izquierda
-    };
-    const float fase = fmodf(t, 1.5f) / 1.5f;  // ciclo de 1.5 s, como el CSS
-    for (int i = 0; i < 3; ++i) {
-        const bool encendida = fase >= i / 3.0f && fase < (i + 1) / 3.0f;
-        nvgBeginPath(vg);
-        for (int v = 0; v < 3; ++v) {
-            const float px = cx + (verts[i][v * 2] - 18.0f) * k;
-            const float py = cy + (verts[i][v * 2 + 1] - 16.0f) * k;
-            if (v == 0) nvgMoveTo(vg, px, py); else nvgLineTo(vg, px, py);
-        }
-        nvgClosePath(vg);
-        nvgFillColor(vg, encendida ? nvgRGB(52, 213, 131) : nvgRGB(36, 43, 34));
-        nvgFill(vg);
-    }
+    x = x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x);
+    const float u = 1.0f - x;
+    return 1.0f - u * u * u;
 }
 
-// Las ultimas lineas del registro de la instalacion, para la ventana de log.
-std::string colaDelLog()
+// El texto, recortado por el principio con "…" si no cabe: en una ruta lo
+// que importa es el final (el archivo).
+std::string recortar(NVGcontext* vg, const std::string& texto, float ancho)
 {
-    std::ifstream f(std::string(CONFIG_PATH) + "deep_clean.log");
-    if (!f.good())
-        return "";
-    std::vector<std::string> lineas;
-    std::string l;
-    while (std::getline(f, l))
-        lineas.push_back(l);
+    if (nvgTextBounds(vg, 0, 0, texto.c_str(), nullptr, nullptr) <= ancho)
+        return texto;
+    size_t desde = 0;
     std::string out;
-    const size_t desde = lineas.size() > 7 ? lineas.size() - 7 : 0;
-    for (size_t i = desde; i < lineas.size(); ++i) {
-        out += lineas[i];
-        if (i + 1 < lineas.size())
-            out += "\n";
-    }
+    do {
+        desde++;
+        while (desde < texto.size() && (texto[desde] & 0xC0) == 0x80)
+            desde++;  // no partir un caracter UTF-8
+        out = "\u2026" + texto.substr(desde);
+    } while (desde < texto.size() && nvgTextBounds(vg, 0, 0, out.c_str(), nullptr, nullptr) > ancho);
     return out;
 }
 
 }  // namespace
 
+/* ProgressDisplay sin SPINNER deja su puntero `spinner` sin inicializar
+   (borealis solo lo asigna con esa bandera) y su destructor lo borra igual:
+   con basura en esa memoria la app se cae al destruir la pagina, por ejemplo
+   al volver con B antes de descargar. borealis es un submodulo de terceros,
+   asi que se crea sobre memoria en cero: el constructor no toca `spinner` y
+   queda nulo, igual que `label` si faltara PERCENTAGE. */
+static brls::ProgressDisplay* barraSinSpinner()
+{
+    void* memoria = ::operator new(sizeof(brls::ProgressDisplay));
+    std::memset(memoria, 0, sizeof(brls::ProgressDisplay));
+    return new (memoria) brls::ProgressDisplay(brls::ProgressDisplayFlags::PERCENTAGE);
+}
+
 WorkerPage::WorkerPage(brls::StagedAppletFrame* frame, const std::string& text, worker_func_t worker_func) : frame(frame), workerFunc(worker_func), text(text)
 {
-    this->progressDisp = new brls::ProgressDisplay();
+    // Sin el spinner de borealis a la izquierda: el indicador de actividad es
+    // la Trifuerza de arriba.
+    this->progressDisp = barraSinSpinner();
     this->progressDisp->setParent(this);
 
     this->label = new brls::Label(brls::LabelStyle::DIALOG, text, true);
@@ -82,10 +79,6 @@ WorkerPage::WorkerPage(brls::StagedAppletFrame* frame, const std::string& text, 
     this->button = new brls::Button(brls::ButtonStyle::REGULAR);
     this->button->setParent(this);
 
-    this->logLabel = new brls::Label(brls::LabelStyle::SMALL, "", true);
-    this->logLabel->setHorizontalAlign(NVG_ALIGN_LEFT);
-    this->logLabel->setColor(nvgRGBA(170, 175, 190, 255));
-    this->logLabel->setParent(this);
 
     this->inicioAnimacion = std::chrono::steady_clock::now();
 
@@ -162,26 +155,7 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
             const float tAnim = std::chrono::duration<float>(std::chrono::steady_clock::now() - this->inicioAnimacion).count();
             drawIconoCarga(vg, this->x + this->width / 2.0f, this->y + this->height / 2.0f - 145.0f, tAnim);
 
-            const auto ahora = std::chrono::steady_clock::now();
-            if (ahora - this->ultimaLecturaLog > std::chrono::milliseconds(250)) {
-                this->ultimaLecturaLog = ahora;
-                this->logLabel->setText(colaDelLog());
-            }
-            if (!this->logLabel->getText().empty()) {
-                /* Panel con fondo: el log no flota suelto sobre la interfaz. */
-                const float px = this->logLabel->getX() - 18.0f;
-                const float py = this->logLabel->getY() - 12.0f;
-                const float pw = this->logLabel->getWidth() + 36.0f;
-                const float ph = this->logLabel->getHeight() + 24.0f;
-                nvgBeginPath(vg);
-                nvgRoundedRect(vg, px, py, pw, ph, 10.0f);
-                nvgFillColor(vg, nvgRGBA(14, 18, 14, 216));
-                nvgFill(vg);
-                nvgStrokeColor(vg, nvgRGBA(255, 255, 255, 16));
-                nvgStrokeWidth(vg, 1.5f);
-                nvgStroke(vg);
-                this->logLabel->frame(ctx);
-            }
+            this->drawCascada(vg, this->x + this->width / 2.0f, this->y + this->height / 2.0f + style->CrashFrame.buttonHeight + 28.0f, this->width * 0.8f, ctx);
         }
     }
 }
@@ -202,11 +176,6 @@ void WorkerPage::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* sta
         style->CrashFrame.buttonWidth * 2,
         style->CrashFrame.buttonHeight);
 
-    this->logLabel->setBoundaries(
-        this->x + this->width * 0.08f,
-        this->y + this->height / 2 + style->CrashFrame.buttonHeight + 16,
-        this->width * 0.84f,
-        132);
 }
 
 void WorkerPage::doWork()
@@ -216,6 +185,7 @@ void WorkerPage::doWork()
        pack, descarga de apps...). Las tareas que no escriben pasos dejan el
        archivo vacio y la ventana simplemente no se dibuja. */
     deep_clean::truncarLog();
+    actividad::limpiar();
     if (this->workerFunc)
         this->workerFunc();
 }
@@ -234,6 +204,67 @@ WorkerPage::~WorkerPage()
     }
     delete this->progressDisp;
     delete this->label;
-    delete this->logLabel;
     delete this->button;
+}
+
+/* Lo que hace la app, en tres lineas: la actual arriba y, debajo, las dos
+   anteriores cada vez mas tenues. Al llegar una nueva, todas bajan un lugar
+   con un deslizamiento corto y la mas vieja se desvanece. Las lineas entran
+   como mucho cada 150 ms, para que se alcancen a leer: lo que pase entre medio
+   (cientos de archivos extraidos) se resume en el ultimo. */
+void WorkerPage::drawCascada(NVGcontext* vg, float cx, float y, float ancho, brls::FrameContext* ctx)
+{
+    const auto ahora = std::chrono::steady_clock::now();
+    if (ahora - this->cambio >= std::chrono::milliseconds(150)) {
+        std::string nueva;
+        if (actividad::siguiente(nueva) && (this->cascada.empty() || this->cascada.front() != nueva)) {
+            this->cascada.push_front(nueva);
+            while (this->cascada.size() > 4)
+                this->cascada.pop_back();
+            this->cambio = ahora;
+        }
+    }
+    if (this->cascada.empty())
+        return;
+
+    const float e = suave(std::chrono::duration<float>(ahora - this->cambio).count() / 0.28f);
+
+    // Lugar de cada linea: -1 es de donde entra la nueva, 3 adonde sale la vieja.
+    struct Lugar {
+        float y, tam, alfa;
+    };
+    const Lugar lugares[5] = {
+        {y - 14.0f, 22.0f, 0.0f},  // entrando
+        {y, 22.0f, 1.0f},           // actual
+        {y + 36.0f, 18.0f, 0.46f},  // anterior
+        {y + 64.0f, 17.0f, 0.18f},  // la de antes
+        {y + 88.0f, 16.0f, 0.0f},   // saliendo
+    };
+
+    nvgFontFaceId(vg, ctx->fontStash->regular);
+    nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+    for (size_t i = 0; i < this->cascada.size(); ++i) {
+        const Lugar& de = lugares[i];
+        const Lugar& a = lugares[i + 1];
+        const float ly = de.y + (a.y - de.y) * e;
+        const float tam = de.tam + (a.tam - de.tam) * e;
+        const float alfa = (de.alfa + (a.alfa - de.alfa) * e) * this->alpha;
+        if (alfa < 0.01f)
+            continue;
+
+        nvgFontSize(vg, tam);
+        const std::string texto = recortar(vg, this->cascada[i], ancho);
+        // La actual en hueso con un punto esmeralda; las anteriores en gris verdoso.
+        const bool actual = i == 0;
+        const NVGcolor color = actual ? nvgRGBAf(238 / 255.0f, 242 / 255.0f, 227 / 255.0f, alfa) : nvgRGBAf(170 / 255.0f, 182 / 255.0f, 172 / 255.0f, alfa);
+        nvgFillColor(vg, color);
+        nvgBeginPath(vg);
+        nvgText(vg, cx, ly, texto.c_str(), nullptr);
+
+        const float mitad = nvgTextBounds(vg, 0, 0, texto.c_str(), nullptr, nullptr) / 2.0f;
+        nvgBeginPath(vg);
+        nvgCircle(vg, cx - mitad - 14.0f, ly, actual ? 4.0f : 3.0f);
+        nvgFillColor(vg, actual ? nvgRGBAf(52 / 255.0f, 213 / 255.0f, 131 / 255.0f, alfa) : color);
+        nvgFill(vg);
+    }
 }

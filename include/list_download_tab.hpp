@@ -26,6 +26,10 @@ private:
     // construyen, asi que una entrada encontrada por el buscador se baja por el
     // mismo camino que la de la lista completa.
     std::string filter;
+    // Las filas de apps con su URL: al terminar una instalacion se vuelve a
+    // marcar cada una ("Instalada" / "Version nueva") sin rearmar la lista.
+    std::vector<std::pair<brls::ListItem*, std::string>> filasApps;
+    int genInstalaciones = 0;
     void createList();
     void createList(contentType type);
     void createCheatSlipItem();
@@ -37,11 +41,12 @@ private:
     // Las entradas que pasan el filtro, en el orden del json.
     std::vector<std::pair<std::string, std::string>> applyFilter(
         const std::vector<std::pair<std::string, std::string>>& links) const;
+public:
     // Añade la pregunta del acceso directo, el worker que lo crea y la página
     // de resultado. nroPath puede llenarse recién durante los stages previos.
-    void addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath);
+    // Estatica: la usa tambien instalarAppDelCatalogo (Bacán Shop, Nextendo).
+    static void addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath);
 
-public:
     /* Pide el texto y abre los resultados.
        La ofrece solo el menu de categorias de Apps, que es donde sirve: ahi se
        busca en todo el catalogo sin tener que acertar antes la categoria. Dentro
@@ -49,6 +54,13 @@ public:
        ni en las demas listas.
        jsonKey vacia = todo el catalogo del tipo. */
     static void openSearch(contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey = "");
+
+    /* El icono de la app a la izquierda de su fila: el del catalogo (guardado en
+       la SD), si no el del .nro instalado, y si no uno neutro, para que todas
+       las filas queden alineadas. */
+    static void ponerIcono(brls::ListItem* item, const nlohmann::ordered_json& nxlinks, const std::string& url);
+
+    void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 
     ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks = nlohmann::ordered_json::object(), const std::string& jsonKey = "", const std::string& filter = "");
 };
