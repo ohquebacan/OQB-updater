@@ -1,21 +1,24 @@
-# Último reporte — OQB Updater (8-nov-2026)
+# Último reporte — limpieza al instalar un pack (8-nov-2026)
 
-## Bacán Shop seguía diciendo «actualización pendiente»
-La actualización sí se instaló: en la SD está la 2.21.24, la misma que publica el catálogo, y quedó anotada.
-El problema era que la app calculaba el aviso una sola vez, al abrirse, y no lo volvía a revisar después de instalar.
-Ahora, al terminar cualquier instalación, se recalcula todo:
-- el punto dorado de Bacán Shop y el «Nuevas» de Apps en el menú;
-- la píldora y el botón de la pestaña Bacán Shop (pasa a «v2.21.24 · Al día» y «Volver a instalar»);
-- las filas de las listas de apps y de las apps sugeridas;
-- el «N nuevas» de cada sección.
+Revisé `deep_clean.cpp` y la limpieza de rutina de `utils::extractArchive`.
 
-## Íconos en las listas de apps
-Cada fila de app lleva su ícono, y también las apps sugeridas en Bacán Shop. El ícono sale, en este orden:
-1. Del catálogo: el script de OQB-HATS-PACK saca el ícono de cada .nro, lo achica a 96 px (unos 3 KB) y publica todos juntos en `iconos.zip`. La app lo baja una sola vez en segundo plano y lo guarda en `/config/aio-switch-updater/iconos/`. Solo vuelve a pedirlo si sale una app con un ícono nuevo.
-2. Si el catálogo no lo trae: el ícono del .nro que ya está instalado en la SD.
-3. Si no hay ninguno de los dos: un ícono neutro, para que todas las filas queden alineadas.
+## Lo que ya hacía bien
+- `/atmosphere`, salvo `contents`, queda igual a lo que trae el pack; se respeta lo que escriben Atmosphère y la consola.
+- `atmosphere/contents` y `/SaltySD` se vacían, salvo lo que está en preserve.txt.
+- En `/bootloader` se rehace todo con el pack, salvo `ini/` y `payloads/`.
+- En `/config` se borra la carpeta de cada app que ya no está.
+- En `/switch` caen las copias repetidas de apps que el pack ya trae y los .nro dañados.
+- Se borran `ReiNX/`, `sxos/` y `sept/` de la raíz.
+- Al final se aplica `pack_remove.txt`.
 
-## Estado
-- OQB Updater: compilado y copiado a la SD (`/switch/OQB-updater.nro`, md5 87774199121b5956f288768e6315780f). Sin commit. Falta probarlo en la consola.
-- Catálogo (`~/oqb-hats-catalogo`): `update_app_versions.py` y el workflow quedaron listos, sin commit ni push. Hasta que se publique, solo se verán los íconos de las apps instaladas y el neutro en las demás. Al publicarlo, el workflow vuelve a abrir todos los archivos una vez para sacar los íconos.
-- JKSV: lo que faltaba (la tarjeta de la Nube y la copia a la SD) sigue en otra sesión.
+## Lo que agregué (sin commit)
+1. **Carpetas:** se borran con `fs::removeDir`, la misma función que la limpieza de rutina y `pack_remove.txt`, en lugar de `std::filesystem::remove_all`, que en la Switch falla sin avisar.
+2. **Raíz de la SD:** se borran los `hekate_ctcaer_*.bin` de otras versiones (solo si el pack trae el suyo) y `fusee-primary.bin` y `fusee-secondary.bin`, de antes de Atmosphère 1.0. No se tocan `payload.bin`, `boot.dat` ni `boot.ini`, porque los usan los chips.
+3. **Basura de Mac:** se borran los `._`, los `.DS_Store` y las carpetas de indexado de macOS de toda la SD, salvo `/Nintendo` y `/emuMMC`. Es lo mismo que hace Herramientas.
+4. **`bootloader/ini`, después de extraer:** se borra un .ini solo si NINGUNA de sus entradas puede arrancar, es decir, si faltan en la SD todos sus `payload=` y `fss0=`. Respeta preserve.txt.
+
+Todo queda anotado en `deep_clean.log`.
+
+## Sin probar
+- Compila. No se probó en la consola ni se publicó.
+- La basura conocida de otros packs en `/switch` sigue dependiendo de `pack_remove.txt`, que hoy solo lista lo del pack de overclock.

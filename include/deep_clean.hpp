@@ -12,6 +12,10 @@ namespace deep_clean {
 // /bootloader) corre antes, en utils::extractArchive.
 void removeForeignPackLeftovers(const std::string& archivePath);
 
+// Despues de extraer el pack: quita de bootloader/ini los .ini de otros packs
+// en los que ninguna entrada puede arrancar (sus payload=/fss0= no existen).
+void quitarInisHuerfanos();
+
 // Escribe una linea en deep_clean.log (append), para seguir la instalacion
 // paso a paso desde la SD.
 void logPaso(const std::string& paso);

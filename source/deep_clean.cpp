@@ -25,6 +25,7 @@
 #include "app_updates.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
+#include "limpieza_mac.hpp"
 #include "utils.hpp"
 
 namespace {
@@ -66,6 +67,15 @@ constexpr const char* SIEMPRE[] = {"/config/aio-switch-updater", "/config/sphair
                                    "/atmosphere/bluetooth_devices.db"};
 // Carpetas de otros CFW/packs que a veces quedan en la raíz de la SD.
 constexpr const char* RAIZ_AJENA[] = {"ReiNX", "sxos", "sept"};
+
+/* Carpetas: con fsFsDeleteDirectoryRecursively (fs::removeDir), lo mismo que
+   la limpieza de rutina y pack_remove.txt. std::filesystem::remove_all en la
+   Switch deja archivos sin borrar y el error queda en el error_code sin avisar. */
+void borrarCarpeta(const std::string& ruta)
+{
+    if (!fs::removeDir(ruta))
+        deep_clean::logPaso("   no se pudo borrar dir " + ruta);
+}
 
 bool esApp(const std::string& baja)
 {
@@ -282,7 +292,7 @@ bool sincronizar(const std::string& carpeta, const DelZip& zip, const Conocidos&
             } else {
                 deep_clean::logPaso("   borro dir " + ruta);
                 actividad::detalle(actividad::texto("quitado", ruta));
-                std::filesystem::remove_all(ruta, ec);
+                borrarCarpeta(ruta);
             }
         } else if (conocida(baja, zip, conocidos, conservar)) {
             conserva = true;
@@ -395,7 +405,7 @@ void sincronizarConfig(const DelZip& zip, const Conocidos& conocidos, const std:
             if (std::any_of(claves.begin(), claves.end(), [&k](const std::string& c) { return clavesCoinciden(k, c); })) continue;
             deep_clean::logPaso("   borro dir " + ruta);
             actividad::detalle(actividad::texto("quitado", ruta));
-            std::filesystem::remove_all(ruta, ec);
+            borrarCarpeta(ruta);
         } else {
             deep_clean::logPaso("   borro " + ruta);
             actividad::detalle(actividad::texto("quitado", ruta));
@@ -488,11 +498,80 @@ void deep_clean::removeForeignPackLeftovers(const std::string& archivePath)
     paso("sincronizando /config");
     sincronizarConfig(zip, conocidos, conservar, claves);
     std::error_code ec;
+    paso("raiz: payloads de otras versiones");
+    {
+        /* Un hekate de otra version (hekate_ctcaer_6.2.0.bin junto al del pack)
+           y el fusee-primary/secondary de antes de Atmosphere 1.0 no los usa
+           nada y confunden al elegir que payload lanzar. El de hekate solo si
+           el pack trae el suyo; payload.bin, boot.dat y boot.ini no se tocan
+           (los usan los chips). */
+        const bool packTraeHekate = std::any_of(zip.rutas.begin(), zip.rutas.end(), [](const std::string& r) {
+            return r.rfind("/hekate_ctcaer_", 0) == 0 && r.ends_with(".bin") && r.find('/', 1) == std::string::npos;
+        });
+        for (const auto& nombre : nombresDe("/")) {
+            const std::string ruta = "/" + nombre;
+            const std::string baja = minusculas(ruta);
+            if (esCarpeta(ruta) || zip.rutas.count(baja) || protegida(baja, conservar)) continue;
+            const bool hekateViejo = packTraeHekate && baja.rfind("/hekate_ctcaer_", 0) == 0 && baja.ends_with(".bin");
+            const bool fuseeViejo = baja == "/fusee-primary.bin" || baja == "/fusee-secondary.bin";
+            if (hekateViejo || fuseeViejo) {
+                paso("   borro " + ruta);
+                actividad::detalle(actividad::texto("quitado", ruta));
+                std::filesystem::remove(ruta, ec);
+            }
+        }
+    }
     for (const char* nombre : RAIZ_AJENA) {
         if (esCarpeta(std::string("/") + nombre)) {
             paso(std::string("   borro dir /") + nombre);
-            std::filesystem::remove_all(std::string("/") + nombre, ec);
+            borrarCarpeta(std::string("/") + nombre);
         }
     }
+    /* Lo que deja macOS al copiar a la SD ("._" de AppleDouble, .DS_Store,
+       .Spotlight-V100...): LayeredFS y algunos homebrew toman los "._" por
+       archivos reales. Lo mismo que Herramientas > Limpiar archivos de Mac. */
+    paso("basura de Mac");
+    const limpiezaMac::Resultado mac = limpiezaMac::limpiar();
+    paso("   " + std::to_string(mac.archivos) + " archivos y " + std::to_string(mac.carpetas) + " carpetas de Mac");
     paso("fin");
+}
+
+void deep_clean::quitarInisHuerfanos()
+{
+    /* bootloader/ini se conserva al instalar (ahi van las entradas que agrega
+       el usuario), asi que la de otro pack seguia en el menu de hekate aunque
+       lo que lanza ya no exista. Se quita solo el .ini en el que NINGUNA
+       entrada puede arrancar: todas sus rutas payload=/fss0= faltan en la SD.
+       Uno con al menos una entrada valida se deja entero. */
+    std::set<std::string> conservar;
+    for (const auto& c : fs::readLineByLine(FILES_IGNORE)) {
+        if (!c.empty()) conservar.insert(minusculas(c[0] == '/' ? c : "/" + c));
+    }
+    std::error_code ec;
+    for (const auto& nombre : nombresDe("/bootloader/ini")) {
+        const std::string ruta = "/bootloader/ini/" + nombre;
+        const std::string baja = minusculas(ruta);
+        if (!baja.ends_with(".ini") || esCarpeta(ruta) || protegida(baja, conservar)) continue;
+        std::ifstream ini(ruta);
+        std::string linea;
+        int rutas = 0, existen = 0;
+        while (std::getline(ini, linea)) {
+            while (!linea.empty() && (linea.back() == '\r' || linea.back() == ' ')) linea.pop_back();
+            const auto igual = linea.find('=');
+            if (igual == std::string::npos) continue;
+            const std::string clave = minusculas(linea.substr(0, igual));
+            if (clave != "payload" && clave != "fss0") continue;
+            std::string valor = linea.substr(igual + 1);
+            while (!valor.empty() && valor.front() == ' ') valor.erase(0, 1);
+            if (valor.empty()) continue;
+            ++rutas;
+            if (std::filesystem::exists(valor[0] == '/' ? valor : "/" + valor, ec)) ++existen;
+        }
+        ini.close();
+        if (rutas > 0 && existen == 0) {
+            deep_clean::logPaso("   borro (entrada de hekate sin archivos) " + ruta);
+            actividad::detalle(actividad::texto("quitado", ruta));
+            std::filesystem::remove(ruta, ec);
+        }
+    }
 }

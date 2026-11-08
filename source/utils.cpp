@@ -357,6 +357,7 @@ namespace util {
                 extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
                 pasoInstalacion("extract ok");
                 removePackLeftovers();
+                deep_clean::quitarInisHuerfanos();
                 pasoInstalacion("=== fin instalacion pack");
                 break;
             }
