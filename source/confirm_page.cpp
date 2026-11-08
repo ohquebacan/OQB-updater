@@ -34,6 +34,18 @@ ConfirmPage* ConfirmPage::returnToList()
     return this;
 }
 
+ConfirmPage* ConfirmPage::volverDosAtras(const std::string& etiqueta)
+{
+    this->goHome = false;
+    this->button->setLabel(etiqueta);
+    // El segundo cierre va en el callback: dos popView seguidos sacarian dos
+    // veces la misma vista, porque la primera sigue en la pila mientras se anima.
+    this->button->getClickEvent()->subscribe([](View* view) {
+        brls::Application::popView(brls::ViewAnimation::FADE, [] { brls::Application::popView(); });
+    });
+    return this;
+}
+
 ConfirmPage_Done::ConfirmPage_Done(brls::StagedAppletFrame* frame, const std::string& text) : ConfirmPage(frame, text)
 {
     this->button->setLabel("menus/common/go_home"_i18n);

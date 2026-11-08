@@ -256,7 +256,8 @@
         "error_message": "{}\nPlease try again in a little while. If the problem persists, open an issue on GitHub.",
         "mariko_payload_missing": "In order to update Atmosphère on patched Switches, your payload needs to be named \"payload.bin\" and should be at the root of your SD card.",
         "download_failed": "The download failed: check your internet connection (airplane mode?). Nothing on your SD card was changed.",
-        "incomplete_download": "The download arrived incomplete. Nothing on your SD card was changed; try again on a stable connection."
+        "incomplete_download": "The download arrived incomplete. Nothing on your SD card was changed; try again on a stable connection.",
+        "empty_cheats": "The cheat database that was downloaded has no cheats in it; it was probably published incomplete. Nothing on your SD was changed; try again later."
     },
     "worker": {
         "of": "of",
@@ -630,6 +631,8 @@
         "versiones": "Versions the database knows",
         "la_tuya": "Yours",
         "la_ultima": "Newest",
-        "y_mas": "and {} more"
+        "y_mas": "and {} more",
+        "volver": "Back to Cheats",
+        "recargar": "Reload"
     }
 }

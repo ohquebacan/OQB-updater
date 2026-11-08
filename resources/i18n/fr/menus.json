@@ -214,7 +214,8 @@
   "errors": {
     "insufficient_storage": "Il n'y a pas assez d'espace disponible sur la carte SD pour effectuer cette opération.",
     "error_message": "{}\nVeuillez réessayer un peu plus tard. Si le problème persiste, ouvrez une issue sur GitHub",
-    "mariko_payload_missing": "Pour mettre à jour Atmopshère sur une Switch patchée, le payload doit être nommé \"payload.bin\" et être placé à la racine de votre carte SD."
+    "mariko_payload_missing": "Pour mettre à jour Atmopshère sur une Switch patchée, le payload doit être nommé \"payload.bin\" et être placé à la racine de votre carte SD.",
+    "empty_cheats": "La base de codes téléchargée ne contient aucun code ; elle a probablement été publiée incomplète. Rien n'a été modifié sur votre SD ; réessayez plus tard."
   },
   "worker": {
     "of": "de",
@@ -395,6 +396,8 @@
     "versiones": "Versions connues de la base",
     "la_tuya": "La vôtre",
     "la_ultima": "La plus récente",
-    "y_mas": "et {} de plus"
+    "y_mas": "et {} de plus",
+    "volver": "Retour aux codes",
+    "recargar": "Recharger"
   }
 }

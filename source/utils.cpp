@@ -270,6 +270,13 @@ namespace util {
         if (!crashIfNotArchive(type)) return;
         switch (type) {
             case contentType::cheats: {
+                /* Una base sin ningun archivo de trucos no se da por instalada: la
+                   2026-09-08 salio con un contents.zip vacio y la app anotaba la
+                   version igual, asi que todo figuraba "al dia" y sin trucos. */
+                if (!util::baseTrucosValida(CHEATS_FILENAME)) {
+                    ProgressEvent::instance().setStatusCode(STATUS_EMPTY_CHEATS);
+                    break;
+                }
                 std::vector<std::string> titles = extract::getInstalledTitlesNs();
                 titles = extract::excludeTitles(CHEATS_EXCLUDE, titles);
                 extract::extractCheats(CHEATS_FILENAME, titles, CurrentCfw::running_cfw, version);
@@ -637,6 +644,22 @@ namespace util {
         return res;
     }
 
+    bool baseTrucosValida(const std::string& zip)
+    {
+        bool hay = false;
+        if (unzFile z = unzOpen(zip.c_str())) {
+            for (int r = unzGoToFirstFile(z); r == UNZ_OK && !hay; r = unzGoToNextFile(z)) {
+                char nombre[512] = {};
+                unz_file_info info{};
+                if (unzGetCurrentFileInfo(z, &info, nombre, sizeof(nombre) - 1, nullptr, 0, nullptr, 0) == UNZ_OK &&
+                    lowerCase(nombre).find("/cheats/") != std::string::npos && info.uncompressed_size > 0)
+                    hay = true;
+            }
+            unzClose(z);
+        }
+        return hay;
+    }
+
     std::string getErrorMessage(long status_code)
     {
         std::string res;
@@ -646,6 +669,9 @@ namespace util {
                 break;
             case STATUS_INCOMPLETE_DOWNLOAD:
                 res = "menus/errors/incomplete_download"_i18n;
+                break;
+            case STATUS_EMPTY_CHEATS:
+                res = "menus/errors/empty_cheats"_i18n;
                 break;
             case 500:
                 res = fmt::format("{0:}: Internal Server Error", status_code);

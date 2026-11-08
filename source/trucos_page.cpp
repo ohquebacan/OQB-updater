@@ -5,6 +5,8 @@
 
 #include <algorithm>
 #include <atomic>
+#include <dirent.h>
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -46,6 +48,7 @@ namespace {
         u32 ultima = 0;
         bool hayUltima = false;
         std::vector<uint8_t> icono;
+        bool iconoPedido = false;  // desde la cache: se pide a ns la primera vez que se ve
         Estado estado = SIN_TRUCOS;
     };
 
@@ -54,6 +57,15 @@ namespace {
         while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back()))) s.pop_back();
         while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front()))) s.erase(s.begin());
         return s;
+    }
+
+    /* Que base hay en la SD: su version y el tamano del zip. Con la version sola
+       no alcanza: la 2026-09-08 vacia y la buena se llaman igual. */
+    std::string marcaBase()
+    {
+        std::error_code ec;
+        const auto tam = std::filesystem::file_size(CHEATS_FILENAME, ec);
+        return sinEspacios(util::readFile(CHEATS_VERSION)) + "|" + std::to_string(ec ? 0 : tam);
     }
 
     const std::string CACHE = std::string(CONFIG_PATH) + "trucos_versiones.json";
@@ -111,6 +123,72 @@ namespace {
         return n;
     }
 
+    const std::string CACHE_JUEGOS = std::string(CONFIG_PATH) + "trucos_juegos.json";
+
+    // Lo que ya se reviso, para no repetirlo cada vez que se entra (sin iconos).
+    void guardarCache(const std::string& firma, const std::vector<Juego>& juegos)
+    {
+        nlohmann::json j = nlohmann::json::object();
+        j["firma"] = firma;
+        auto& lista = j["juegos"] = nlohmann::json::array();
+        for (const auto& g : juegos) {
+            nlohmann::json v = nlohmann::json::array();
+            for (const auto& ver : g.versiones) v.push_back({ver.numero, ver.bid, ver.conTrucos});
+            lista.push_back({{"tid", g.tid}, {"nombre", g.nombre}, {"visible", g.visible}, {"version", g.version}, {"bid", g.bid}, {"trucos", g.trucos},
+                             {"ultima", g.ultima}, {"hayUltima", g.hayUltima}, {"estado", (int)g.estado}, {"versiones", v}});
+        }
+        const std::string tmp = CACHE_JUEGOS + ".tmp";
+        {
+            std::ofstream f(tmp, std::ios::trunc);
+            f << j.dump();
+        }
+        std::error_code ec;
+        std::filesystem::rename(tmp, CACHE_JUEGOS, ec);
+    }
+
+    bool leerCache(const std::string& firma, std::vector<Juego>& juegos)
+    {
+        std::ifstream f(CACHE_JUEGOS);
+        if (!f) return false;
+        const nlohmann::json j = nlohmann::json::parse(f, nullptr, false);
+        if (!j.is_object() || !j.contains("firma") || j["firma"] != firma || !j.contains("juegos") || !j["juegos"].is_array()) return false;
+        for (const auto& g : j["juegos"]) {
+            Juego x;
+            x.tid = g.value("tid", (u64)0);
+            x.nombre = g.value("nombre", "");
+            x.visible = g.value("visible", "");
+            x.version = g.value("version", (u32)0);
+            x.bid = g.value("bid", "");
+            x.trucos = g.value("trucos", 0);
+            x.ultima = g.value("ultima", (u32)0);
+            x.hayUltima = g.value("hayUltima", false);
+            x.estado = static_cast<Estado>(g.value("estado", (int)SIN_TRUCOS));
+            if (g.contains("versiones") && g["versiones"].is_array())
+                for (const auto& v : g["versiones"])
+                    if (v.is_array() && v.size() == 3) x.versiones.push_back({v[0].get<u32>(), v[1].get<std::string>(), v[2].get<bool>()});
+            juegos.push_back(std::move(x));
+        }
+        return true;
+    }
+
+    // Los archivos de trucos de un juego (opendir: lo mismo que usa la limpieza del pack).
+    std::set<std::string> buildsConTrucos(const std::string& carpeta)
+    {
+        std::set<std::string> out;
+        DIR* dir = opendir(carpeta.c_str());
+        if (!dir) return out;
+        while (dirent* e = readdir(dir)) {
+            std::string n = e->d_name;
+            const auto punto = n.rfind('.');
+            if (punto == std::string::npos) continue;
+            const std::string ext = util::lowerCase(n.substr(punto));
+            n = util::upperCase(n.substr(0, punto));
+            if (ext == ".txt" && n.size() == 16 && extract::isBID(n)) out.insert(n);
+        }
+        closedir(dir);
+        return out;
+    }
+
     // Lee los juegos instalados en un hilo. Solo llena datos.
     class Lectura
     {
@@ -120,9 +198,9 @@ namespace {
         std::vector<Juego> juegos;  // se puede leer cuando listo == true
         bool baseBajada = false;
 
-        void empezar()
+        void empezar(bool forzar)
         {
-            this->hilo = std::thread([this] { this->correr(); });
+            this->hilo = std::thread([this, forzar] { this->correr(forzar); });
         }
 
         ~Lectura()
@@ -134,16 +212,29 @@ namespace {
     private:
         std::thread hilo;
 
-        void correr()
+        void correr(bool forzar)
         {
             std::vector<Juego> out;
-            this->baseBajada = !sinEspacios(util::readFile(CHEATS_VERSION)).empty();
+            const std::string baseSd = sinEspacios(util::readFile(CHEATS_VERSION));
+            this->baseBajada = !baseSd.empty();
 
             constexpr s32 MAXIMO = 64000;
             std::vector<NsApplicationRecord> registros(MAXIMO);
             s32 cuantos = 0;
             if (R_FAILED(nsListApplicationRecord(registros.data(), MAXIMO, 0, &cuantos))) cuantos = 0;
             this->total = cuantos;
+
+            /* La firma: la base que hay en la SD y cada juego con su version. Si no
+               cambio nada desde la ultima vez, la revision guardada sirve tal cual. */
+            std::string firma = "base " + marcaBase();
+            for (s32 i = 0; i < cuantos; ++i)
+                firma += fmt::format(";{:016X}:{}", registros[i].application_id, cheats_util::GetVersion(registros[i].application_id));
+            if (!forzar && leerCache(firma, out)) {
+                this->hechos = cuantos;
+                this->juegos = std::move(out);
+                this->listo = true;
+                return;
+            }
 
             const std::string base = versionesDeLaBase();
             auto control = std::make_unique<NsApplicationControlData>();
@@ -165,13 +256,8 @@ namespace {
                 j.version = cheats_util::GetVersion(j.tid);
 
                 // Builds con trucos: los archivos de la base en la SD.
-                std::set<std::string> conTrucos;
-                std::error_code ec;
                 const std::string carpeta = util::getContentsPath() + tid + "/cheats/";
-                for (auto it = std::filesystem::directory_iterator(carpeta, ec); !ec && it != std::filesystem::directory_iterator(); it.increment(ec)) {
-                    const std::string stem = util::upperCase(it->path().stem().string());
-                    if (extract::isBID(stem)) conTrucos.insert(stem);
-                }
+                const std::set<std::string> conTrucos = buildsConTrucos(carpeta);
 
                 const nlohmann::json obj = base.empty() ? nlohmann::json() : objetoDe(base, tid);
                 if (obj.is_object()) {
@@ -211,6 +297,7 @@ namespace {
                 const int pb = b.estado == CON_TRUCOS ? 0 : (b.estado == SIN_TRUCOS ? 2 : 1);
                 return pa != pb ? pa < pb : a.nombre < b.nombre;
             });
+            if (!this->cancelar) guardarCache(firma, out);
             this->juegos = std::move(out);
             this->listo = true;
         }
@@ -297,9 +384,11 @@ namespace {
     {
         std::unique_ptr<Lectura> lectura;
         std::string baseLeida;  // CHEATS_VERSION cuando se empezo a leer
+        std::string marcaLeida;  // marcaBase() cuando se empezo a leer
         int filtro = 0;         // 0 todos, 1 listos, 2 otra version, 3 sin trucos
         int elegido = 0, primero = 0;
         std::map<u64, int> iconos;
+        std::chrono::steady_clock::time_point ultimaRevision{};
 
         std::vector<int> visibles() const
         {
@@ -321,13 +410,15 @@ namespace {
             return this->elegido >= 0 && this->elegido < (int)v.size() ? &this->lectura->juegos[v[this->elegido]] : nullptr;
         }
 
-        void leer()
+        void leer(bool forzar = false)
         {
+            this->lectura.reset();  // si habia una lectura en curso, espera a que pare
             this->borrarIconos();
             this->baseLeida = sinEspacios(util::readFile(CHEATS_VERSION));
+            this->marcaLeida = marcaBase();
             this->elegido = this->primero = 0;
             this->lectura = std::make_unique<Lectura>();
-            this->lectura->empezar();
+            this->lectura->empezar(forzar);
         }
 
         void borrarIconos()
@@ -361,13 +452,17 @@ namespace {
                 this->elegido = this->primero = 0;
                 return true;
             });
+            this->registerAction("menus/trucos/recargar"_i18n, brls::Key::MINUS, [this] {
+                if (this->lectura && this->lectura->listo) this->leer(true);
+                return true;
+            });
             this->registerAction("menus/trucos/como"_i18n, brls::Key::Y, [] {
                 util::showDialogBoxInfo("menus/trucos/como_texto"_i18n);
                 return true;
             });
             this->registerAction("menus/trucos/base"_i18n, brls::Key::X, [] {
                 brls::AppletFrame* frame = new brls::AppletFrame(true, true);
-                frame->setContentView(new ListDownloadTab(contentType::cheats));
+                frame->setContentView((new ListDownloadTab(contentType::cheats))->desdeTrucos());
                 brls::PopupFrame::open("menus/main/download_cheats"_i18n, frame, "", "");
                 return true;
             });
@@ -391,7 +486,7 @@ namespace {
         // Al volver de bajar la base, se vuelve a leer con los trucos nuevos.
         void willAppear(bool resetState) override
         {
-            if (this->lectura && this->lectura->listo && sinEspacios(util::readFile(CHEATS_VERSION)) != this->baseLeida) this->leer();
+            if (this->lectura && this->lectura->listo && marcaBase() != this->marcaLeida) this->leer();
             brls::View::willAppear(resetState);
         }
 
@@ -405,6 +500,15 @@ namespace {
             const NVGcolor texto = this->a(ctx->theme->textColor);
             const NVGcolor tenue = this->a(ctx->theme->descriptionColor);
             nvgFontFaceId(vg, ctx->fontStash->regular);
+
+            /* Al volver de bajar la base (o de borrarla), se revisan los juegos de
+               nuevo con los trucos que hay ahora. Se mira el archivo de version una
+               vez por segundo, no en cada cuadro. */
+            const auto ahora = std::chrono::steady_clock::now();
+            if (this->lectura && this->lectura->listo && ahora - this->ultimaRevision > std::chrono::seconds(1)) {
+                this->ultimaRevision = ahora;
+                if (marcaBase() != this->marcaLeida) this->leer();
+            }
 
             if (!this->lectura || !this->lectura->listo) {
                 nvgFontSize(vg, 24.0f);
@@ -496,8 +600,19 @@ namespace {
                 }
                 // Icono, creado la primera vez que se ve.
                 auto it = this->iconos.find(j.tid);
-                if (it == this->iconos.end())
+                if (it == this->iconos.end()) {
+                    // Desde la cache no hay icono guardado: se le pide a ns ahora, una vez.
+                    Juego& g = const_cast<Juego&>(j);
+                    if (g.icono.empty() && !g.iconoPedido) {
+                        g.iconoPedido = true;
+                        auto control = std::make_unique<NsApplicationControlData>();
+                        u64 tam = 0;
+                        if (R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, g.tid, control.get(), sizeof(NsApplicationControlData), &tam)) &&
+                            tam > sizeof(control->nacp))
+                            g.icono.assign(control->icon, control->icon + (tam - sizeof(control->nacp)));
+                    }
                     it = this->iconos.emplace(j.tid, j.icono.empty() ? 0 : nvgCreateImageMem(vg, 0, const_cast<unsigned char*>(j.icono.data()), j.icono.size())).first;
+                }
                 const float lado = 50.0f, ix = izq + 12.0f, iy = fy + (fila - lado) / 2;
                 nvgBeginPath(vg);
                 nvgRoundedRect(vg, ix, iy, lado, lado, 9.0f);

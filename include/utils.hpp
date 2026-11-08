@@ -61,6 +61,9 @@ namespace util {
     std::string lowerCase(const std::string& str);
     std::string upperCase(const std::string& str);
     std::string getErrorMessage(long status_code);
+    // El zip de la base de trucos trae al menos un archivo de trucos. La base
+    // 2026-09-08 salio con un contents.zip vacio que la app daba por instalado.
+    bool baseTrucosValida(const std::string& zip);
     bool isApplet();
     std::string getContentsPath();
     // Dónde guardar (o actualizar) un .nro: respeta la carpeta propia de la app si ya existe.

@@ -26,6 +26,9 @@ public:
     // Al terminar, volver a la lista desde donde se instaló (una sección del catálogo)
     // en vez de al inicio, para seguir eligiendo cosas de ahí mismo.
     ConfirmPage* returnToList();
+    // Al terminar, cierra este marco y el de abajo (la ventana desde la que se
+    // abrio) con el boton `etiqueta`: p. ej. bajar la base desde Trucos vuelve a Trucos.
+    ConfirmPage* volverDosAtras(const std::string& etiqueta);
 };
 
 class ConfirmPage_Done : public ConfirmPage

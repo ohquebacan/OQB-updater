@@ -26,6 +26,8 @@ private:
     // construyen, asi que una entrada encontrada por el buscador se baja por el
     // mismo camino que la de la lista completa.
     std::string filter;
+    // Abierta desde Trucos: al bajar la base se vuelve ahi, no al inicio.
+    bool volverATrucos = false;
     // Las filas de apps con su URL: al terminar una instalacion se vuelve a
     // marcar cada una ("Instalada" / "Version nueva") sin rearmar la lista.
     std::vector<std::pair<brls::ListItem*, std::string>> filasApps;
@@ -61,6 +63,12 @@ public:
     static void ponerIcono(brls::ListItem* item, const nlohmann::ordered_json& nxlinks, const std::string& url);
 
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
+
+    ListDownloadTab* desdeTrucos()
+    {
+        this->volverATrucos = true;
+        return this;
+    }
 
     ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks = nlohmann::ordered_json::object(), const std::string& jsonKey = "", const std::string& filter = "");
 };

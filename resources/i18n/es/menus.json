@@ -256,7 +256,8 @@
         "error_message": "{}\nPor favor, vuelve a intentarlo dentro de un rato. Si el problema persiste abre una incidencia en GitHub.",
         "mariko_payload_missing": "Para actualizar Atmosphère en Switch parcheadas tu payload debe de llamarse \"payload.bin\" y debe de estar en la raíz de tu tarjeta SD.",
         "download_failed": "No se pudo descargar: revisa tu conexión a internet (¿modo avión?). No se cambió nada en tu SD.",
-        "incomplete_download": "La descarga llegó incompleta. No se cambió nada en tu SD; vuelve a intentarlo con una conexión estable."
+        "incomplete_download": "La descarga llegó incompleta. No se cambió nada en tu SD; vuelve a intentarlo con una conexión estable.",
+        "empty_cheats": "La base de trucos que se bajó no trae ningún truco; probablemente la publicaron incompleta. No se cambió nada en tu SD; prueba de nuevo más tarde."
     },
     "worker": {
         "of": "de",
@@ -651,6 +652,8 @@
         "versiones": "Versiones que conoce la base",
         "la_tuya": "La que tienes",
         "la_ultima": "La más nueva",
-        "y_mas": "y {} más"
+        "y_mas": "y {} más",
+        "volver": "Volver a Trucos",
+        "recargar": "Recargar"
     }
 }

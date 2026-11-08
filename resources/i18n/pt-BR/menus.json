@@ -213,7 +213,8 @@
   "errors": {
     "insufficient_storage": "Não há espaço suficiente disponível no seu cartão SD para realizar esta operação.",
     "error_message": "{}\nPor favor, tente novamente em breve. Se o problema persistir, abra uma issue no GitHub.",
-    "mariko_payload_missing": "Para atualizar o Atmosphère em Switches modificados, o seu payload precisa ter o nome de \"payload.bin\" e deve estar na raiz do seu cartão SD."
+    "mariko_payload_missing": "Para atualizar o Atmosphère em Switches modificados, o seu payload precisa ter o nome de \"payload.bin\" e deve estar na raiz do seu cartão SD.",
+    "empty_cheats": "A base de trapaças baixada não tem nenhuma trapaça; provavelmente foi publicada incompleta. Nada foi alterado no seu SD; tente de novo mais tarde."
   },
   "apps": {
     "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
@@ -389,6 +390,8 @@
     "versiones": "Versões que a base conhece",
     "la_tuya": "A sua",
     "la_ultima": "A mais nova",
-    "y_mas": "e mais {}"
+    "y_mas": "e mais {}",
+    "volver": "Voltar às trapaças",
+    "recargar": "Recarregar"
   }
 }

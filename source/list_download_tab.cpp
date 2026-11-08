@@ -283,7 +283,10 @@ void ListDownloadTab::createList(contentType type)
                     return;
                 }
                 else if (type != contentType::payloads && type != contentType::hekate_ipl) {
-                    if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline")) {
+                    /* La base se vuelve a bajar si salio otra, y tambien si la que quedo
+                       en la SD no trae trucos (la 2026-09-08 vacia se quedaba para siempre). */
+                    if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline") ||
+                        !util::baseTrucosValida(CHEATS_FILENAME)) {
                         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, url]() { util::downloadArchive(url, type); }));
                     }
                     stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, type]() { util::extractArchive(type, this->newCheatsVer); }));
@@ -320,6 +323,9 @@ void ListDownloadTab::createList(contentType type)
                 }
                 else if (type == contentType::apps) {
                     stagedFrame->addStage((new ConfirmPage_Done(stagedFrame, doneMsg))->returnToList());
+                }
+                else if (type == contentType::cheats && this->volverATrucos) {
+                    stagedFrame->addStage((new ConfirmPage_Done(stagedFrame, doneMsg))->volverDosAtras("menus/trucos/volver"_i18n));
                 }
                 else {
                     stagedFrame->addStage(new ConfirmPage_Done(stagedFrame, doneMsg));

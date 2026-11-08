@@ -17,6 +17,7 @@ constexpr const char MARIKO_PAYLOAD_PATH_TEMP[] = "/payload.bin.aio";
 // como error y no sigue a la etapa siguiente).
 constexpr long STATUS_DOWNLOAD_FAILED = 600;      // sin respuesta o transferencia cortada
 constexpr long STATUS_INCOMPLETE_DOWNLOAD = 601;  // el archivo no es un zip completo
+constexpr long STATUS_EMPTY_CHEATS = 602;         // la base de trucos bajada no trae ningun truco
 
 constexpr const char CHANGELOG_URL[] = "https://github.com/HamletDuFromage/aio-switch-updater/releases";
 
@@ -71,8 +72,10 @@ constexpr const char ICONOS_PATH[] = "/config/aio-switch-updater/iconos/";
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
 constexpr const char CUSTOM_PACKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/custom_packs.json";
 
-constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles.zip";
-constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents.zip";
+// _complete: la base 2026-09-08 publico contents.zip y titles.zip vacios (116 B, solo la
+// carpeta); los trucos estaban en los _complete, que traen tambien los graficos/60 fps.
+constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles_complete.zip";
+constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents_complete.zip";
 constexpr const char GFX_CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles_60fps-res-gfx.zip";
 constexpr const char GFX_CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents_60fps-res-gfx.zip";
 constexpr const char CHEATS_URL_VERSION[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/VERSION";
