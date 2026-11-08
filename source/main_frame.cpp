@@ -79,9 +79,11 @@ namespace {
         h3.join();
         h4.join();
         h5.join();
-        // Los iconos de las apps, en segundo plano: solo baja algo si falta alguno.
-        if (catalogoObtenido.is_object() && !catalogoObtenido.empty())
-            std::thread([c = catalogoObtenido] { appUpdates::asegurarIconos(c); }).detach();
+        /* Los iconos de las apps: aqui mismo, con la pantalla de carga a la
+           vista y despues de las demas consultas. Sin hilo suelto: uno que
+           seguia corriendo mientras se armaba la ventana tumbaba la 3.2. Solo
+           baja algo si falta alguno (la primera vez, ~150 KB). */
+        appUpdates::asegurarIconos(catalogoObtenido);
         tagGuardado = tagObtenido;
         nxlinksGuardado = nxObtenido;
         if (nxlinksGuardado.is_object()) {

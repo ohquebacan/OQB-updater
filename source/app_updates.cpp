@@ -1,6 +1,9 @@
 #include "app_updates.hpp"
 
+#include <curl/curl.h>
 #include <minizip/unzip.h>
+
+#include <sys/stat.h>
 
 #include <atomic>
 #include <cctype>
@@ -11,6 +14,7 @@
 #include <filesystem>
 #include <vector>
 
+#include "arranque.hpp"
 #include "constants.hpp"
 #include "download.hpp"
 #include "fs.hpp"
@@ -112,6 +116,43 @@ namespace appUpdates {
         }
 
         std::atomic<int> instalaciones{0};
+
+        // Descarga propia y minima para los iconos: a memoria, sin barra de
+        // progreso ni registro de actividad ni comprobacion de espacio. La de
+        // download:: toca estado compartido con la interfaz (ProgressEvent,
+        // actividad, y puede cerrar la app si cree que no hay espacio).
+        size_t aMemoria(void* datos, size_t tam, size_t n, void* destino)
+        {
+            auto* v = static_cast<std::vector<uint8_t>*>(destino);
+            const size_t total = tam * n;
+            if (v->size() + total > (4u << 20))
+                return 0;  // un iconos.zip no pesa eso: algo anda mal, se corta
+            const uint8_t* p = static_cast<const uint8_t*>(datos);
+            v->insert(v->end(), p, p + total);
+            return total;
+        }
+
+        bool bajarAMemoria(const char* url, std::vector<uint8_t>& out)
+        {
+            CURL* curl = curl_easy_init();
+            if (!curl)
+                return false;
+            long codigo = 0;
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            curl_easy_setopt(curl, CURLOPT_USERAGENT, "OQB-updater");
+            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 8L);
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 20L);
+            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, aMemoria);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &out);
+            const CURLcode rc = curl_easy_perform(curl);
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &codigo);
+            curl_easy_cleanup(curl);
+            return rc == CURLE_OK && codigo == 200 && !out.empty();
+        }
 
         // El JPEG del icono de un .nro: la seccion icon de su ASET.
         std::vector<uint8_t> leerIconoNro(const std::string& path)
@@ -296,14 +337,36 @@ namespace appUpdates {
         if (!falta)
             return;
 
-        const std::string zip = std::string(ICONOS_PATH) + "iconos.zip.tmp";
-        std::filesystem::create_directories(ICONOS_PATH, ec);
-        if (download::downloadFile(ICONOS_URL, zip, OFF) != 200) {
-            std::filesystem::remove(zip, ec);
+        arranque::marca("iconos: bajando");
+        std::vector<uint8_t> datos;
+        if (!bajarAMemoria(ICONOS_URL, datos)) {
+            arranque::marca("iconos: no se pudo bajar");
             return;
         }
-        unzFile z = unzOpen(zip.c_str());
-        if (z) {
+        arranque::marca("iconos: bajados " + std::to_string(datos.size()) + " B");
+
+        // minizip lee de archivo: se escribe el zip y se borra al terminar.
+        const std::string carpeta(ICONOS_PATH);
+        if (mkdir(carpeta.substr(0, carpeta.size() - 1).c_str(), 0777) != 0 && !std::filesystem::is_directory(carpeta.substr(0, carpeta.size() - 1), ec)) {
+            arranque::marca("iconos: sin carpeta");
+            return;
+        }
+        const std::string zip = carpeta + "iconos.zip.tmp";
+        {
+            FILE* f = std::fopen(zip.c_str(), "wb");
+            if (!f) {
+                arranque::marca("iconos: no se pudo escribir el zip");
+                return;
+            }
+            const bool ok = std::fwrite(datos.data(), 1, datos.size(), f) == datos.size();
+            std::fclose(f);
+            if (!ok) {
+                std::filesystem::remove(zip, ec);
+                return;
+            }
+        }
+        int guardados = 0;
+        if (unzFile z = unzOpen(zip.c_str())) {
             for (int r = unzGoToFirstFile(z); r == UNZ_OK; r = unzGoToNextFile(z)) {
                 char nombre[128] = {};
                 unz_file_info info{};
@@ -314,28 +377,29 @@ namespace appUpdates {
                 if (n.size() < 5 || n.find('/') != std::string::npos || n.find('\\') != std::string::npos || n.substr(n.size() - 4) != ".jpg" ||
                     info.uncompressed_size == 0 || info.uncompressed_size > (1u << 20))
                     continue;
-                const std::string destino = std::string(ICONOS_PATH) + n;
+                const std::string destino = carpeta + n;
                 if (std::filesystem::exists(destino, ec) || unzOpenCurrentFile(z) != UNZ_OK)
                     continue;
-                std::vector<char> datos(info.uncompressed_size);
-                const int leidos = unzReadCurrentFile(z, datos.data(), datos.size());
+                std::vector<char> buf(info.uncompressed_size);
+                const int leidos = unzReadCurrentFile(z, buf.data(), buf.size());
                 unzCloseCurrentFile(z);
-                if (leidos != static_cast<int>(datos.size()))
+                if (leidos != static_cast<int>(buf.size()))
                     continue;
                 // tmp + rename: un apagon a mitad no deja un icono roto.
                 const std::string tmp = destino + ".tmp";
                 if (FILE* f = std::fopen(tmp.c_str(), "wb")) {
-                    const bool ok = std::fwrite(datos.data(), 1, datos.size(), f) == datos.size();
+                    const bool ok = std::fwrite(buf.data(), 1, buf.size(), f) == buf.size();
                     std::fclose(f);
-                    if (ok)
-                        std::filesystem::rename(tmp, destino, ec);
+                    if (ok && std::rename(tmp.c_str(), destino.c_str()) == 0)
+                        ++guardados;
                     else
-                        std::filesystem::remove(tmp, ec);
+                        std::remove(tmp.c_str());
                 }
             }
             unzClose(z);
         }
-        std::filesystem::remove(zip, ec);
+        std::remove(zip.c_str());
+        arranque::marca("iconos: " + std::to_string(guardados) + " guardados");
     }
 
     std::string rutaIcono(const nlohmann::ordered_json& nxlinks, const std::string& url)

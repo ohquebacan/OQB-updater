@@ -28,6 +28,15 @@ namespace arranque {
         std::snprintf(tiempo, sizeof(tiempo), "%6.2fs ", s);
         std::lock_guard<std::mutex> l(candado);
         lineas.push_back(tiempo + fase);
+        /* Tambien al disco en el momento, linea por linea: si la app se cae
+           antes de armar la ventana, el log dice hasta donde llego (antes solo
+           se guardaba al final, y un crash al arrancar no dejaba rastro). */
+        static bool primera = true;
+        if (FILE* f = std::fopen((std::string(CONFIG_PATH) + "arranque.log").c_str(), primera ? "w" : "a")) {
+            std::fprintf(f, "%s%s\n", tiempo, fase.c_str());
+            std::fclose(f);
+            primera = false;
+        }
     }
 
     void guardar()
