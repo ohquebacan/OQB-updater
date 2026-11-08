@@ -398,6 +398,9 @@
     "la_ultima": "La plus récente",
     "y_mas": "et {} de plus",
     "volver": "Retour aux codes",
-    "recargar": "Recharger"
+    "recargar": "Recharger",
+    "pedir_base": "Téléchargez d'abord la base de codes",
+    "pedir_base_sub": "Pour savoir quels jeux ont des codes, il faut la base (environ 4 Mo). Elle se télécharge une fois, puis seulement quand une nouvelle sort.",
+    "pedir_base_boton": " Télécharger la base de codes"
   }
 }

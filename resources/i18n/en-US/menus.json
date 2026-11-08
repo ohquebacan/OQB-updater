@@ -633,6 +633,9 @@
         "la_ultima": "Newest",
         "y_mas": "and {} more",
         "volver": "Back to Cheats",
-        "recargar": "Reload"
+        "recargar": "Reload",
+        "pedir_base": "Download the cheat database first",
+        "pedir_base_sub": "To know which games have cheats you need the database (about 4 MB). It's downloaded once, and again only when a new one comes out.",
+        "pedir_base_boton": " Download the cheat database"
     }
 }

@@ -654,6 +654,9 @@
         "la_ultima": "La más nueva",
         "y_mas": "y {} más",
         "volver": "Volver a Trucos",
-        "recargar": "Recargar"
+        "recargar": "Recargar",
+        "pedir_base": "Primero baja la base de trucos",
+        "pedir_base_sub": "Para saber qué juegos tienen trucos hace falta la base (unos 4 MB). Se baja una vez y después solo cuando sale una nueva.",
+        "pedir_base_boton": " Bajar la base de trucos"
     }
 }

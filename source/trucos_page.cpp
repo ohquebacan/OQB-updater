@@ -91,6 +91,33 @@ namespace {
         return sinEspacios(util::readFile(CHEATS_VERSION)) + "|" + std::to_string(ec ? 0 : tam);
     }
 
+    // La version instalada de un juego (la de cheats_util::GetVersion pierde memoria en cada llamada).
+    u32 versionDe(u64 tid)
+    {
+        std::vector<NsApplicationContentMetaStatus> estados(100);
+        s32 n = 0;
+        u32 v = 0;
+        if (R_SUCCEEDED(nsListApplicationContentMetaStatus(tid, 0, estados.data(), estados.size(), &n)))
+            for (s32 i = 0; i < n; ++i) v = std::max(v, estados[i].version);
+        return v;
+    }
+
+    // En la SD un rename no pisa un archivo que ya existe: se borra antes.
+    void reemplazar(const std::string& tmp, const std::string& destino)
+    {
+        std::error_code ec;
+        std::filesystem::remove(destino, ec);
+        std::filesystem::rename(tmp, destino, ec);
+    }
+
+    // Hay una base de trucos en la SD y trae trucos (la 2026-09-08 vacia no cuenta).
+    bool baseLista()
+    {
+        if (sinEspacios(util::readFile(CHEATS_VERSION)).empty()) return false;
+        std::error_code ec;
+        return !std::filesystem::exists(CHEATS_FILENAME, ec) || util::baseTrucosValida(CHEATS_FILENAME);
+    }
+
     const std::string CACHE = std::string(CONFIG_PATH) + "trucos_versiones.json";
     const std::string MARCA = std::string(CONFIG_PATH) + "trucos_versiones.ver";
 
@@ -114,7 +141,7 @@ namespace {
                 std::ofstream f(tmp, std::ios::binary | std::ios::trunc);
                 f << texto;
             }
-            std::filesystem::rename(tmp, CACHE, ec);
+            reemplazar(tmp, CACHE);
             std::ofstream(MARCA, std::ios::trunc) << publicada;
             return texto;
         }
@@ -166,8 +193,7 @@ namespace {
             // replace: un nombre con bytes que no son UTF-8 valido lanzaba una excepcion aca.
             f << j.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
         }
-        std::error_code ec;
-        std::filesystem::rename(tmp, CACHE_JUEGOS, ec);
+        reemplazar(tmp, CACHE_JUEGOS);
     }
 
     bool leerCache(const std::string& firma, std::vector<Juego>& juegos)
@@ -218,6 +244,7 @@ namespace {
     {
     public:
         std::atomic<bool> listo{false}, cancelar{false};
+        std::atomic<bool> cambio{false};  // la cache sirvio pero algun juego cambio de version
         std::atomic<int> hechos{0}, total{0};
         std::vector<Juego> juegos;  // se puede leer cuando listo == true
         bool baseBajada = false;
@@ -259,18 +286,25 @@ namespace {
             if (R_FAILED(nsListApplicationRecord(registros.data(), MAXIMO, 0, &cuantos))) cuantos = 0;
             this->total = cuantos;
 
-            /* La firma: la base que hay en la SD y cada juego con su version. Si no
-               cambio nada desde la ultima vez, la revision guardada sirve tal cual. */
+            /* La firma: la base que hay en la SD y que juegos hay. Con eso se muestra
+               la revision guardada al instante; las versiones (una consulta por
+               juego, lo lento) se comprueban despues, por detras, y si alguna
+               cambio se avisa para volver a revisar. */
             std::string firma = "base " + marcaBase();
-            for (s32 i = 0; i < cuantos; ++i)
-                firma += fmt::format(";{:016X}:{}", registros[i].application_id, cheats_util::GetVersion(registros[i].application_id));
+            for (s32 i = 0; i < cuantos; ++i) firma += fmt::format(";{:016X}", registros[i].application_id);
             if (!forzar && leerCache(firma, out)) {
                 this->hechos = cuantos;
                 this->juegos = std::move(out);
                 this->listo = true;
+                for (const auto& g : this->juegos) {
+                    if (this->cancelar) return;
+                    if (versionDe(g.tid) != g.version) {
+                        this->cambio = true;
+                        return;
+                    }
+                }
                 return;
             }
-
             const std::string base = versionesDeLaBase();
             auto control = std::make_unique<NsApplicationControlData>();
             for (s32 i = 0; i < cuantos && !this->cancelar; ++i) {
@@ -288,7 +322,7 @@ namespace {
                     if (tam > sizeof(control->nacp)) j.icono.assign(control->icon, control->icon + (tam - sizeof(control->nacp)));
                 }
                 if (j.nombre.empty()) j.nombre = tid;
-                j.version = cheats_util::GetVersion(j.tid);
+                j.version = versionDe(j.tid);
 
                 // Builds con trucos: los archivos de la base en la SD.
                 const std::string carpeta = util::getContentsPath() + tid + "/cheats/";
@@ -424,6 +458,14 @@ namespace {
         int elegido = 0, primero = 0;
         std::map<u64, int> iconos;
         std::chrono::steady_clock::time_point ultimaRevision{};
+        bool esperandoBase = false;  // sin base no se leen los juegos: se pide bajarla primero
+
+        static void abrirBase()
+        {
+            brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+            frame->setContentView((new ListDownloadTab(contentType::cheats))->desdeTrucos());
+            brls::PopupFrame::open("menus/main/download_cheats"_i18n, frame, "", "");
+        }
 
         std::vector<int> visibles() const
         {
@@ -474,7 +516,8 @@ namespace {
     public:
         Vista()
         {
-            this->leer();
+            this->esperandoBase = !baseLista();
+            if (!this->esperandoBase) this->leer();
             this->registerAction("", brls::Key::DUP, [this] { this->mover(-1); return true; }, true);
             this->registerAction("", brls::Key::DDOWN, [this] { this->mover(1); return true; }, true);
             this->registerAction("", brls::Key::L, [this] {
@@ -496,12 +539,14 @@ namespace {
                 return true;
             });
             this->registerAction("menus/trucos/base"_i18n, brls::Key::X, [] {
-                brls::AppletFrame* frame = new brls::AppletFrame(true, true);
-                frame->setContentView((new ListDownloadTab(contentType::cheats))->desdeTrucos());
-                brls::PopupFrame::open("menus/main/download_cheats"_i18n, frame, "", "");
+                abrirBase();
                 return true;
             });
             this->registerAction("menus/trucos/ver"_i18n, brls::Key::A, [this] {
+                if (this->esperandoBase) {
+                    abrirBase();
+                    return true;
+                }
                 const Juego* j = this->actual();
                 if (!j) return true;
                 if (j->estado == CON_TRUCOS)
@@ -521,7 +566,12 @@ namespace {
         // Al volver de bajar la base, se vuelve a leer con los trucos nuevos.
         void willAppear(bool resetState) override
         {
-            if (this->lectura && this->lectura->listo && marcaBase() != this->marcaLeida) this->leer();
+            if (this->esperandoBase && baseLista()) {
+                this->esperandoBase = false;
+                this->leer();
+            }
+            else if (this->lectura && this->lectura->listo && marcaBase() != this->marcaLeida)
+                this->leer();
             brls::View::willAppear(resetState);
         }
 
@@ -540,9 +590,42 @@ namespace {
                nuevo con los trucos que hay ahora. Se mira el archivo de version una
                vez por segundo, no en cada cuadro. */
             const auto ahora = std::chrono::steady_clock::now();
-            if (this->lectura && this->lectura->listo && ahora - this->ultimaRevision > std::chrono::seconds(1)) {
+            if (ahora - this->ultimaRevision > std::chrono::seconds(1)) {
                 this->ultimaRevision = ahora;
-                if (marcaBase() != this->marcaLeida) this->leer();
+                if (this->esperandoBase) {
+                    if (marcaBase() != this->marcaLeida && baseLista()) {
+                        this->esperandoBase = false;
+                        this->leer();
+                    }
+                    this->marcaLeida = marcaBase();
+                }
+                else if (this->lectura && this->lectura->listo && (marcaBase() != this->marcaLeida || this->lectura->cambio))
+                    this->leer(this->lectura->cambio);
+            }
+
+            if (this->esperandoBase) {
+                // Antes de leer 200 juegos, la base: sin ella no hay nada que mostrar.
+                const float cw = std::min(720.0f, width - 80.0f), ch = 230.0f, cx = x + (width - cw) / 2.0f, cy = y + (height - ch) / 2.0f;
+                const Colores c = coloresDe(OTRA_VERSION);
+                nvgBeginPath(vg);
+                nvgRoundedRect(vg, cx, cy, cw, ch, 16.0f);
+                nvgFillColor(vg, this->a(c.fondo));
+                nvgFill(vg);
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+                nvgFillColor(vg, this->a(c.texto));
+                nvgFontSize(vg, 26.0f);
+                nvgBeginPath(vg);
+                nvgText(vg, cx + 30.0f, cy + 28.0f, "menus/trucos/pedir_base"_i18n.c_str(), nullptr);
+                nvgFontSize(vg, 18.0f);
+                nvgTextLineHeight(vg, 1.35f);
+                nvgFillColor(vg, texto);
+                nvgBeginPath(vg);
+                nvgTextBox(vg, cx + 30.0f, cy + 72.0f, cw - 60.0f, "menus/trucos/pedir_base_sub"_i18n.c_str(), nullptr);
+                nvgFontSize(vg, 20.0f);
+                nvgFillColor(vg, this->a(c.texto));
+                nvgBeginPath(vg);
+                nvgText(vg, cx + 30.0f, cy + ch - 48.0f, "menus/trucos/pedir_base_boton"_i18n.c_str(), nullptr);
+                return;
             }
 
             if (!this->lectura || !this->lectura->listo) {

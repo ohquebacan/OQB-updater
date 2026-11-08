@@ -392,6 +392,9 @@
     "la_ultima": "A mais nova",
     "y_mas": "e mais {}",
     "volver": "Voltar às trapaças",
-    "recargar": "Recarregar"
+    "recargar": "Recarregar",
+    "pedir_base": "Primeiro baixe a base de trapaças",
+    "pedir_base_sub": "Para saber quais jogos têm trapaças é preciso a base (uns 4 MB). Ela é baixada uma vez e depois só quando sair uma nova.",
+    "pedir_base_boton": " Baixar a base de trapaças"
   }
 }
