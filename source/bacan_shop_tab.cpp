@@ -18,6 +18,7 @@
 #include "pack_list_item.hpp"
 #include "pack_version.hpp"
 #include "protection_page.hpp"
+#include "trucos_page.hpp"
 #include "utils.hpp"
 
 namespace i18n = brls::i18n;
@@ -232,11 +233,9 @@ namespace {
             item->setWarningValue(fmt::format("menus/bacan/trucos_nuevos"_i18n, nueva));
         else
             item->setPositiveValue("menus/bacan/trucos_al_dia"_i18n);
-        item->getClickEvent()->subscribe([](brls::View* view) {
-            brls::AppletFrame* frame = new brls::AppletFrame(true, true);
-            frame->setContentView(new ListDownloadTab(contentType::cheats));
-            brls::PopupFrame::open("menus/main/download_cheats"_i18n, frame, "", "");
-        });
+        // La pantalla de Trucos: cada juego con su version y si tiene trucos para
+        // ella. Bajar o administrar la base queda en esa pantalla, con X.
+        item->getClickEvent()->subscribe([](brls::View* view) { trucos::abrir(); });
         lista->addView(item);
     }
 

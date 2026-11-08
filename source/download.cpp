@@ -521,20 +521,26 @@ namespace download {
     }
 
     namespace {
+        struct Texto {
+            std::string* s;
+            size_t maximo;
+        };
+
         size_t aTexto(void* datos, size_t tam, size_t n, void* destino)
         {
-            auto* s = static_cast<std::string*>(destino);
+            auto* t = static_cast<Texto*>(destino);
             const size_t total = tam * n;
-            if (s->size() + total > (64u << 10))
+            if (t->s->size() + total > t->maximo)
                 return 0;
-            s->append(static_cast<const char*>(datos), total);
+            t->s->append(static_cast<const char*>(datos), total);
             return total;
         }
     }  // namespace
 
-    long textoCorto(const std::string& url, std::string& out, long segundos)
+    long textoCorto(const std::string& url, std::string& out, long segundos, size_t maximo)
     {
         out.clear();
+        Texto destino{&out, maximo};
         CURL* curl = curl_easy_init();
         if (!curl)
             return 0;
@@ -548,7 +554,7 @@ namespace download {
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, segundos);
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, aTexto);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &out);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &destino);
         const CURLcode rc = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &codigo);
         curl_easy_cleanup(curl);

@@ -10,5 +10,7 @@ private:
     brls::StagedAppletFrame* stagedFrame;
 
 public:
-    ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista = true, const nlohmann::ordered_json& hideStatus = {});
+    // nxlinks: el catalogo, para la lista de packs de la instalacion limpia.
+    ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista = true, const nlohmann::ordered_json& hideStatus = {},
+             const nlohmann::ordered_json& nxlinks = nlohmann::ordered_json::object());
 };

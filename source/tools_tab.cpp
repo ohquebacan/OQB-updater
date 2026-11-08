@@ -18,6 +18,7 @@
 #include "forwarder_page.hpp"
 #include "fs.hpp"
 #include "hide_tabs_page.hpp"
+#include "instalacion_limpia.hpp"
 #include "limpieza_mac.hpp"
 #include "net_page.hpp"
 #include "ntp.hpp"
@@ -104,7 +105,8 @@ namespace {
     }
 }
 
-ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus) : brls::List()
+ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus,
+                   const nlohmann::ordered_json& nxlinks) : brls::List()
 {
     /* OQB: primero de la lista a proposito. Es lo que hay que mirar despues de
        actualizar el pack o de cambiar el package3, que es justo cuando se puede
@@ -374,6 +376,14 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     cleanMac->setHeight(LISTITEM_HEIGHT);
 
+    /* Instalacion limpia: el pack con la SD como recien formateada. Antes de
+       borrar nada muestra una vista previa y pide mantener A. */
+    brls::ListItem* limpia = new brls::ListItem("menus/limpia/entrada"_i18n, "", "menus/limpia/entrada_sub"_i18n);
+    {
+        const nlohmann::ordered_json links = nxlinks;
+        limpia->getClickEvent()->subscribe([links, erista](brls::View* view) { instalacionLimpia::abrir(links, erista); });
+    }
+
     brls::ListItem* language = new brls::ListItem("menus/tools/language"_i18n);
     language->getClickEvent()->subscribe([](brls::View* view) {
         std::vector<std::pair<std::string, std::string>> languages{
@@ -514,6 +524,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     siVisible(archivos, "move", move);
     siVisible(archivos, "cleanup", cleanUp);
     siVisible(archivos, "cleanup", cleanMac);
+    siVisible(archivos, "cleanup", limpia);
 
     siVisible(inicio, "createforwarder", createForwarder);
     siVisible(inicio, "manageforwarders", manageForwarders);

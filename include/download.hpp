@@ -15,9 +15,9 @@ namespace download {
     long downloadPage(const std::string& url, std::string& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
     long getRequest(const std::string& url, nlohmann::ordered_json& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
 
-    // Un texto corto (hasta 64 KB) con un tope total de `segundos`. Su propio
+    // Un texto corto (hasta `maximo`, 64 KB si no se dice) con un tope total de `segundos`. Su propio
     // curl, sin barra de progreso ni registro: sirve desde cualquier hilo.
     // Devuelve el codigo HTTP (0 si no hubo respuesta completa).
-    long textoCorto(const std::string& url, std::string& out, long segundos);
+    long textoCorto(const std::string& url, std::string& out, long segundos, size_t maximo = 64u << 10);
 
 }  // namespace download

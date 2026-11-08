@@ -575,3 +575,234 @@ void deep_clean::quitarInisHuerfanos()
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Instalacion limpia
+// ---------------------------------------------------------------------------
+
+namespace {
+
+uint64_t tamano(const std::string& ruta)
+{
+    std::error_code ec;
+    if (!std::filesystem::is_directory(ruta, ec)) {
+        const auto t = std::filesystem::file_size(ruta, ec);
+        return ec ? 0 : t;
+    }
+    uint64_t total = 0;
+    for (auto it = std::filesystem::recursive_directory_iterator(ruta, ec); !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
+        std::error_code e2;
+        if (it->is_regular_file(e2)) {
+            const auto t = it->file_size(e2);
+            if (!e2) total += t;
+        }
+    }
+    return total;
+}
+
+bool terminaEn(const std::string& s, const char* fin)
+{
+    const size_t n = std::strlen(fin);
+    return s.size() >= n && s.compare(s.size() - n, n, fin) == 0;
+}
+
+// Algo del zip esta en esa ruta o debajo de ella (ruta en minusculas).
+bool zipTraeAlgoEn(const DelZip& zip, const std::string& baja)
+{
+    if (zip.rutas.count(baja)) return true;
+    const std::string dentro = baja + "/";
+    const auto it = zip.rutas.lower_bound(dentro);
+    return it != zip.rutas.end() && it->rfind(dentro, 0) == 0;
+}
+
+// En la raiz: lo que nunca se toca (en minusculas).
+constexpr const char* RAIZ_INTOCABLE[] = {"nintendo", "emummc", "backup", "jksv", "atmosphere", "bootloader", "config", "switch",
+                                          // Prelude / Nextendo dejan su estado aqui: borrarlo deja Nextendo a medias.
+                                          "rootca.pem", "prelude_trace.txt", "prelude_exit.log"};
+// Carpetas de mods en la raiz.
+constexpr const char* RAIZ_MODS[] = {"ultimate", "mods", "saltysd"};
+
+}  // namespace
+
+deep_clean::estricta::Plan deep_clean::estricta::armar(const std::string& zipPath)
+{
+    Plan plan;
+    deep_clean::logPaso("=== inicio plan instalacion limpia");
+    std::set<std::string> conservar;
+    for (const auto& c : fs::readLineByLine(FILES_IGNORE)) {
+        if (!c.empty()) conservar.insert(minusculas(c[0] == '/' ? c : "/" + c));
+    }
+    const DelZip zip = leerZip(zipPath);
+    if (zip.rutas.empty()) {
+        deep_clean::logPaso("plan: zip ilegible");
+        return plan;
+    }
+    const Conocidos conocidos = conocidosDelCatalogo();
+
+    // Nombres de las apps del pack, para reconocer su carpeta de datos.
+    std::vector<std::string> clavesPack;
+    for (const auto& n : zip.archivosApp) clavesPack.push_back(clave(sinExtension(n)));
+    for (const auto& n : zip.apps) clavesPack.push_back(clave(n));
+    for (const auto& r : zip.rutas) {
+        if (r.rfind("/switch/", 0) == 0) {
+            const auto fin = r.find('/', 8);
+            if (fin != std::string::npos) clavesPack.push_back(clave(r.substr(8, fin - 8)));
+        }
+    }
+    auto esDelPack = [&clavesPack](const std::string& nombre) {
+        const std::string k = clave(nombre);
+        return std::any_of(clavesPack.begin(), clavesPack.end(), [&k](const std::string& c) { return clavesCoinciden(k, c); });
+    };
+    const std::string propia = minusculas(util::getAppPath());
+
+    // Las apps ajenas que entran al plan, con su categoria final (APPS o PORTS):
+    // su carpeta de /config sigue a la app.
+    std::vector<std::pair<std::string, Categoria>> clavesApps;
+    auto agrega = [&plan](const std::string& ruta, Categoria cat) {
+        Elemento e;
+        e.ruta = ruta;
+        e.bytes = tamano(ruta);
+        // Una app ajena grande es un port o un emulador con los juegos del usuario.
+        if (cat == APPS && e.bytes >= (256ull << 20)) cat = PORTS;
+        e.cat = cat;
+        plan.bytes[cat] += e.bytes;
+        plan.cuenta[cat] += 1;
+        plan.elementos.push_back(std::move(e));
+        return cat;
+    };
+    // Nunca: las llaves de la consola (prod.keys, title.keys) y lo de Nextendo/Prelude.
+    auto intocable = [](const std::string& baja) {
+        const std::string nombre = archivoDe(baja);
+        return terminaEn(nombre, ".keys") || nombre.find("prelude") != std::string::npos || nombre.find("nextendo") != std::string::npos;
+    };
+
+    // /switch: lo que no trae el pack.
+    for (const auto& nombre : nombresDe("/switch")) {
+        const std::string ruta = "/switch/" + nombre;
+        const std::string baja = minusculas(ruta);
+        if (nombre.rfind("._", 0) == 0) {
+            agrega(ruta, RESTOS);
+            continue;
+        }
+        if (protegida(baja, conservar) || intocable(baja)) continue;
+        if (propia == baja || propia.rfind(baja + "/", 0) == 0) continue;
+        if (baja == "/switch/.overlays") {
+            for (const auto& ovl : nombresDe(ruta)) {
+                const std::string r = ruta + "/" + ovl;
+                const std::string b = minusculas(r);
+                if (esApp(b) && !zip.rutas.count(b) && !protegida(b, conservar) && !intocable(b))
+                    clavesApps.emplace_back(clave(sinExtension(ovl)), agrega(r, APPS));
+            }
+            continue;
+        }
+        // Otras carpetas ocultas (.packages es la base de datos de HB App Store, que va en el pack).
+        if (nombre[0] == '.') continue;
+        if (zipTraeAlgoEn(zip, baja)) continue;
+        if (esCarpeta(ruta)) {
+            // La carpeta de datos de una app del pack (Checkpoint guarda ahi las partidas).
+            if (esDelPack(nombre)) continue;
+            clavesApps.emplace_back(clave(nombre), agrega(ruta, APPS));
+            continue;
+        }
+        // Un .nro suelto: si es otra copia de una app del pack, es un resto.
+        bool repetida = false;
+        if (esApp(baja)) {
+            if (FILE* f = std::fopen(ruta.c_str(), "rb")) {
+                const std::string app = nombreApp(lectorDeArchivo(f));
+                std::fclose(f);
+                repetida = !app.empty() && zip.apps.count(app);
+            }
+        }
+        const Categoria catFinal = agrega(ruta, repetida ? RESTOS : APPS);
+        if (esApp(baja)) clavesApps.emplace_back(clave(sinExtension(nombre)), catFinal);
+    }
+
+    // /config: la carpeta de una app ajena sigue a esa app; la de nadie es un resto.
+    for (const auto& nombre : nombresDe("/config")) {
+        const std::string ruta = "/config/" + nombre;
+        const std::string baja = minusculas(ruta);
+        if (protegida(baja, conservar) || zipTraeAlgoEn(zip, baja)) continue;
+        if (baja == "/config/aio-switch-updater") continue;
+        if (esCarpeta(ruta) && esDelPack(nombre)) continue;
+        const std::string k = clave(nombre);
+        const auto app = std::find_if(clavesApps.begin(), clavesApps.end(), [&k](const auto& c) { return clavesCoinciden(k, c.first); });
+        agrega(ruta, app == clavesApps.end() ? RESTOS : app->second);
+    }
+
+    // Descargas viejas de esta app (el pack recien bajado se borra al terminar).
+    for (const auto& nombre : nombresDe(DOWNLOAD_PATH)) {
+        const std::string ruta = std::string(DOWNLOAD_PATH) + nombre;
+        if (terminaEn(minusculas(nombre), ".zip") && ruta != AMS_FILENAME && !esCarpeta(ruta)) agrega(ruta, RESTOS);
+    }
+
+    // /themes: los temas que no trae el pack.
+    for (const auto& nombre : nombresDe("/themes")) {
+        const std::string ruta = "/themes/" + nombre;
+        const std::string baja = minusculas(ruta);
+        if (zipTraeAlgoEn(zip, baja) || protegida(baja, conservar)) continue;
+        agrega(ruta, nombre.rfind("._", 0) == 0 ? RESTOS : TEMAS);
+    }
+
+    // La raiz.
+    for (const auto& nombre : nombresDe("/")) {
+        const std::string ruta = "/" + nombre;
+        const std::string baja = minusculas(nombre);
+        if (std::any_of(std::begin(RAIZ_INTOCABLE), std::end(RAIZ_INTOCABLE), [&baja](const char* n) { return baja == n; })) continue;
+        if (baja == "themes" || zipTraeAlgoEn(zip, "/" + baja) || protegida("/" + baja, conservar) || intocable("/" + baja)) continue;
+        // Juegos sueltos: son del usuario, no de un pack.
+        if (terminaEn(baja, ".nsp") || terminaEn(baja, ".nsz") || terminaEn(baja, ".xci") || terminaEn(baja, ".xcz")) continue;
+        if (std::any_of(std::begin(RAIZ_MODS), std::end(RAIZ_MODS), [&baja](const char* n) { return baja == n; })) {
+            agrega(ruta, MODS);
+            continue;
+        }
+        if (baja[0] == '.') {  // .Spotlight-V100, .fseventsd, .mesa...
+            agrega(ruta, RESTOS);
+            continue;
+        }
+        // Datos en la raiz de una app del catalogo que ya no esta en el pack (tico/).
+        const std::string dentro = "/" + baja + "/";
+        const bool deCatalogo = std::any_of(conocidos.rutas.begin(), conocidos.rutas.end(), [&dentro](const std::string& r) { return r.rfind(dentro, 0) == 0; });
+        agrega(ruta, deCatalogo ? APPS : RAIZ);
+    }
+
+    std::sort(plan.elementos.begin(), plan.elementos.end(), [](const Elemento& a, const Elemento& b) {
+        return a.cat != b.cat ? a.cat < b.cat : a.bytes > b.bytes;
+    });
+    s64 total = 0, libre = 0;
+    if (R_SUCCEEDED(nsGetTotalSpaceSize(NcmStorageId_SdCard, &total)) && R_SUCCEEDED(nsGetFreeSpaceSize(NcmStorageId_SdCard, &libre)) && total > libre)
+        plan.usado = (uint64_t)(total - libre);
+    plan.valido = true;
+    deep_clean::logPaso("plan: " + std::to_string(plan.elementos.size()) + " elementos");
+    return plan;
+}
+
+uint64_t deep_clean::estricta::aBorrar(const Plan& plan, const Opciones& op)
+{
+    uint64_t total = 0;
+    for (int c = 0; c < N_CATEGORIAS; ++c) {
+        if (c == RESTOS || !op.conservar[c]) total += plan.bytes[c];
+    }
+    return total;
+}
+
+int deep_clean::estricta::ejecutar(const Plan& plan, const Opciones& op)
+{
+    static const char* NOMBRES[] = {"resto", "app", "mods", "tema", "raiz", "port"};
+    std::ofstream log(std::string(CONFIG_PATH) + "limpieza.log", std::ios::trunc);
+    log << "Instalacion limpia: lo que se quito antes de instalar el pack\n";
+    int quitadas = 0;
+    std::error_code ec;
+    for (const auto& e : plan.elementos) {
+        if (e.cat != RESTOS && op.conservar[e.cat]) continue;
+        log << "[" << NOMBRES[e.cat] << "] " << e.ruta << " (" << e.bytes << " B)\n";
+        log.flush();
+        actividad::detalle(actividad::texto("quitado", e.ruta));
+        if (esCarpeta(e.ruta))
+            borrarCarpeta(e.ruta);
+        else
+            std::filesystem::remove(e.ruta, ec);
+        ++quitadas;
+    }
+    deep_clean::logPaso("instalacion limpia: " + std::to_string(quitadas) + " quitadas");
+    return quitadas;
+}

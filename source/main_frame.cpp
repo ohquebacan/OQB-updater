@@ -247,7 +247,7 @@ MainFrame::MainFrame() : TabFrame()
         this->addSeparator();
 
     if (!util::getBoolValue(hideStatus, "tools"))
-        this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
+        this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus, nxlinks));
     arranque::marca("ventana: pestaña ajustes");
 
     if (!util::getBoolValue(hideStatus, "language"))
