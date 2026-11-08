@@ -395,6 +395,8 @@
     "recargar": "Recarregar",
     "pedir_base": "Primeiro baixe a base de trapaças",
     "pedir_base_sub": "Para saber quais jogos têm trapaças é preciso a base (uns 4 MB). Ela é baixada uma vez e depois só quando sair uma nova.",
-    "pedir_base_boton": " Baixar a base de trapaças"
+    "pedir_base_boton": " Baixar a base de trapaças",
+    "d_otra_sub_sin_lista": "Você tem {}, mas a base só tem trapaças para outra versão do jogo, que não está na lista dela. Se puder, mude a versão do jogo; se não, espere a base adicionar a sua.",
+    "d_desconocida_sub_sin_lista": "A base ainda não conhece a sua versão, e as trapaças dela são de outra versão do jogo. Provavelmente não vão funcionar com a sua."
   }
 }

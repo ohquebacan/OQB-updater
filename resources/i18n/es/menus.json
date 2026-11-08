@@ -657,6 +657,8 @@
         "recargar": "Recargar",
         "pedir_base": "Primero baja la base de trucos",
         "pedir_base_sub": "Para saber qué juegos tienen trucos hace falta la base (unos 4 MB). Se baja una vez y después solo cuando sale una nueva.",
-        "pedir_base_boton": " Bajar la base de trucos"
+        "pedir_base_boton": " Bajar la base de trucos",
+        "d_otra_sub_sin_lista": "Tienes {}, pero la base trae trucos solo para otra versión del juego, que no figura en su lista. Si puedes, cambia la versión del juego; si no, espera a que la base agregue la tuya.",
+        "d_desconocida_sub_sin_lista": "La base todavía no conoce tu versión, y los trucos que trae son de otra versión del juego. Probablemente no funcionen con la tuya."
     }
 }

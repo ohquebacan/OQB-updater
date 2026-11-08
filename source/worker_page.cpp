@@ -1,5 +1,6 @@
 #include "worker_page.hpp"
 #include "confirm_page.hpp"
+#include "oqb_theme.hpp"
 
 #include <cstring>
 #include <new>
@@ -269,7 +270,9 @@ void WorkerPage::drawCascada(NVGcontext* vg, float cx, float y, float ancho, brl
         const std::string texto = recortar(vg, this->cascada[i], ancho);
         // La actual en hueso con un punto esmeralda; las anteriores en gris verdoso.
         const bool actual = i == 0;
-        const NVGcolor color = actual ? nvgRGBAf(238 / 255.0f, 242 / 255.0f, 227 / 255.0f, alfa) : nvgRGBAf(170 / 255.0f, 182 / 255.0f, 172 / 255.0f, alfa);
+        // Del tema: en modo claro el hueso y el gris verdoso no se leian sobre el fondo.
+        const NVGcolor base = actual ? ctx->theme->textColor : ctx->theme->descriptionColor;
+        const NVGcolor color = nvgRGBAf(base.r, base.g, base.b, alfa);
         nvgFillColor(vg, color);
         nvgBeginPath(vg);
         nvgText(vg, cx, ly, texto.c_str(), nullptr);
@@ -277,7 +280,8 @@ void WorkerPage::drawCascada(NVGcontext* vg, float cx, float y, float ancho, brl
         const float mitad = nvgTextBounds(vg, 0, 0, texto.c_str(), nullptr, nullptr) / 2.0f;
         nvgBeginPath(vg);
         nvgCircle(vg, cx - mitad - 14.0f, ly, actual ? 4.0f : 3.0f);
-        nvgFillColor(vg, actual ? nvgRGBAf(52 / 255.0f, 213 / 255.0f, 131 / 255.0f, alfa) : color);
+        const NVGcolor punto = oqb::esmeralda();
+        nvgFillColor(vg, actual ? nvgRGBAf(punto.r, punto.g, punto.b, alfa) : color);
         nvgFill(vg);
     }
 }

@@ -636,6 +636,8 @@
         "recargar": "Reload",
         "pedir_base": "Download the cheat database first",
         "pedir_base_sub": "To know which games have cheats you need the database (about 4 MB). It's downloaded once, and again only when a new one comes out.",
-        "pedir_base_boton": " Download the cheat database"
+        "pedir_base_boton": " Download the cheat database",
+        "d_otra_sub_sin_lista": "You have {}, but the database only has cheats for another version of the game that isn't in its list. If you can, change the game's version; otherwise wait for the database to add yours.",
+        "d_desconocida_sub_sin_lista": "The database doesn't know your version yet, and its cheats are for another version of the game. They probably won't work with yours."
     }
 }

@@ -401,6 +401,8 @@
     "recargar": "Recharger",
     "pedir_base": "Téléchargez d'abord la base de codes",
     "pedir_base_sub": "Pour savoir quels jeux ont des codes, il faut la base (environ 4 Mo). Elle se télécharge une fois, puis seulement quand une nouvelle sort.",
-    "pedir_base_boton": " Télécharger la base de codes"
+    "pedir_base_boton": " Télécharger la base de codes",
+    "d_otra_sub_sin_lista": "Vous avez {}, mais la base n'a des codes que pour une autre version du jeu, absente de sa liste. Si possible, changez la version du jeu ; sinon, attendez que la base ajoute la vôtre.",
+    "d_desconocida_sub_sin_lista": "La base ne connaît pas encore votre version, et ses codes sont pour une autre version du jeu. Ils ne fonctionneront probablement pas avec la vôtre."
   }
 }

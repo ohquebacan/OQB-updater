@@ -16,6 +16,7 @@
 #include "pack_list_item.hpp"
 #include "pack_version.hpp"
 #include "progress_event.hpp"
+#include "oqb_theme.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -106,8 +107,8 @@ namespace {
                 nvgBeginPath(vg);
                 nvgText(vg, cx + 20.0f, top + 38.0f, valor.c_str(), nullptr);
             };
-            caja(x, nvgRGBA(226, 75, 74, 46), nvgRGB(240, 149, 149), "menus/limpia/se_borra"_i18n, tam(borra));
-            caja(x + w + gap, nvgRGBA(52, 213, 131, 40), nvgRGB(157, 234, 154), "menus/limpia/se_conserva"_i18n,
+            caja(x, nvgRGBA(226, 75, 74, 46), oqb::rojoTexto(), "menus/limpia/se_borra"_i18n, tam(borra));
+            caja(x + w + gap, nvgRGBA(52, 213, 131, 40), oqb::verdeTexto(), "menus/limpia/se_conserva"_i18n,
                  estado->plan.usado ? tam(queda) : "—");
         }
 
@@ -305,7 +306,7 @@ namespace {
             if (p > 0.0f) {
                 nvgBeginPath(vg);
                 nvgRoundedRect(vg, bx, by, bw * p, bh, bh / 2.0f);
-                nvgFillColor(vg, this->a(nvgRGB(230, 185, 92)));
+                nvgFillColor(vg, this->a(oqb::doradoTexto()));
                 nvgFill(vg);
             }
             if (p >= 1.0f && !this->listo) {

@@ -23,6 +23,7 @@
 #include "download_cheats_page.hpp"
 #include "extract.hpp"
 #include "list_download_tab.hpp"
+#include "oqb_theme.hpp"
 #include "utils.hpp"
 
 namespace i18n = brls::i18n;
@@ -417,10 +418,10 @@ namespace {
     Colores coloresDe(Estado e)
     {
         switch (e) {
-            case CON_TRUCOS: return {nvgRGBA(52, 213, 131, 46), nvgRGB(157, 234, 154)};
+            case CON_TRUCOS: return {nvgRGBA(52, 213, 131, 46), oqb::verdeTexto()};
             case OTRA_VERSION:
-            case VERSION_DESCONOCIDA: return {nvgRGBA(230, 185, 92, 46), nvgRGB(230, 185, 92)};
-            default: return {nvgRGBA(255, 255, 255, 20), nvgRGB(160, 160, 160)};
+            case VERSION_DESCONOCIDA: return {nvgRGBA(230, 185, 92, 46), oqb::doradoTexto()};
+            default: return {oqb::velo(20), oqb::grisTexto()};
         }
     }
 
@@ -686,7 +687,7 @@ namespace {
                 float cx = izq;
                 for (int f = 0; f < 4; ++f) {
                     const std::string t = fmt::format("{} · {}", i18n::getStr(claves[f]), cuenta[f]);
-                    const Colores c = f == this->filtro ? Colores{ctx->theme->textColor, ctx->theme->backgroundColorRGB} : Colores{nvgRGBA(255, 255, 255, 18), ctx->theme->descriptionColor};
+                    const Colores c = f == this->filtro ? Colores{ctx->theme->textColor, ctx->theme->backgroundColorRGB} : Colores{oqb::velo(18), ctx->theme->descriptionColor};
                     cx += pildora(vg, cx, y + 118.0f, t, c, this->alpha) + 10.0f;
                 }
             }
@@ -737,7 +738,7 @@ namespace {
                 if (it->second > 0)
                     nvgFillPaint(vg, nvgImagePattern(vg, ix, iy, lado, lado, 0, it->second, this->alpha));
                 else
-                    nvgFillColor(vg, this->a(nvgRGBA(255, 255, 255, 25)));
+                    nvgFillColor(vg, this->a(oqb::velo(25)));
                 nvgFill(vg);
 
                 const std::string pill = etiquetaDe(j.estado);
@@ -774,7 +775,7 @@ namespace {
                 if (it != this->iconos.end() && it->second > 0)
                     nvgFillPaint(vg, nvgImagePattern(vg, der, dy, lado, lado, 0, it->second, this->alpha));
                 else
-                    nvgFillColor(vg, this->a(nvgRGBA(255, 255, 255, 25)));
+                    nvgFillColor(vg, this->a(oqb::velo(25)));
                 nvgFill(vg);
                 nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
                 nvgFontSize(vg, 21.0f);
@@ -803,11 +804,15 @@ namespace {
                 }
                 else if (e == OTRA_VERSION) {
                     titulo = "menus/trucos/d_otra"_i18n;
-                    cuerpo = fmt::format("menus/trucos/d_otra_sub"_i18n, nombreVersion(*j, j->version), conTrucosLista(*j));
+                    const std::string lista = conTrucosLista(*j);
+                    // La base puede traer trucos de una build que no figura en sus versiones.
+                    cuerpo = lista.empty() ? fmt::format("menus/trucos/d_otra_sub_sin_lista"_i18n, nombreVersion(*j, j->version))
+                                           : fmt::format("menus/trucos/d_otra_sub"_i18n, nombreVersion(*j, j->version), lista);
                 }
                 else if (e == VERSION_DESCONOCIDA) {
                     titulo = "menus/trucos/d_desconocida"_i18n;
-                    cuerpo = fmt::format("menus/trucos/d_desconocida_sub"_i18n, conTrucosLista(*j));
+                    const std::string lista = conTrucosLista(*j);
+                    cuerpo = lista.empty() ? "menus/trucos/d_desconocida_sub_sin_lista"_i18n : fmt::format("menus/trucos/d_desconocida_sub"_i18n, lista);
                 }
                 else {
                     titulo = "menus/trucos/d_sin"_i18n;
@@ -848,6 +853,9 @@ namespace {
                     const Version& v = j->versiones[k];
                     const float vy = dy + k * alto;
                     if (k == caben2 - 1 && (int)j->versiones.size() > caben2) {
+                        // La alineacion la dejo centrada la pildora de la fila anterior.
+                        nvgFontSize(vg, 15.0f);
+                        nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
                         nvgFillColor(vg, tenue);
                         nvgBeginPath(vg);
                         nvgText(vg, der, vy + 8.0f, fmt::format("menus/trucos/y_mas"_i18n, j->versiones.size() - k).c_str(), nullptr);
