@@ -33,6 +33,10 @@ namespace extract {
     // que legitimamente solo traiga, por ejemplo, switch/.
     std::string detectWrapperDir(const std::string& archivePath);
 
+    // Si cabe en la SD lo que trae el zip descomprimido (con un 10 % de margen).
+    // true si no se pudo saber cuanto espacio queda.
+    bool hayEspacioPara(const std::string& archivePath);
+
     void extract(
         const std::string& filename, const std::string& workingPath = ROOT_PATH, bool preserveInis = false, std::function<void()> func = []() { return; },
         const std::string& stripPrefix = "");

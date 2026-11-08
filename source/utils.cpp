@@ -128,6 +128,14 @@ namespace util {
         ProgressEvent::instance().setStatusCode(status_code);
     }
 
+    void volverAtras(int niveles)
+    {
+        if (niveles <= 0) return;
+        // Cada cierre en el callback del anterior: dos popView seguidos sacarian
+        // dos veces la misma vista, porque sigue en la pila mientras se anima.
+        brls::Application::popView(brls::ViewAnimation::FADE, [niveles] { volverAtras(niveles - 1); });
+    }
+
     void showDialogBoxInfo(const std::string& text)
     {
         brls::Dialog* dialog;
@@ -302,6 +310,12 @@ namespace util {
                 break;
             }
             case contentType::ams_cfw: {
+                /* El espacio se mira antes de limpiar: si faltara a mitad de la
+                   extraccion, la SD quedaria sin el pack viejo y sin el nuevo. */
+                if (!extract::hayEspacioPara(AMS_FILENAME)) {
+                    ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
+                    break;
+                }
                 /* Antes aqui se preguntaban dos cosas: si sobrescribir los .ini y
                    si desactivar la carga de sysmodules. Las dos quedan fijadas en
                    el valor que deja el pack funcionando tal como se armo, porque
@@ -672,6 +686,9 @@ namespace util {
                 break;
             case STATUS_EMPTY_CHEATS:
                 res = "menus/errors/empty_cheats"_i18n;
+                break;
+            case STATUS_NO_SPACE:
+                res = "menus/errors/insufficient_storage"_i18n;
                 break;
             case 500:
                 res = fmt::format("{0:}: Internal Server Error", status_code);

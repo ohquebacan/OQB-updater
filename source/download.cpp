@@ -399,9 +399,8 @@ namespace download {
 
         fclose(chunk.out);
         if (!can_download) {
-            brls::Application::crash("menus/errors/insufficient_storage"_i18n);
-            std::this_thread::sleep_for(std::chrono::microseconds(2000000));
-            brls::Application::quit();
+            // Antes: crash + quit desde el hilo de trabajo. Ahora es un error mas.
+            status_code = STATUS_NO_SPACE;
             res = {};
         }
 

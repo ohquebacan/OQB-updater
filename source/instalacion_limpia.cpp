@@ -50,9 +50,12 @@ namespace {
         return s;
     }
 
+    /* Cancelar en la vista previa o al confirmar: se cierran los dos marcos (el de
+       la vista previa y el del pack elegido) y se vuelve a Herramientas, sin tocar
+       la SD. Antes se abria otra ventana principal encima. */
     void volverAlInicio()
     {
-        brls::Application::pushView(new MainFrame());
+        util::volverAtras(2);
     }
 
     // Los primeros nombres de una categoria, para que se sepa que hay adentro.
@@ -138,7 +141,7 @@ namespace {
                 const std::string nombre = link.first;
                 item->getClickEvent()->subscribe([frame, estado, url, clave, fecha, nombre](brls::View* view) {
                     if (!estado->erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
-                        brls::Application::crash("menus/errors/mariko_payload_missing"_i18n);
+                        util::showDialogBoxInfo("menus/errors/mariko_payload_missing"_i18n);
                         return;
                     }
                     estado->url = url;
@@ -349,7 +352,7 @@ namespace {
             marco->setTitle("menus/limpia/titulo"_i18n);
             marco->addStage(new VistaPrevia(marco, estado));
             marco->addStage(new Mantener(marco, estado));
-            marco->addStage(new WorkerPage(marco, "menus/limpia/trabajando"_i18n, [estado]() {
+            marco->addStage((new WorkerPage(marco, "menus/limpia/trabajando"_i18n, [estado]() {
                 deep_clean::estricta::ejecutar(estado->plan, estado->op);
                 util::extractArchive(contentType::ams_cfw);
                 if (ProgressEvent::instance().getStatusCode() <= 399) {
@@ -357,7 +360,7 @@ namespace {
                     std::error_code ec;
                     std::filesystem::remove(AMS_FILENAME, ec);  // 100+ MB que ya no sirven
                 }
-            }));
+            }))->volverNiveles(2));
             marco->addStage(new ConfirmPage_AmsUpdate(marco, "menus/ams_update/reboot_rcm"_i18n, estado->erista));
             brls::Application::pushView(marco);
         }

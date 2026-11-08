@@ -85,6 +85,9 @@ namespace {
 
 namespace extract {
 
+    bool hayEspacioPara(const std::string& archivePath);
+
+
     namespace {
         bool caselessCompare(const std::string& a, const std::string& b)
         {
@@ -109,19 +112,16 @@ namespace extract {
             return size;  // in B
         }
 
-        void ensureAvailableStorage(const std::string& archivePath)
+        /* Antes cerraba la app desde el hilo de trabajo (crash + quit) y, mientras
+           tanto, la extraccion seguia. Ahora deja el error anotado y quien llama
+           no extrae: la pagina de trabajo lo muestra y vuelve atras. */
+        bool ensureAvailableStorage(const std::string& archivePath)
         {
-            s64 uncompressedSize = getUncompressedSize(archivePath);
-            s64 freeStorage;
-
-            if (R_SUCCEEDED(fs::getFreeStorageSD(freeStorage))) {
-                brls::Logger::info("Uncompressed size of archive {}: {}. Available: {}", archivePath, uncompressedSize, freeStorage);
-                if (uncompressedSize * 1.1 > freeStorage) {
-                    brls::Application::crash("menus/errors/insufficient_storage"_i18n);
-                    std::this_thread::sleep_for(std::chrono::microseconds(2000000));
-                    brls::Application::quit();
-                }
+            if (!hayEspacioPara(archivePath)) {
+                ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
+                return false;
             }
+            return true;
         }
 
         void extractEntry(std::string filename, unzFile& zfile, bool forceCreateTree = false)
@@ -199,9 +199,20 @@ namespace extract {
         return candidate + "/";
     }
 
+    bool hayEspacioPara(const std::string& archivePath)
+    {
+        const s64 uncompressedSize = getUncompressedSize(archivePath);
+        s64 freeStorage;
+        if (R_SUCCEEDED(fs::getFreeStorageSD(freeStorage))) {
+            brls::Logger::info("Uncompressed size of archive {}: {}. Available: {}", archivePath, uncompressedSize, freeStorage);
+            return uncompressedSize * 1.1 <= freeStorage;
+        }
+        return true;  // sin saber cuanto queda, no se frena
+    }
+
     void extract(const std::string& archivePath, const std::string& workingPath, bool preserveInis, std::function<void()> func, const std::string& stripPrefix)
     {
-        ensureAvailableStorage(archivePath);
+        if (!ensureAvailableStorage(archivePath)) return;
 
         unzFile zfile = unzOpen(archivePath.c_str());
         unz_global_info gi;
@@ -471,7 +482,7 @@ namespace extract {
 
     void extractCheats(const std::string& archivePath, const std::vector<std::string>& titles, CFW cfw, const std::string& version, bool extractAll)
     {
-        ensureAvailableStorage(archivePath);
+        if (!ensureAvailableStorage(archivePath)) return;
 
         unzFile zfile = unzOpen(archivePath.c_str());
         unz_global_info gi;

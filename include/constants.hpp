@@ -18,6 +18,7 @@ constexpr const char MARIKO_PAYLOAD_PATH_TEMP[] = "/payload.bin.aio";
 constexpr long STATUS_DOWNLOAD_FAILED = 600;      // sin respuesta o transferencia cortada
 constexpr long STATUS_INCOMPLETE_DOWNLOAD = 601;  // el archivo no es un zip completo
 constexpr long STATUS_EMPTY_CHEATS = 602;         // la base de trucos bajada no trae ningun truco
+constexpr long STATUS_NO_SPACE = 603;             // no hay espacio en la SD para bajar o extraer
 
 constexpr const char CHANGELOG_URL[] = "https://github.com/HamletDuFromage/aio-switch-updater/releases";
 

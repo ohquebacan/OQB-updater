@@ -41,6 +41,9 @@ namespace util {
     void shutDown(bool reboot = false);
     void rebootToPayload(const std::string& path);
     void showDialogBoxInfo(const std::string& text);
+    // Cierra `niveles` vistas de la pila, una despues de otra (para volver al
+    // punto desde el que se abrio un flujo, sin abrir otra ventana principal).
+    void volverAtras(int niveles);
     int showDialogBoxBlocking(const std::string& text, const std::string& opt);
     int showDialogBoxBlocking(const std::string& text, const std::string& opt1, const std::string& opt2);
     std::string getLatestTag(const std::string& url);

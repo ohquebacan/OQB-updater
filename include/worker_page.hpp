@@ -25,11 +25,20 @@ private:
     int progressValue = 0;
     bool workStarted = false;
     bool draw_page = true;
+    int nivelesAlVolver = 1;
     std::thread* workerThread;
     worker_func_t workerFunc;
 
 public:
     WorkerPage(brls::StagedAppletFrame* frame, const std::string& text, worker_func_t worker_func);
+
+    /* Cuantas vistas cerrar si falla o se cancela, para volver al punto desde
+       el que se abrio el flujo (1: solo este marco). */
+    WorkerPage* volverNiveles(int n)
+    {
+        this->nivelesAlVolver = n;
+        return this;
+    }
     ~WorkerPage();
 
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;

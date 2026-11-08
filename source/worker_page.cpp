@@ -131,24 +131,30 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
         else if (ProgressEvent::instance().finished()) {
             appletEndBlockingHomeButton();
             appletSetMediaPlaybackState(false);
-            if (ProgressEvent::instance().getStatusCode() > 399) {
-                /* Antes: Application::crash (su boton cierra la app) y, debajo,
-                   el marco seguia a la etapa siguiente. En un pack, la ultima es
-                   reiniciar/apagar: con una descarga fallida, "Aceptar" terminaba
-                   reiniciando la consola sin haber instalado nada. Ahora el
-                   error es una pagina cuyo boton vuelve al inicio de la app, y
-                   no se sigue con ninguna etapa. */
+            /* Un error o un cancelar no siguen con ninguna etapa (en un pack la
+               ultima es reiniciar) y vuelven al punto desde el que se abrio el
+               flujo. Antes: el error cerraba la app o abria el inicio, y cancelar
+               apilaba una ventana principal nueva (quedaba en blanco). */
+            const bool cancelado = ProgressEvent::instance().getInterupt();
+            if (ProgressEvent::instance().getStatusCode() > 399 && !cancelado) {
                 this->draw_page = false;
                 const std::string mensaje = fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(ProgressEvent::instance().getStatusCode()));
                 ProgressEvent::instance().setStatusCode(0);
-                brls::StagedAppletFrame* aviso = new brls::StagedAppletFrame();
-                aviso->setTitle(APP_TITLE);
-                aviso->addStage(new ConfirmPage_Done(aviso, mensaje));
-                brls::Application::pushView(aviso);
+                const int niveles = this->nivelesAlVolver;
+                brls::Dialog* aviso = new brls::Dialog(mensaje);
+                aviso->addButton("menus/common/back"_i18n, [aviso, niveles](brls::View* view) {
+                    aviso->close([niveles] { util::volverAtras(niveles); });
+                });
+                aviso->setCancelable(false);
+                aviso->open();
                 return;
             }
-            if (ProgressEvent::instance().getInterupt()) {
-                brls::Application::pushView(new MainFrame());
+            if (cancelado) {
+                this->draw_page = false;
+                ProgressEvent::instance().setInterupt(false);
+                ProgressEvent::instance().setStatusCode(0);
+                util::volverAtras(this->nivelesAlVolver);
+                return;
             }
             else {
                 ProgressEvent::instance().setStatusCode(0);
