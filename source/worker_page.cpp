@@ -1,4 +1,5 @@
 #include "worker_page.hpp"
+#include "confirm_page.hpp"
 
 #include <cstring>
 #include <new>
@@ -130,8 +131,20 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
             appletEndBlockingHomeButton();
             appletSetMediaPlaybackState(false);
             if (ProgressEvent::instance().getStatusCode() > 399) {
+                /* Antes: Application::crash (su boton cierra la app) y, debajo,
+                   el marco seguia a la etapa siguiente. En un pack, la ultima es
+                   reiniciar/apagar: con una descarga fallida, "Aceptar" terminaba
+                   reiniciando la consola sin haber instalado nada. Ahora el
+                   error es una pagina cuyo boton vuelve al inicio de la app, y
+                   no se sigue con ninguna etapa. */
                 this->draw_page = false;
-                brls::Application::crash(fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(ProgressEvent::instance().getStatusCode())));
+                const std::string mensaje = fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(ProgressEvent::instance().getStatusCode()));
+                ProgressEvent::instance().setStatusCode(0);
+                brls::StagedAppletFrame* aviso = new brls::StagedAppletFrame();
+                aviso->setTitle(APP_TITLE);
+                aviso->addStage(new ConfirmPage_Done(aviso, mensaje));
+                brls::Application::pushView(aviso);
+                return;
             }
             if (ProgressEvent::instance().getInterupt()) {
                 brls::Application::pushView(new MainFrame());
