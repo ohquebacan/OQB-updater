@@ -64,6 +64,9 @@ namespace {
     private:
         std::chrono::steady_clock::time_point inicio = std::chrono::steady_clock::now();
         bool vista = false;
+        // Desde cuando ya no se dibuja (ver retirar()).
+        bool retirada = false;
+        std::chrono::steady_clock::time_point finRetiro{};
         int fuenteTitulo = -1;
         bool fuenteIntentada = false;
 
@@ -72,6 +75,17 @@ namespace {
         float tiempo() const
         {
             return this->vista ? std::chrono::duration<float>(std::chrono::steady_clock::now() - this->inicio).count() : 0.0f;
+        }
+
+        /* Queda en la pila debajo de la ventana principal. Al volver de algo que
+           se abrio directo encima de ella (las mejoras de Bacán Shop), borealis
+           redibuja la ventana con un fundido y, por ser esta translucida, la
+           Trifuerza se asomaba medio segundo. Se deja de dibujar en cuanto
+           termina el fundido de entrada de la ventana principal. */
+        void retirar(float trasSegundos)
+        {
+            this->retirada = true;
+            this->finRetiro = std::chrono::steady_clock::now() + std::chrono::milliseconds(static_cast<int>(trasSegundos * 1000));
         }
 
         // Los tres triangulos ya encendidos.
@@ -92,6 +106,8 @@ namespace {
 
         void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override
         {
+            if (this->retirada && std::chrono::steady_clock::now() >= this->finRetiro)
+                return;
             if (!this->vista) {
                 this->vista = true;
                 this->inicio = std::chrono::steady_clock::now();
@@ -221,6 +237,7 @@ int main(int argc, char* argv[])
     brls::Logger::debug("Start");
 
     bool seguir = true;
+    PantallaCarga* cargaVisible = nullptr;
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
         /* La red y las protecciones corren en un hilo; mientras, el bucle de
            la interfaz sigue y se ve la pantalla de carga. La ventana se arma
@@ -228,6 +245,7 @@ int main(int argc, char* argv[])
            desde otro hilo o desde draw() es lo que rompio el intento anterior. */
         arranque::marca("servicios listos");
         PantallaCarga* carga = new PantallaCarga();
+        cargaVisible = carga;
         brls::Application::pushView(carga);
         std::atomic<bool> listo{false};
         std::thread precarga([&listo] {
@@ -245,6 +263,8 @@ int main(int argc, char* argv[])
     if (seguir && std::filesystem::exists(HIDDEN_AIO_FILE)) {
         MainFrame* mainFrame = new MainFrame();
         brls::Application::pushView(mainFrame);
+        if (cargaVisible)
+            cargaVisible->retirar(1.0f);
         arranque::marca("ventana principal armada");
         arranque::guardar();
 

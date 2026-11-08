@@ -31,17 +31,18 @@ void ListDownloadTab::ponerIcono(brls::ListItem* item, const nlohmann::ordered_j
     // subtitulo se deja la altura que ya tenia: el icono crece con la fila.
     if (item->getSubLabel().empty())
         item->setHeight(68);
+    // Esquinas redondeadas, como los iconos del menu HOME (no un cuadrado en punta).
+    brls::Image* icono = nullptr;
     const std::string ruta = appUpdates::rutaIcono(nxlinks, url);
-    if (!ruta.empty()) {
-        item->setThumbnail(ruta);
-        return;
+    if (!ruta.empty())
+        icono = new brls::Image(ruta);
+    else {
+        std::vector<uint8_t> propio = appUpdates::iconoInstalado(nxlinks, url);
+        icono = propio.empty() ? new brls::Image(std::string("romfs:/iconos/generico.png")) : new brls::Image(propio.data(), propio.size());
     }
-    std::vector<uint8_t> propio = appUpdates::iconoInstalado(nxlinks, url);
-    if (!propio.empty()) {
-        item->setThumbnail(propio.data(), propio.size());
-        return;
-    }
-    item->setThumbnail("romfs:/iconos/generico.png");
+    icono->setScaleType(brls::ImageScaleType::FIT);
+    icono->setCornerRadius(10.0f);
+    item->setThumbnail(icono);
 }
 
 void ListDownloadTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)

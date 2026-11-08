@@ -76,6 +76,8 @@ constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage
 constexpr const char GFX_CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles_60fps-res-gfx.zip";
 constexpr const char GFX_CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents_60fps-res-gfx.zip";
 constexpr const char CHEATS_URL_VERSION[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/VERSION";
+// Si los archivos de GitHub fallan (8-nov-2026: 504 tras 11 s), el tag del release, que es la misma fecha.
+constexpr const char CHEATS_URL_RELEASE[] = "https://api.github.com/repos/HamletDuFromage/switch-cheats-db/releases/latest";
 constexpr const char LOOKUP_TABLE_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/switch-cheats-db/master/versions.json";
 constexpr const char LOOKUP_TABLE_CBOR[] = "https://github.com/HamletDuFromage/switch-cheats-db/raw/master/versions.cbor";
 constexpr const char VERSIONS_DIRECTORY[] = "https://raw.githubusercontent.com/HamletDuFromage/switch-cheats-db/master/versions/";

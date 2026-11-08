@@ -307,7 +307,7 @@ namespace {
     /* Apps que mejoran la experiencia al jugar. La lista sale del catalogo
        ("bacan_sugeridas" en nx-links.json, un arreglo de nombres) para poder
        cambiarla sin sacar otra version; si no la trae, estas. */
-    constexpr const char* SUGERIDAS[] = {"SimpleModDownloader", "SimpleModManager", "SaltyNX", "ARCropolis y Skyline"};
+    constexpr const char* SUGERIDAS[] = {"JKSV BACAN", "SimpleModDownloader", "SimpleModManager", "SaltyNX", "ARCropolis y Skyline"};
 
     void agregarSugerencias(BacanShopTab* lista, const nlohmann::ordered_json& nxlinks)
     {

@@ -1,3 +1,4 @@
+#include <cctype>
 #include "utils.hpp"
 
 #include <switch.h>
@@ -468,12 +469,34 @@ namespace util {
            quedaba esperando los timeouts. */
         static std::mutex candado;
         static std::string guardada;
+        static bool intentada = false;
         std::lock_guard<std::mutex> l(candado);
-        if (!guardada.empty())
+        /* Una sola vez por sesion, salga bien o mal: si fallo en la precarga,
+           volver a pedirla al abrir Trucos congelaria la interfaz otra vez. */
+        if (intentada)
             return guardada;
+        intentada = true;
         if (!hayInternet())
             return "";
-        guardada = util::downloadFileToString(CHEATS_URL_VERSION);
+        auto limpia = [](std::string v) {
+            while (!v.empty() && std::isspace(static_cast<unsigned char>(v.back())))
+                v.pop_back();
+            while (!v.empty() && std::isspace(static_cast<unsigned char>(v.front())))
+                v.erase(v.begin());
+            // Una pagina de error (el 504 de GitHub) no es una version.
+            return (v.size() > 40 || v.find('<') != std::string::npos || v.find('\n') != std::string::npos) ? std::string() : v;
+        };
+        /* Con tope corto: antes esperaba lo que tardara GitHub (11 s con un 504)
+           y la ventana no aparecia hasta entonces. Y se guardaba la pagina de
+           error como si fuera la version. */
+        std::string texto;
+        if (download::textoCorto(CHEATS_URL_VERSION, texto, 4) == 200)
+            guardada = limpia(texto);
+        if (guardada.empty() && download::textoCorto(CHEATS_URL_RELEASE, texto, 4) == 200) {
+            const auto j = nlohmann::ordered_json::parse(texto, nullptr, false);
+            if (j.is_object() && j.contains("tag_name") && j["tag_name"].is_string())
+                guardada = limpia(j["tag_name"].get<std::string>());
+        }
         /* if (res == "" && isArchive(CHEATS_FILENAME)) {
             res = "offline";
         } */

@@ -520,4 +520,39 @@ namespace download {
         return res;
     }
 
+    namespace {
+        size_t aTexto(void* datos, size_t tam, size_t n, void* destino)
+        {
+            auto* s = static_cast<std::string*>(destino);
+            const size_t total = tam * n;
+            if (s->size() + total > (64u << 10))
+                return 0;
+            s->append(static_cast<const char*>(datos), total);
+            return total;
+        }
+    }  // namespace
+
+    long textoCorto(const std::string& url, std::string& out, long segundos)
+    {
+        out.clear();
+        CURL* curl = curl_easy_init();
+        if (!curl)
+            return 0;
+        long codigo = 0;
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "OQB-updater");
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, segundos);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, segundos);
+        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, aTexto);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &out);
+        const CURLcode rc = curl_easy_perform(curl);
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &codigo);
+        curl_easy_cleanup(curl);
+        return rc == CURLE_OK ? codigo : 0;
+    }
+
 }  // namespace download
