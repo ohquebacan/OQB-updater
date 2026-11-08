@@ -52,6 +52,29 @@ namespace {
         Estado estado = SIN_TRUCOS;
     };
 
+    // Lo que no es UTF-8 valido se cambia por '?': nombres de juegos (sobre todo
+    // de conversiones caseras) traen a veces bytes sueltos.
+    std::string utf8Valido(const std::string& s)
+    {
+        std::string out;
+        out.reserve(s.size());
+        for (size_t i = 0; i < s.size();) {
+            const unsigned char c = s[i];
+            size_t n = c < 0x80 ? 1 : (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : (c >> 3) == 0x1E ? 4 : 0;
+            bool ok = n > 0 && i + n <= s.size();
+            for (size_t k = 1; ok && k < n; ++k) ok = (static_cast<unsigned char>(s[i + k]) & 0xC0) == 0x80;
+            if (ok) {
+                out.append(s, i, n);
+                i += n;
+            }
+            else {
+                out += '?';
+                ++i;
+            }
+        }
+        return out;
+    }
+
     std::string sinEspacios(std::string s)
     {
         while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back()))) s.pop_back();
@@ -140,7 +163,8 @@ namespace {
         const std::string tmp = CACHE_JUEGOS + ".tmp";
         {
             std::ofstream f(tmp, std::ios::trunc);
-            f << j.dump();
+            // replace: un nombre con bytes que no son UTF-8 valido lanzaba una excepcion aca.
+            f << j.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
         }
         std::error_code ec;
         std::filesystem::rename(tmp, CACHE_JUEGOS, ec);
@@ -200,7 +224,18 @@ namespace {
 
         void empezar(bool forzar)
         {
-            this->hilo = std::thread([this, forzar] { this->correr(forzar); });
+            /* Una excepcion que escapa de un hilo cierra la app de golpe, y si el
+               hilo de la interfaz esta leyendo el control en ese momento,
+               Atmosphere muestra un panic (paso con la cache, 8-nov-2026). Aqui
+               nada se escapa: si algo falla, se muestra lo que se alcanzo a leer. */
+            this->hilo = std::thread([this, forzar] {
+                try {
+                    this->correr(forzar);
+                }
+                catch (...) {
+                    this->listo = true;
+                }
+            });
         }
 
         ~Lectura()
@@ -248,8 +283,8 @@ namespace {
                     tam >= sizeof(control->nacp)) {
                     NacpLanguageEntry* idioma = nullptr;
                     if (R_SUCCEEDED(nacpGetLanguageEntry(&control->nacp, &idioma)) && idioma)
-                        j.nombre = std::string(idioma->name, strnlen(idioma->name, sizeof(idioma->name)));
-                    j.visible = std::string(control->nacp.display_version, strnlen(control->nacp.display_version, sizeof(control->nacp.display_version)));
+                        j.nombre = utf8Valido(std::string(idioma->name, strnlen(idioma->name, sizeof(idioma->name))));
+                    j.visible = utf8Valido(std::string(control->nacp.display_version, strnlen(control->nacp.display_version, sizeof(control->nacp.display_version))));
                     if (tam > sizeof(control->nacp)) j.icono.assign(control->icon, control->icon + (tam - sizeof(control->nacp)));
                 }
                 if (j.nombre.empty()) j.nombre = tid;
