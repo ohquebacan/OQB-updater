@@ -44,6 +44,7 @@ ExcludePage::ExcludePage() : AppletFrame(true, true)
         tid = record.application_id;
         rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, &controlData, sizeof(controlData), &controlSize);
         if (R_FAILED(rc)) break;
+        util::descomprimirNombres(&controlData.nacp);
         rc = nacpGetLanguageEntry(&controlData.nacp, &langEntry);
         if (R_FAILED(rc)) break;
         if (!langEntry->name) {

@@ -129,6 +129,7 @@ u32 AppPage::GetControlData(u64 tid, NsApplicationControlData* controlData, u64&
     if (R_FAILED(rc)) return rc;
 
     if (controlSize < sizeof(controlData->nacp)) return 100;
+    util::descomprimirNombres(&controlData->nacp);
 
     rc = nacpGetLanguageEntry(&controlData->nacp, &langEntry);
     if (R_FAILED(rc)) return rc;

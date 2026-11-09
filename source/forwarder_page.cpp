@@ -170,6 +170,7 @@ void ForwarderManagePage::populate()
                         NacpLanguageEntry* langEntry = NULL;
                         if (R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, controlData, sizeof(NsApplicationControlData), &controlSize)) &&
                             controlSize >= sizeof(controlData->nacp) &&
+                            util::descomprimirNombres(&controlData->nacp) &&
                             R_SUCCEEDED(nacpGetLanguageEntry(&controlData->nacp, &langEntry)) &&
                             langEntry && langEntry->name[0]) {
                             name = langEntry->name;

@@ -292,7 +292,8 @@ namespace {
                la revision guardada al instante; las versiones (una consulta por
                juego, lo lento) se comprueban despues, por detras, y si alguna
                cambio se avisa para volver a revisar. */
-            std::string firma = "base " + marcaBase();
+            // "n2": nombres ya descomprimidos (libnx#714); la cache vieja tenia "?".
+            std::string firma = "n2 base " + marcaBase();
             for (s32 i = 0; i < cuantos; ++i) firma += fmt::format(";{:016X}", registros[i].application_id);
             if (!forzar && leerCache(firma, out)) {
                 this->hechos = cuantos;
@@ -317,6 +318,7 @@ namespace {
                 u64 tam = 0;
                 if (R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, j.tid, control.get(), sizeof(NsApplicationControlData), &tam)) &&
                     tam >= sizeof(control->nacp)) {
+                    util::descomprimirNombres(&control->nacp);
                     NacpLanguageEntry* idioma = nullptr;
                     if (R_SUCCEEDED(nacpGetLanguageEntry(&control->nacp, &idioma)) && idioma)
                         j.nombre = utf8Valido(std::string(idioma->name, strnlen(idioma->name, sizeof(idioma->name))));

@@ -84,6 +84,12 @@ namespace util {
        juego "sin trucos". Si no queda ningun truco en la SD se borra la marca,
        para que la base se vuelva a ofrecer. */
     void revisarBaseTrucos();
+    /* Desde el firmware 21, las actualizaciones de los juegos traen los nombres
+       comprimidos (zlib, para que entren 32 idiomas en el lugar de 16): el byte
+       0x3215 de la NACP vale 1 y libnx los devuelve tal cual, por eso salian
+       "?" y simbolos raros. Esto los descomprime en su lugar (los 16 primeros
+       idiomas). Ver switchbrew/libnx#714. Devuelve false si no pudo. */
+    bool descomprimirNombres(NacpStruct* nacp);
     // Tras instalar el pack: vuelve a poner los trucos desde cheats.zip (no se borra).
     void restaurarTrucos();
     bool isApplet();

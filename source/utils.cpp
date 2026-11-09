@@ -1,4 +1,5 @@
 #include <cctype>
+#include <cstring>
 #include "utils.hpp"
 
 #include <switch.h>
@@ -19,6 +20,7 @@
 #include "fs.hpp"
 #include "main_frame.hpp"
 #include <minizip/unzip.h>
+#include <zlib.h>
 #include "progress_event.hpp"
 #include "reboot_payload.h"
 #include "unistd.h"
@@ -695,6 +697,29 @@ namespace util {
             c = std::toupper(c);
         });
         return res;
+    }
+
+    bool descomprimirNombres(NacpStruct* nacp)
+    {
+        static_assert(sizeof(NacpStruct) == 0x4000, "NACP de 0x4000");
+        u8* crudo = reinterpret_cast<u8*>(nacp);
+        if (crudo[0x3215] != 1) return true;  // sin comprimir: nada que hacer
+        const u16 tam = static_cast<u16>(crudo[0] | (crudo[1] << 8));
+        if (tam == 0 || tam > 0x3000 - 2) return false;
+        std::vector<u8> salida(0x6000);
+        z_stream z{};
+        if (inflateInit2(&z, -15) != Z_OK) return false;
+        z.next_in = crudo + 2;
+        z.avail_in = tam;
+        z.next_out = salida.data();
+        z.avail_out = salida.size();
+        const int r = inflate(&z, Z_FINISH);
+        const uLong hecho = z.total_out;
+        inflateEnd(&z);
+        if (r != Z_STREAM_END || hecho < 0x3000) return false;
+        std::memcpy(crudo, salida.data(), 0x3000);
+        crudo[0x3215] = 0;
+        return true;
     }
 
     void revisarBaseTrucos()

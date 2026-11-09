@@ -6,6 +6,7 @@
 
 #include "constants.hpp"
 #include "crash_report.hpp"
+#include "utils.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -25,7 +26,7 @@ std::string crashProgramName(const crash::Group& g)
     u64 size = 0;
     NacpLanguageEntry* entry = nullptr;
     if (R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, control.get(), sizeof(NsApplicationControlData), &size)) &&
-        size >= sizeof(control->nacp) && R_SUCCEEDED(nacpGetLanguageEntry(&control->nacp, &entry)) && entry && entry->name[0])
+        size >= sizeof(control->nacp) && util::descomprimirNombres(&control->nacp) && R_SUCCEEDED(nacpGetLanguageEntry(&control->nacp, &entry)) && entry && entry->name[0])
         return entry->name;
 
     if (!g.module.empty()) return g.module;
