@@ -522,7 +522,9 @@ namespace extract {
             unzGoToNextFile(zfile);
         }
         unzClose(zfile);
-        if (version != "offline" && version != "") {
+        /* Cancelado a medias no se anota la version: quedaba la base "al dia"
+           y cada juego sin trucos. */
+        if (version != "offline" && version != "" && !ProgressEvent::instance().getInterupt()) {
             util::saveToFile(version, CHEATS_VERSION);
         }
         ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());

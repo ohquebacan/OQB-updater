@@ -390,6 +390,10 @@ namespace util {
                 pasoInstalacion("extract ok");
                 removePackLeftovers();
                 deep_clean::quitarInisHuerfanos();
+                /* La limpieza de arriba vacio atmosphere/contents y con eso los
+                   trucos: se reponen desde la base que ya estaba bajada. */
+                restaurarTrucos();
+                pasoInstalacion("trucos repuestos");
                 pasoInstalacion("=== fin instalacion pack");
                 break;
             }
@@ -691,6 +695,31 @@ namespace util {
             c = std::toupper(c);
         });
         return res;
+    }
+
+    void revisarBaseTrucos()
+    {
+        std::error_code ec;
+        if (!std::filesystem::exists(CHEATS_VERSION, ec)) return;
+        const std::string contents = getContentsPath();
+        for (const auto& d : std::filesystem::directory_iterator(contents, ec))
+            if (std::filesystem::is_directory(d.path().string() + "/cheats", ec)) return;
+        std::filesystem::remove(CHEATS_VERSION, ec);
+    }
+
+    void restaurarTrucos()
+    {
+        std::string version = readFile(CHEATS_VERSION);
+        while (!version.empty() && std::isspace(static_cast<unsigned char>(version.back()))) version.pop_back();
+        if (version.empty()) return;
+        std::error_code ec;
+        if (!std::filesystem::exists(CHEATS_FILENAME, ec) || !baseTrucosValida(CHEATS_FILENAME)) {
+            std::filesystem::remove(CHEATS_VERSION, ec);
+            return;
+        }
+        std::vector<std::string> titles = extract::getInstalledTitlesNs();
+        titles = extract::excludeTitles(CHEATS_EXCLUDE, titles);
+        extract::extractCheats(CHEATS_FILENAME, titles, CurrentCfw::running_cfw, version);
     }
 
     bool baseTrucosValida(const std::string& zip)

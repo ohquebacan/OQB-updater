@@ -476,6 +476,7 @@ void ListDownloadTab::setDescription(contentType type)
             break;
         case contentType::cheats:
             this->newCheatsVer = util::getCheatsVersion();
+            util::revisarBaseTrucos();
             this->currentCheatsVer = util::readFile(CHEATS_VERSION);
             description->setText("menus/main/cheats_text"_i18n + this->currentCheatsVer);
             break;

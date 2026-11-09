@@ -79,6 +79,13 @@ namespace util {
     // El zip de la base de trucos trae al menos un archivo de trucos. La base
     // 2026-09-08 salio con un contents.zip vacio que la app daba por instalado.
     bool baseTrucosValida(const std::string& zip);
+    /* Instalar un pack vacia atmosphere/contents, y con eso los trucos de cada
+       juego, pero cheats_version.dat queda: la app daba la base por bajada y cada
+       juego "sin trucos". Si no queda ningun truco en la SD se borra la marca,
+       para que la base se vuelva a ofrecer. */
+    void revisarBaseTrucos();
+    // Tras instalar el pack: vuelve a poner los trucos desde cheats.zip (no se borra).
+    void restaurarTrucos();
     bool isApplet();
     std::string getContentsPath();
     // Dónde guardar (o actualizar) un .nro: respeta la carpeta propia de la app si ya existe.

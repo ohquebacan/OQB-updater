@@ -218,6 +218,7 @@ namespace {
     std::pair<std::string, std::string> versionesTrucos()
     {
         // Ya la pidio la precarga del arranque: no toca la red aqui.
+        util::revisarBaseTrucos();
         return {sinEspacios(util::getCheatsVersion()), sinEspacios(util::readFile(CHEATS_VERSION))};
     }
 

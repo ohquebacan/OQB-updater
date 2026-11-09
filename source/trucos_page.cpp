@@ -278,6 +278,7 @@ namespace {
         void correr(bool forzar)
         {
             std::vector<Juego> out;
+            util::revisarBaseTrucos();
             const std::string baseSd = sinEspacios(util::readFile(CHEATS_VERSION));
             this->baseBajada = !baseSd.empty();
 
@@ -319,6 +320,18 @@ namespace {
                     NacpLanguageEntry* idioma = nullptr;
                     if (R_SUCCEEDED(nacpGetLanguageEntry(&control->nacp, &idioma)) && idioma)
                         j.nombre = utf8Valido(std::string(idioma->name, strnlen(idioma->name, sizeof(idioma->name))));
+                    /* Si el nombre del idioma de la consola sale roto (bytes que no son
+                       texto: conversiones caseras), se prueba con los otros idiomas
+                       del juego y se queda el primero que se lea entero. */
+                    if (j.nombre.empty() || j.nombre.find('?') != std::string::npos) {
+                        for (const auto& otro : control->nacp.lang) {
+                            const std::string crudo(otro.name, strnlen(otro.name, sizeof(otro.name)));
+                            if (!crudo.empty() && utf8Valido(crudo) == crudo && crudo.find('?') == std::string::npos) {
+                                j.nombre = crudo;
+                                break;
+                            }
+                        }
+                    }
                     j.visible = utf8Valido(std::string(control->nacp.display_version, strnlen(control->nacp.display_version, sizeof(control->nacp.display_version))));
                     if (tam > sizeof(control->nacp)) j.icono.assign(control->icon, control->icon + (tam - sizeof(control->nacp)));
                 }
@@ -492,6 +505,7 @@ namespace {
         {
             this->lectura.reset();  // si habia una lectura en curso, espera a que pare
             this->borrarIconos();
+            util::revisarBaseTrucos();
             this->baseLeida = sinEspacios(util::readFile(CHEATS_VERSION));
             this->marcaLeida = marcaBase();
             this->elegido = this->primero = 0;
