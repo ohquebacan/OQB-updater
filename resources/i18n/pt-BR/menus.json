@@ -169,7 +169,10 @@
     "outdated_titles": "Atualizações ausentes",
     "latest_version_not_found": "Não foi possível encontrar informações de atualizações",
     "outdated_titles_desc": "Os seguintes títulos têm atualizações disponíveis:",
-    "scanning": "Checking {} of {}... (B to cancel)"
+    "scanning": "Checking {} of {}... (B to cancel)",
+    "tema": "Tema",
+    "tema_sub": "A cor do app, também na tela de carregamento.",
+    "tema_actual": "Atual"
   },
   "utils": {
     "fw_warning": "Devido ao tamanho dos arquivos de firmware, o download de firmwares no modo applet não é suportado. Por favor, inicie o aplicativo com acesso total à RAM.",
@@ -202,7 +205,8 @@
     "custom_packs_misc": "◆ Downloads contendo homebrew e ferramentas.",
     "custom_download": "Download personalizado",
     "add_custom_link": "Adicionar um link personalizado",
-    "delete_custom_link": "Excluir"
+    "delete_custom_link": "Excluir",
+    "conservar_tema": "Você tem um tema ou menu alternativo instalado. Manter?\n\nSe depois for atualizar o firmware, é melhor removê-lo e colocá-lo de volta depois.\n\nSim: manter. Não: remover."
   },
   "firmware": {
     "launch_daybreak": "Deseja iniciar o Daybreak para instalar a atualização do sistema baixada?"
@@ -304,7 +308,9 @@
     "partidas_item_uno": "Há save completo para 1 dos seus jogos",
     "partidas_sub": "Abra o JKSV BACAN, escolha o jogo e procure [Full save]: ele faz backup do seu antes de substituir.",
     "partidas_sin_jksv_sub": "São restaurados com o JKSV BACAN, que faz backup do seu save antes. Pressione A para instalá-lo.",
-    "instalar_jksv": "Instalar JKSV"
+    "instalar_jksv": "Instalar JKSV",
+    "trucos_partidas": "Trapaças e saves",
+    "partidas_como": "1. Abra o JKSV BACÁN.\n2. Escolha o jogo.\n3. Em «Novo», escolha [Partida completa] e segure A para confirmar.\n\nO JKSV faz backup do seu save atual antes de substituí-lo."
   },
   "limpia": {
     "titulo": "Instalação limpa",
@@ -349,7 +355,8 @@
     "confirmar": "Serão apagados {} e instalado {}.\n\nO que for apagado não pode ser recuperado. A lista fica em /config/aio-switch-updater/limpieza.log.",
     "trabajando": "Limpando e instalando",
     "ports": "Ports e emuladores com seus jogos",
-    "cat_port": "Port"
+    "cat_port": "Port",
+    "explica": "A instalação limpa instala {} e deixa seu SD como recém-formatado, só com o que o pack traz.\n\n1. O pack é baixado e seu SD é verificado. Nada é apagado ainda.\n2. Você vê o que sai e o que fica, e escolhe se mantém os apps que não são do pack, os mods e os temas.\n3. Você confirma segurando A por três segundos. Só então tudo é apagado (fica anotado em limpieza.log) e o pack é instalado.\n\nSeus jogos, saves, emuNAND, backups do hekate e o que estiver em preserve.txt nunca são tocados."
   },
   "trucos": {
     "titulo": "Trapaças",
@@ -398,5 +405,105 @@
     "pedir_base_boton": " Baixar a base de trapaças",
     "d_otra_sub_sin_lista": "Você tem {}, mas a base só tem trapaças para outra versão do jogo, que não está na lista dela. Se puder, mude a versão do jogo; se não, espere a base adicionar a sua.",
     "d_desconocida_sub_sin_lista": "A base ainda não conhece a sua versão, e as trapaças dela são de outra versão do jogo. Provavelmente não vão funcionar com a sua."
+  },
+  "inicio": {
+    "menu": "Início",
+    "menu_packs": "Packs e firmwares",
+    "titulo": "INÍCIO",
+    "subtitulo": "O que há no seu console e o que vale a pena fazer",
+    "ams": "Atmosphère",
+    "firmware": "Firmware",
+    "pack": "Pack instalado",
+    "arranque": "Inicialização",
+    "libre": "Espaço livre",
+    "pack_nuevo": "Há uma versão nova do pack",
+    "actualizar": " Atualizar",
+    "apps": "Apps para atualizar",
+    "apps_al_dia": "Apps em dia",
+    "apps_al_dia_sub": "Nenhuma tem versão nova",
+    "y_mas": " e mais {}",
+    "trucos": "Jogos com trapaças",
+    "trucos_revisar": "Entre para verificar seus jogos",
+    "trucos_otra": "{} precisam de outra versão",
+    "trucos_listos": "Prontos para usar",
+    "partidas": "Saves completos",
+    "partidas_sub": "Para seus jogos, com JKSV",
+    "nextendo_on": "Ativo e funcionando",
+    "nextendo_off": "Desativado",
+    "proteccion_ok": "Proteção e estado: tudo certo",
+    "proteccion_avisos": "Proteção: {} coisas para verificar",
+    "proteccion_falla": "Provavelmente uma proteção não está ativa",
+    "ver_estado": "Ver estado ›",
+    "abrir": "Abrir",
+    "firmwares_titulo": "Firmware",
+    "firmwares_sub": "Baixar um firmware para atualizar com o Daybreak",
+    "packs_resumen": "Atmosphère {}{} · {}",
+    "limpia_corto": "Instalação limpa",
+    "apps_nuevas": "Com atualização",
+    "apps_nuevas_sub": "Os apps que você tem e têm versão nova",
+    "grupo_sd": "O SD e os arquivos",
+    "titulo_packs": "PACKS E FIRMWARES",
+    "sub_packs": "Atmosphère, hekate e os apps, prontos para o seu console",
+    "titulo_apps": "APPS",
+    "sub_apps": "Busque, atualize ou instale homebrew",
+    "titulo_tools": "FERRAMENTAS",
+    "sub_tools": "Agrupadas pelo que você quer fazer",
+    "boton_instalar": "Instalar",
+    "boton_actualizar": "Atualizar",
+    "apps_categoria": "Categoria",
+    "apps_buscar": "Buscar",
+    "apps_instalar": "Instalar ou atualizar",
+    "apps_buscar_en": " Buscar entre {} apps",
+    "apps_chip_nuevas": "Com atualização · {}",
+    "apps_chip_todas": "Todas",
+    "apps_sin_instalar": "Instalar",
+    "apps_vacio": "Não há apps nesta categoria.",
+    "apps_tienes": "Você tem",
+    "apps_nueva": "Nova",
+    "apps_boton_actualizar": " Atualizar",
+    "apps_boton_reinstalar": " Reinstalar",
+    "apps_boton_instalar": " Instalar",
+    "grupo_juegos_home": "Jogos e menu HOME",
+    "grupo_consola_red": "Console, controles e internet",
+    "titulo_bacan": "BACÁN SHOP",
+    "sub_bacan": "Sua loja de jogos, com trapaças, saves e melhorias",
+    "sub_nextendo": "Jogue online sem conta Nintendo",
+    "pack_card": "HATS PACK",
+    "pack_nueva": "Nova versão · {}",
+    "pack_sin": "Instale o pack em Packs e firmwares",
+    "al_dia": "Atualizado",
+    "app_card": "OQB Updater {}",
+    "app_nueva": "Versão {} disponível",
+    "app_sin_red": "Sem conexão para verificar",
+    "reinstalar": "Reinstalar"
+  },
+  "nextendo": {
+    "cuenta_titulo": "Crie sua conta Nextendo",
+    "cuenta_texto": "Escaneie com o celular. Com essa conta você joga online nos jogos compatíveis.",
+    "jugando_ahora": "jogando agora",
+    "clock_sync_sub": "Consulta um servidor de hora e corrige agora.",
+    "clock_auto_sub": "O interruptor do console."
+  },
+  "estado": {
+    "titulo": "ESTADO",
+    "subtitulo": "Suas proteções e seu registro na OQB",
+    "prot_ok": "Proteções ativas",
+    "prot_ok_sub": "O console não pode se conectar à Nintendo",
+    "prot_falla": "Há proteções desativadas",
+    "prot_falla_sub": "O console pode se conectar à Nintendo. Pressione A para ver.",
+    "prot_nextendo": "Desligadas pelo Nextendo",
+    "prot_nextendo_sub": "É normal enquanto você usa o Nextendo.",
+    "bien": "{} de {} OK",
+    "diag_nada": "Nenhum erro registrado no SD.",
+    "diag_ultimo": "Último: {} ({}) em {}.",
+    "diag_limpio": "Sem erros",
+    "diag_uno": "1 erro",
+    "diag_varios": "{} erros"
+  },
+  "app_update": {
+    "anterior": "Voltar ao design anterior (3.2)",
+    "anterior_sub": "Instala a 3.2, com o design antigo.",
+    "anterior_titulo": "Voltar à {}",
+    "anterior_confirm": "A versão {} do OQB Updater será instalada, com o design anterior."
   }
 }

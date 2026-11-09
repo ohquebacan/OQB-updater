@@ -12,4 +12,8 @@
 // pack por el camino de siempre. Cancelar en la vista previa no toca la SD.
 namespace instalacionLimpia {
     void abrir(const nlohmann::ordered_json& nxlinks, bool erista);
+
+    // Desde la tarjeta de un pack (Packs y firmwares): sin elegir el pack, y
+    // primero una pantalla que explica exactamente que hace.
+    void abrirCon(const nlohmann::ordered_json& nxlinks, bool erista, const std::string& nombre, const std::string& url);
 }

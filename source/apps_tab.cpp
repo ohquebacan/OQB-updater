@@ -4,6 +4,7 @@
 
 #include "download.hpp"
 #include "list_download_tab.hpp"
+#include "pack_list_item.hpp"
 #include "utils.hpp"
 
 namespace i18n = brls::i18n;
@@ -73,6 +74,27 @@ AppsTab::AppsTab(const nlohmann::ordered_json& nxlinks) : brls::List(), nxlinks(
     this->addView(search);
 
     const nlohmann::ordered_json instaladas = appUpdates::installed();
+
+    /* Rediseno: lo que hay para actualizar va primero, en una seccion propia
+       (antes habia que entrar a cada categoria para encontrarlo). */
+    {
+        size_t nuevas = 0;
+        if (this->nxlinks.contains("apps") && this->nxlinks["apps"].is_object())
+            for (const auto& url : this->nxlinks["apps"])
+                if (url.is_string() && appUpdates::hasUpdate(this->nxlinks, instaladas, url.get<std::string>())) ++nuevas;
+        if (nuevas) {
+            PackListItem* item = new PackListItem("menus/inicio/apps_nuevas"_i18n, "", "menus/inicio/apps_nuevas_sub"_i18n);
+            item->setWarningValue(nuevas == 1 ? "menus/apps/new_count_one"_i18n : fmt::format("menus/apps/new_count"_i18n, nuevas));
+            const nlohmann::ordered_json links = this->nxlinks;
+            item->getClickEvent()->subscribe([links](brls::View* view) {
+                brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+                util::LecturaSwitch lectura;
+                frame->setContentView(new ListDownloadTab(contentType::apps, links, "", "", true));
+                brls::PopupFrame::open("menus/inicio/apps_nuevas"_i18n, frame, "", "");
+            });
+            this->addView(item);
+        }
+    }
 
     for (const auto& section : SECTIONS) {
         brls::ListItem* item = new brls::ListItem(i18n::getStr(section.label));

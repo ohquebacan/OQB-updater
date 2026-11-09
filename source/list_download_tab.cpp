@@ -64,7 +64,7 @@ void ListDownloadTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigne
     brls::List::draw(vg, x, y, width, height, style, ctx);
 }
 
-ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey, const std::string& filter) : brls::List(), type(type), nxlinks(nxlinks), jsonKey(jsonKey), filter(filter)
+ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks, const std::string& jsonKey, const std::string& filter, bool soloNuevas) : brls::List(), type(type), nxlinks(nxlinks), jsonKey(jsonKey), filter(filter), soloNuevas(soloNuevas)
 {
     this->genInstalaciones = appUpdates::generacionInstalaciones();
     this->setDescription();
@@ -118,6 +118,13 @@ void ListDownloadTab::createList(contentType type)
 
     // El registro de la SD, una vez para toda la lista.
     const nlohmann::ordered_json instaladas = type == contentType::apps ? appUpdates::installed() : nlohmann::ordered_json::object();
+
+    if (this->soloNuevas) {
+        links.erase(std::remove_if(links.begin(), links.end(), [this, &instaladas](const auto& link) {
+                        return !appUpdates::hasUpdate(this->nxlinks, instaladas, link.second);
+                    }),
+                    links.end());
+    }
 
     // En "Todas las aplicaciones", primero las que tienen version nueva.
     if (type == contentType::apps && this->jsonKey.empty()) {
@@ -235,16 +242,7 @@ void ListDownloadTab::createList(contentType type)
                        basta: el pack trae 0100000000001013 con un exefs.nsp1 desactivado, y el
                        aviso salia siempre, incluso despues de que el pack lo hubiera limpiado.
                        Un solo aviso aunque haya varias carpetas. */
-                    const std::string contentsPath = util::getContentsPath();
-                    bool hayTema = false;
-                    std::error_code ec;
-                    for (const auto& tid : {"0100000000001000", "0100000000001007", "0100000000001013"}) {
-                        const std::string base = contentsPath + tid + "/";
-                        for (const auto& activo : {"romfs", "exefs", "exefs.nsp"}) {
-                            if (std::filesystem::exists(base + activo, ec))
-                                hayTema = true;
-                        }
-                    }
+                    const bool hayTema = util::hayTemaActivo();
                     if (hayTema)
                         stagedFrame->addStage(new DialoguePage_confirm(stagedFrame, "menus/main/theme_warning"_i18n));
                 }

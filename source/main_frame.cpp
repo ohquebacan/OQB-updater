@@ -1,14 +1,26 @@
 #include "main_frame.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <fstream>
 #include <json.hpp>
+#include <set>
 #include <thread>
 
 #include "about_tab.hpp"
+#include "current_cfw.hpp"
+#include "iconos_oqb.hpp"
+#include "inicio_tab.hpp"
+#include "oqb_theme.hpp"
+#include "pack_version.hpp"
+#include "pagina_oqb.hpp"
+#include "apps_page.hpp"
+#include "trucos_page.hpp"
 #include "arranque.hpp"
 #include "ams_tab.hpp"
+#include "app_update.hpp"
+#include "estado_page.hpp"
 #include "app_updates.hpp"
 #include "apps_tab.hpp"
 #include "bacan_shop_tab.hpp"
@@ -36,6 +48,7 @@ namespace {
     bool consultado = false;
     std::string tagGuardado;
     nlohmann::ordered_json nxlinksGuardado;
+    nlohmann::ordered_json packsGuardado;  // pack-versions.json, para el aviso de Inicio
 
     /* Las protecciones de la primera ventana, calculadas en segundo plano
        mientras se ve la pantalla de carga. Solo valen para esa ventana: al
@@ -68,6 +81,11 @@ namespace {
             util::getCheatsVersion();  // queda guardada para la pestana Trucos
             arranque::marca("red: version de trucos lista");
         });
+        nlohmann::ordered_json packsObtenidos;
+        std::thread h6([&] {
+            packsObtenidos = packVersion::fetchPublished();
+            arranque::marca("red: packs listos");
+        });
         std::thread h5([&] {
             // Pocos KB. Si todavia no existe (404) queda vacio y no se muestra nada.
             if (download::getRequest(PARTIDAS_URL, partidasObtenidas) != 200)
@@ -79,6 +97,8 @@ namespace {
         h3.join();
         h4.join();
         h5.join();
+        h6.join();
+        packsGuardado = packsObtenidos;
         /* Los iconos de las apps: aqui mismo, con la pantalla de carga a la
            vista y despues de las demas consultas. Sin hilo suelto: uno que
            seguia corriendo mientras se armaba la ventana tumbaba la 3.2. Solo
@@ -111,8 +131,9 @@ void MainFrame::precargar()
 
 MainFrame::MainFrame() : TabFrame()
 {
-    this->setIcon("romfs:/gui_icon.png");
-    this->setTitle(AppTitle);
+    /* Rediseno: sin la barra de titulo. El logo y el nombre van arriba del panel
+       izquierdo (los dibuja draw) y la seccion usa toda la altura. */
+    this->setTitle("");
 
     /* Las pestañas preguntan por cada app del catálogo si está en /switch:
        con esto /switch se lee una sola vez para toda la ventana. */
@@ -145,7 +166,10 @@ MainFrame::MainFrame() : TabFrame()
                                     (!tag.empty() && tag != AppVersion) ? AppVersion + "menus/main/new_update"_i18n : AppVersion,
                                     R_SUCCEEDED(fs::getFreeStorageSD(freeStorage)) ? (float)freeStorage / 0x40000000 : -1));
 
-    json hideStatus = fs::parseJsonFile(HIDE_TABS_JSON);
+    /* 4.0: las pestanas ocultas ya no existen (la opcion se reemplazo por Temas).
+       Se ignora lo que haya quedado guardado: si no, quien oculto algo antes ya
+       no tendria como volver a verlo. */
+    json hideStatus = json::object();
     nlohmann::ordered_json nxlinks;
     if (conectado)
         nxlinks = nxlinksGuardado;
@@ -157,104 +181,225 @@ MainFrame::MainFrame() : TabFrame()
 
     bool erista = util::isErista();
 
-    if (!util::getBoolValue(hideStatus, "about"))
-        this->addTab("menus/main/about"_i18n, new AboutTab(tag, this->donationUrl, checks));
-    arranque::marca("ventana: pestaña estado");
-
-    /* Separadores entre grupos. Siete pestanas seguidas se leen como una lista
-       plana; partidas en estado, descargas y ajustes se ve de un vistazo que
-       hace cada grupo. Se anaden solo si el grupo que viene tiene algo, para no
-       dejar una raya suelta cuando se ocultan pestanas por hide_tabs.json. */
-    const bool hasDownloads = !util::getBoolValue(hideStatus, "atmosphere") ||
-                              !util::getBoolValue(hideStatus, "firmwares") ||
-                              !util::getBoolValue(hideStatus, "cheats") ||
-                              !util::getBoolValue(hideStatus, "apps");
-    const bool hasSettings = !util::getBoolValue(hideStatus, "tools") ||
-                             !util::getBoolValue(hideStatus, "language");
-
-    const bool hasStatus = !util::getBoolValue(hideStatus, "about");
-
-    if (hasStatus && hasDownloads)
-        this->addSeparator();
-
-    if (!util::getBoolValue(hideStatus, "atmosphere"))
-        this->addTab("menus/main/update_ams"_i18n, new AmsTab_Regular(nxlinks, erista));
-    arranque::marca("ventana: pestaña packs");
-
-    if (!util::getBoolValue(hideStatus, "firmwares"))
-        this->addTab("menus/main/download_firmware"_i18n, new ListDownloadTab(contentType::fw, nxlinks));
-    arranque::marca("ventana: pestaña firmwares");
-
-    /* Con Bacán Shop, los trucos van dentro de su seccion: es lo que se usa
-       despues de instalar un juego. Sin ella (sin conexion, o el catalogo no
-       la trae) siguen en su pestana. */
+    /* Rediseno: seis secciones con iconos (Inicio, Packs, Apps, Bacán Shop,
+       Nextendo, Herramientas) en vez de nueve. Estado queda a un boton desde
+       Inicio, Firmwares dentro de Packs e Idioma en Herramientas. */
     const bool conBacan = !util::getBoolValue(hideStatus, "apps") && BacanShopTab::available(nxlinks);
     const bool conTrucos = !util::getBoolValue(hideStatus, "cheats");
+    const bool conNextendo = !util::getBoolValue(hideStatus, "apps") && NextendoTab::available(nxlinks);
+    const bool nextendoActivo = protection::failedOnlyByNextendo(checks);
+
+    // Lo que muestra Inicio: todo de lo que ya se calculo, sin red ni SD aparte.
+    InicioTab::Datos datos;
+    {
+        const std::string info = CurrentCfw::getAmsInfo();
+        const auto barra = info.find('|');
+        datos.ams = barra == std::string::npos ? "" : info.substr(0, barra);
+        if (barra != std::string::npos) datos.arranque = info.substr(barra + 1) == "E" ? "emuNAND" : "sysNAND";
+        datos.firmware = fmt::format("{}.{}.{}", HOSVER_MAJOR(hosversionGet()), HOSVER_MINOR(hosversionGet()), HOSVER_MICRO(hosversionGet()));
+        s64 libre = 0;
+        if (R_SUCCEEDED(fs::getFreeStorageSD(libre))) datos.libre = fmt::format("{:.0f} GB", libre / 1073741824.0);
+        const std::string clave = packVersion::current();
+        if (!clave.empty()) {
+            std::string nombre = clave.substr(0, clave.rfind(".zip"));
+            std::replace(nombre.begin(), nombre.end(), '-', ' ');
+            datos.pack = nombre;
+            const std::string tengo = packVersion::installed(clave);
+            const std::string publicada = packVersion::published(packsGuardado, clave).date;
+            if (!publicada.empty() && !tengo.empty() && publicada != tengo) {
+                datos.packNuevo = true;
+                datos.packNuevoNombre = nombre;
+                datos.packNuevoFecha = publicada;
+            }
+        }
+        datos.appVersion = AppVersion;
+        datos.appTag = conectado ? tagGuardado : "";
+        datos.appNueva = appUpdate::isAvailable(datos.appTag);
+        const nlohmann::ordered_json instaladas = appUpdates::installed();
+        if (nxlinks.is_object() && nxlinks.contains("apps") && nxlinks["apps"].is_object()) {
+            std::vector<std::string> nombres;
+            for (const auto& [nombre, url] : nxlinks["apps"].items()) {
+                if (url.is_string() && appUpdates::hasUpdate(nxlinks, instaladas, url.get<std::string>())) {
+                    ++datos.appsNuevas;
+                    nombres.push_back(nombre);
+                }
+            }
+            for (size_t i = 0; i < nombres.size() && i < 2; ++i) datos.appsNombres += (i ? ", " : "") + nombres[i];
+            if (nombres.size() > 2) datos.appsNombres += fmt::format("menus/inicio/y_mas"_i18n, nombres.size() - 2);
+        }
+        datos.hayTrucos = conTrucos;
+        // Lo que reviso Trucos la ultima vez (su cache): sin cache, se invita a entrar.
+        {
+            std::ifstream f(std::string(CONFIG_PATH) + "trucos_juegos.json");
+            const nlohmann::json cache = f ? nlohmann::json::parse(f, nullptr, false) : nlohmann::json();
+            if (cache.is_object() && cache.contains("juegos") && cache["juegos"].is_array()) {
+                datos.trucosListos = 0;
+                for (const auto& g : cache["juegos"]) {
+                    const int e = g.is_object() ? g.value("estado", 3) : 3;
+                    if (e == 0) ++datos.trucosListos;
+                    else if (e == 1 || e == 2) ++datos.trucosOtra;
+                }
+            }
+        }
+        // Partidas completas para los juegos instalados.
+        if (nxlinks.is_object() && nxlinks.contains("_partidas") && nxlinks["_partidas"].is_object() && nxlinks["_partidas"].contains("partidas") &&
+            nxlinks["_partidas"]["partidas"].is_array()) {
+            std::set<u64> instalados;
+            std::vector<NsApplicationRecord> registros(64000);
+            s32 total = 0;
+            if (R_SUCCEEDED(nsListApplicationRecord(registros.data(), registros.size(), 0, &total)))
+                for (s32 i = 0; i < total; ++i) instalados.insert(registros[i].application_id);
+            std::set<u64> conPartida;
+            for (const auto& p : nxlinks["_partidas"]["partidas"])
+                if (p.is_object() && p.contains("id") && p["id"].is_string()) {
+                    const u64 id = std::strtoull(p["id"].get<std::string>().c_str(), nullptr, 16);
+                    if (instalados.count(id)) conPartida.insert(id);
+                }
+            datos.partidas = conPartida.size();
+        }
+        datos.hayNextendo = conNextendo;
+        datos.nextendoFunciona = conNextendo && NextendoTab::working(nxlinks, nextendoActivo);
+        for (const auto& c : checks) {
+            if (c.status == protection::Status::Fail && !c.byNextendo) datos.proteccionFalla = true;
+            else if (c.status != protection::Status::Ok) ++datos.avisos;
+        }
+    }
+
+    View* vistaPacks = nullptr;
+    View* vistaApps = nullptr;
+    View* vistaTrucos = nullptr;
+    View* vistaBacan = nullptr;
+    View* vistaNextendo = nullptr;
+    auto entrada = [this](iconos::Icono icono) {
+        brls::View* item = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
+        this->iconosMenu.push_back({item, icono});
+        return item;
+    };
+
+    if (!util::getBoolValue(hideStatus, "about")) {
+        const std::string donar = this->donationUrl;
+        const std::vector<protection::Check> copia = checks;
+        const bool packNuevo = datos.packNuevo, appNueva = datos.appNueva;
+        const std::string clavePack = packVersion::current();
+        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack](InicioTab::Destino d) {
+            switch (d) {
+                case InicioTab::Destino::Estado: {
+                    // Rediseno: protecciones, Cliente OQB y apoyo (los datos de la consola ya estan en Inicio).
+                    brls::Application::pushView(new EstadoFrame(donar, copia));
+                    return;
+                }
+                case InicioTab::Destino::Trucos:
+                    if (conBacan) {
+                        trucos::abrir();
+                        return;
+                    }
+                    this->irA(this->itemTrucos);
+                    return;
+                case InicioTab::Destino::Packs:
+                    // Con version nueva, directo a actualizar el pack que esta en la SD.
+                    if (packNuevo && this->tabPacks && this->tabPacks->instalarPorClave(clavePack)) return;
+                    this->irA(this->itemPacks);
+                    return;
+                case InicioTab::Destino::App:
+                    if (!tag.empty()) appUpdate::pushFlow(appNueva ? tag : std::string(AppVersion), appNueva);
+                    return;
+                case InicioTab::Destino::Apps: this->irA(this->itemApps); return;
+                case InicioTab::Destino::Partidas: this->irA(this->itemBacan); return;
+                case InicioTab::Destino::Nextendo: this->irA(this->itemNextendo); return;
+            }
+        };
+        this->addTab("menus/inicio/menu"_i18n, new InicioTab(datos, ir));
+        entrada(iconos::Icono::Inicio);
+    }
+    arranque::marca("ventana: pestaña inicio");
+
+    if (!util::getBoolValue(hideStatus, "atmosphere")) {
+        PaginaOqb::Opciones op;
+        op.columnas = 2;
+        op.botonA = "menus/inicio/boton_instalar"_i18n;
+        op.botonAviso = "menus/inicio/boton_actualizar"_i18n;
+        op.hintX = "menus/inicio/limpia_corto"_i18n;
+        this->addTab("menus/inicio/menu_packs"_i18n,
+                     vistaPacks = new PaginaOqb("menus/inicio/titulo_packs"_i18n, "menus/inicio/sub_packs"_i18n,
+                                                this->tabPacks = new AmsTab_Regular(nxlinks, erista, !util::getBoolValue(hideStatus, "firmwares")), op));
+        this->itemPacks = entrada(iconos::Icono::Packs);
+    }
+    arranque::marca("ventana: pestaña packs");
+
+    /* Con Bacán Shop, los trucos van dentro de su seccion. Sin ella (sin
+       conexion, o el catalogo no la trae) siguen en su pestana. */
     if (conTrucos && !conBacan) {
-        this->addTab("menus/main/download_cheats"_i18n, new ListDownloadTab(contentType::cheats));
+        this->addTab("menus/main/download_cheats"_i18n, vistaTrucos = new ListDownloadTab(contentType::cheats));
+        this->itemTrucos = entrada(iconos::Icono::Trucos);
         arranque::marca("ventana: pestaña trucos");
     }
 
-    if (!util::getBoolValue(hideStatus, "apps"))
-    {
-        // El numero junto al nombre: lo primero que se ve al abrir la app.
-        size_t nuevas = 0;
-        const nlohmann::ordered_json instaladas = appUpdates::installed();
-        if (nxlinks.is_object() && nxlinks.contains("apps") && nxlinks["apps"].is_object()) {
-            for (const auto& url : nxlinks["apps"]) {
-                if (url.is_string() && appUpdates::hasUpdate(nxlinks, instaladas, url.get<std::string>()))
-                    ++nuevas;
-            }
-        }
-        this->addTab("menus/main/apps"_i18n, new AppsTab(nxlinks));
+    if (!util::getBoolValue(hideStatus, "apps")) {
+        this->addTab("menus/main/apps"_i18n, vistaApps = new AppsPage(nxlinks));
+        this->itemApps = entrada(iconos::Icono::Apps);
         arranque::marca("ventana: pestaña apps");
-        this->appsSidebar = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
-        if (nuevas)
+        this->appsSidebar = this->itemApps;
+        if (datos.appsNuevas)
             this->appsItem = this->appsSidebar;
     }
 
-    /* Nextendo: solo con la consola en modo Nextendo, que es cuando sirve. */
-    if (!util::getBoolValue(hideStatus, "apps") && NextendoTab::available(nxlinks)) {
-        const bool activo = protection::failedOnlyByNextendo(checks);
-        this->addTab("Nextendo", new NextendoTab(nxlinks, activo));
-        arranque::marca("ventana: pestaña nextendo");
-        this->nextendoFunciona = NextendoTab::working(nxlinks, activo);
-        if (!NextendoTab::seen() || this->nextendoFunciona)
-            this->nextendoItem = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
-    }
-
-    /* Bacán Shop, debajo de Nextendo. Punto dorado si hay version nueva de la
-       tienda o de los trucos, o si no esta instalada y nunca se abrio. */
+    /* Bacán Shop. Punto dorado si hay version nueva de la tienda o de los
+       trucos, o si no esta instalada y nunca se abrio. */
     if (conBacan) {
-        this->addTab("Bacán Shop", new BacanShopTab(nxlinks, checks, conTrucos));
+        PaginaOqb::Opciones op;
+        op.forma = PaginaOqb::Forma::Secciones;
+        this->addTab("Bacán Shop", vistaBacan = new PaginaOqb("menus/inicio/titulo_bacan"_i18n, "menus/inicio/sub_bacan"_i18n,
+                                                               new BacanShopTab(nxlinks, checks, conTrucos), op));
+        this->itemBacan = entrada(iconos::Icono::Shop);
         arranque::marca("ventana: pestaña bacan shop");
         const std::string urlTienda = BacanShopTab::url(nxlinks);
         const bool instalada = appUpdates::isInstalled(nxlinks, urlTienda);
         this->bacanNueva = instalada && appUpdates::hasUpdate(nxlinks, appUpdates::installed(), urlTienda);
         this->bacanTrucos = conTrucos && BacanShopTab::trucosNuevos();
-        this->bacanSidebar = this->sidebar->getChild(this->sidebar->getViewsCount() - 1);
+        this->bacanSidebar = this->itemBacan;
         if (this->bacanNueva || this->bacanTrucos || (!instalada && !BacanShopTab::seen()))
             this->bacanItem = this->bacanSidebar;
     }
+
+    /* Nextendo: solo con la consola en modo Nextendo, que es cuando sirve. */
+    if (conNextendo) {
+        PaginaOqb::Opciones op;
+        op.forma = PaginaOqb::Forma::Secciones;
+        this->addTab("Nextendo", vistaNextendo = new PaginaOqb("NEXTENDO", "menus/inicio/sub_nextendo"_i18n, new NextendoTab(nxlinks, nextendoActivo), op));
+        this->itemNextendo = entrada(iconos::Icono::Nextendo);
+        arranque::marca("ventana: pestaña nextendo");
+        this->nextendoFunciona = datos.nextendoFunciona;
+        if (!NextendoTab::seen() || this->nextendoFunciona)
+            this->nextendoItem = this->itemNextendo;
+    }
     this->catalogo = nxlinks;
     this->genInstalaciones = appUpdates::generacionInstalaciones();
+    (void)vistaPacks;
+    (void)vistaApps;
+    (void)vistaTrucos;
+    (void)vistaBacan;
+    (void)vistaNextendo;
 
-    /* Mira los dos grupos anteriores, no solo el de descargas: ocultandolas
-       todas, estado y ajustes quedarian pegados sin separador. Cada separador
-       comprueba ademas que su propio grupo tenga algo, asi que no salen dos
-       seguidos ni uno al final. */
-    if ((hasStatus || hasDownloads) && hasSettings)
-        this->addSeparator();
-
-    if (!util::getBoolValue(hideStatus, "tools"))
-        this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus, nxlinks));
+    if (!util::getBoolValue(hideStatus, "tools")) {
+        PaginaOqb::Opciones op;
+        op.forma = PaginaOqb::Forma::Grupos;
+        this->addTab("menus/main/tools"_i18n, new PaginaOqb("menus/inicio/titulo_tools"_i18n, "menus/inicio/sub_tools"_i18n,
+                                                         new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus, nxlinks), op));
+        entrada(iconos::Icono::Herramientas);
+    }
     arranque::marca("ventana: pestaña ajustes");
 
-    if (!util::getBoolValue(hideStatus, "language"))
-        this->addTab("menus/tools/language"_i18n, new LanguageTab());
-    arranque::marca("ventana: pestaña idioma");
-
     this->registerAction("", brls::Key::B, [this] { return true; });
+}
+
+void MainFrame::irA(brls::View* item)
+{
+    // Enfocar la entrada del menu cambia de seccion; despues el foco pasa al contenido.
+    if (!item) return;
+    brls::Application::giveFocus(item);
+    if (auto* entrada = dynamic_cast<brls::SidebarItem*>(item))
+        if (brls::View* vista = entrada->getAssociatedView())
+            if (brls::View* foco = vista->getDefaultFocus()) brls::Application::giveFocus(foco);
 }
 
 void MainFrame::recalcularAvisos()
@@ -279,9 +424,61 @@ void MainFrame::recalcularAvisos()
     }
 }
 
+/* La altura de la cabecera es un valor global del estilo (la usan todos los
+   marcos). Solo este va sin ella: se pone en 0 mientras se acomoda y se dibuja,
+   y se devuelve enseguida para los demas. */
+void MainFrame::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash)
+{
+    const unsigned cabecera = style->AppletFrame.headerHeightRegular;
+    style->AppletFrame.headerHeightRegular = 0;
+    brls::AppletFrame::layout(vg, style, stash);
+    style->AppletFrame.headerHeightRegular = cabecera;
+}
+
 void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
-    brls::TabFrame::draw(vg, x, y, width, height, style, ctx);
+    {
+        const unsigned cabecera = style->AppletFrame.headerHeightRegular;
+        style->AppletFrame.headerHeightRegular = 0;
+        brls::TabFrame::draw(vg, x, y, width, height, style, ctx);
+        style->AppletFrame.headerHeightRegular = cabecera;
+    }
+
+    /* El nombre arriba del panel izquierdo, en Bebas Neue (OFL) y en dos lineas:
+       "OQB" con la Trifuerza a su derecha, en el color del tema, y "UPDATER"
+       debajo. En una sola linea, a esta altura, Bebas no entra en el panel. */
+    {
+        static int fuente = -2;
+        if (fuente == -2) fuente = nvgCreateFont(vg, "bebas", "romfs:/fonts/BebasNeue-Regular.ttf");
+        const float lx = x + style->Sidebar.marginLeft + 12.0f;
+        const float tam = 56.0f;
+        nvgFontFaceId(vg, fuente >= 0 ? fuente : ctx->fontStash->regular);
+        nvgFontSize(vg, tam);
+        nvgTextLetterSpacing(vg, 1.0f);
+        nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+        nvgFillColor(vg, this->a(ctx->theme->textColor));
+        const float cy1 = y + 38.0f, cy2 = y + 86.0f;
+        nvgBeginPath(vg);
+        const float finOqb = nvgText(vg, lx, cy1, "OQB", nullptr);
+        nvgBeginPath(vg);
+        nvgText(vg, lx, cy2, "UPDATER", nullptr);
+        nvgTextLetterSpacing(vg, 0.0f);
+
+        // La Trifuerza, del alto de la letra (como antes), junto a "OQB".
+        const float th = 37.0f, esc = th / 31.0f;
+        const float tx = finOqb + 12.0f, ty = cy1 - th / 2.0f - 2.0f;
+        const float tris[3][6] = {{18, 0, 27, 15.5f, 9, 15.5f}, {27, 15.5f, 36, 31, 18, 31}, {9, 15.5f, 18, 31, 0, 31}};
+        nvgFillColor(vg, this->a(oqb::acentoFuerte()));
+        for (const auto& t : tris) {
+            nvgBeginPath(vg);
+            nvgMoveTo(vg, tx + t[0] * esc, ty + t[1] * esc);
+            nvgLineTo(vg, tx + t[2] * esc, ty + t[3] * esc);
+            nvgLineTo(vg, tx + t[4] * esc, ty + t[5] * esc);
+            nvgClosePath(vg);
+            nvgFill(vg);
+        }
+    }
+
 
     // Termino una instalacion: lo que ya esta al dia deja de figurar pendiente.
     if (const int gen = appUpdates::generacionInstalaciones(); gen != this->genInstalaciones) {

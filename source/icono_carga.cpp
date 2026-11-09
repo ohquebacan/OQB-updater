@@ -1,4 +1,5 @@
 #include "icono_carga.hpp"
+#include "oqb_theme.hpp"
 
 #include <cmath>
 
@@ -25,7 +26,7 @@ void drawIconoCarga(NVGcontext* vg, float cx, float cy, float t, float escala, b
             if (v == 0) nvgMoveTo(vg, px, py); else nvgLineTo(vg, px, py);
         }
         nvgClosePath(vg);
-        nvgFillColor(vg, encendida ? nvgRGB(52, 213, 131) : nvgRGB(36, 43, 34));
+        nvgFillColor(vg, encendida ? oqb::acentoBase(true) : nvgRGB(36, 43, 34));
         nvgFill(vg);
     }
 }
@@ -59,9 +60,10 @@ void drawTrifuerzaEncendido(NVGcontext* vg, float cx, float cy, float t, float e
         {27, 16, 36, 31, 18, 31},  // abajo derecha
         {9, 16, 18, 31, 0, 31},    // abajo izquierda
     };
-    const NVGcolor apagado = nvgRGB(30, 36, 31);
-    const NVGcolor esmeralda = nvgRGB(52, 213, 131);
-    const NVGcolor menta = nvgRGB(150, 240, 190);
+    // Del tema elegido: se enciende hacia su acento (verde en Verde OQB).
+    const NVGcolor esmeralda = oqb::acentoBase(true);
+    const NVGcolor menta = oqb::acentoBase(false);
+    const NVGcolor apagado = mezcla(nvgRGB(24, 24, 24), esmeralda, 0.12f);
 
     for (int i = 0; i < 3; ++i) {
         const float p = suave((t - i * ESCALON) / ENCENDIDO);
@@ -85,7 +87,9 @@ void drawTrifuerzaEncendido(NVGcontext* vg, float cx, float cy, float t, float e
         nvgFill(vg);
         // Un halo fino que aparece y se va con el destello.
         if (destello > 0.01f) {
-            nvgStrokeColor(vg, nvgRGBA(150, 240, 190, (unsigned char)(110 * destello)));
+            NVGcolor halo = menta;
+            halo.a = 110.0f / 255.0f * destello;
+            nvgStrokeColor(vg, halo);
             nvgStrokeWidth(vg, 2.0f + 6.0f * destello);
             nvgLineJoin(vg, NVG_ROUND);
             nvgStroke(vg);

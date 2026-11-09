@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Apps</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Upheaval";src:url("/_blob/a55fd87e4e65ff01d4ddfcba28cf4ef4") format("truetype");font-display:block}
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; display: flex; background: {{t.bg}}; color: {{t.text}}; font-family: 'Instrument Sans', system-ui, sans-serif; overflow: hidden">
+
+  <nav aria-label="Secciones" style="width: 250px; flex-shrink: 0; box-sizing: border-box; padding: 28px 18px 22px; background: {{t.panel}}; border-right: 1px solid {{t.line}}; display: flex; flex-direction: column; gap: 6px">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 0 10px 22px">
+      <svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true"><path d="M17 1 25 15H9z" fill="{{t.accent2}}"></path><path d="M9 15 17 29H1zM25 15 33 29H17z" fill="{{t.text}}"></path></svg>
+      <span style="font-family: Upheaval, sans-serif; font-size: 20px; line-height: 1; letter-spacing: 0.5px">OQB UPDATER</span>
+    </div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+      <a href="{{n.href}}" style="display: flex; align-items: center; gap: 14px; height: 52px; padding: 0 14px; border-radius: 12px; text-decoration: none; font-size: 18px; font-weight: 500; color: {{n.color}}; background: {{n.bg}}">
+        <span style="flex: 1">{{n.label}}</span>
+        <sc-if value="{{n.badge}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: {{t.accent2}}; color: {{t.onAccent}}">{{n.badge}}</span></sc-if>
+      </a>
+    </sc-for>
+    <div style="margin-top: auto; padding: 0 14px; font-size: 14px; color: {{t.muted}}; font-family: 'JetBrains Mono', monospace">v3.2 · al día</div>
+  </nav>
+
+  <main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <div style="flex: 1; min-height: 0; display: flex">
+      <section aria-label="Lista de apps" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 30px 26px 0 40px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; align-items: center; gap: 16px">
+          <h1 style="margin: 0; font-family: Upheaval, sans-serif; font-weight: 400; font-size: 40px; line-height: 1; letter-spacing: 1px">APPS</h1>
+          <label style="flex: 1; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; border-radius: 12px; background: {{t.card}}; border: 1px solid {{t.line}}; color: {{t.muted}}; font-size: 16px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+            <input type="search" placeholder="Ⓧ Buscar entre 55 apps" style="flex: 1; border: 0; background: transparent; font: inherit; color: {{t.text}}; outline: none">
+          </label>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+            <span style="font-size: 14px; font-weight: 600; padding: 7px 13px; border-radius: 999px; background: {{c.bg}}; color: {{c.color}}; border: 1px solid {{c.border}}">{{c.label}}</span>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <sc-for list="{{apps}}" as="a" hint-placeholder-count="7">
+            <div style="display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 14px; border-radius: 12px; background: {{a.bg}}; border: 2px solid {{a.border}}">
+              <span style="width: 42px; height: 42px; border-radius: 10px; background: {{a.color}}; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700">{{a.ini}}</span>
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-size: 17px; font-weight: 600">{{a.name}}</span>
+                <span style="font-size: 13px; color: {{t.muted}}">{{a.cat}}</span>
+              </span>
+              <span style="font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: {{a.tagBg}}; color: {{a.tagColor}}">{{a.tag}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <aside aria-label="Ficha de la app" style="width: 360px; flex-shrink: 0; box-sizing: border-box; padding: 30px 32px 0; border-left: 1px solid {{t.line}}; background: {{t.panel}}; display: flex; flex-direction: column; gap: 16px">
+        <div style="width: 112px; height: 112px; border-radius: 24px; background: #2F6B4A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: Upheaval, sans-serif; font-size: 40px">JK</div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700">JKSV BACÁN</h2>
+          <span style="font-size: 15px; color: {{t.muted}}">Partidas y respaldos · OH! QUÉ BACÁN</span>
+        </div>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5; color: {{t.text2}}">Respalda y restaura tus partidas, con copia en la nube, y pone partidas completas al 100% de muchos juegos.</p>
+        <dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 15px">
+          <dt style="color: {{t.muted}}">Tienes</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace">2.7</dd>
+          <dt style="color: {{t.muted}}">Nueva</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace; color: {{t.ok}}">3.1 · 8 nov</dd>
+          <dt style="color: {{t.muted}}">Tamaño</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace">11 MB</dd>
+        </dl>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px">
+          <a href="Apps.dc.html" style="text-align: center; padding: 13px; border-radius: 12px; background: {{t.accent2}}; color: {{t.onAccent}}; text-decoration: none; font-size: 17px; font-weight: 700">Ⓐ Actualizar</a>
+          <a href="Apps.dc.html" style="text-align: center; padding: 12px; border-radius: 12px; border: 1px solid {{t.line}}; text-decoration: none; font-size: 15px; font-weight: 600">Ⓨ Acceso directo en el menú HOME</a>
+        </div>
+      </aside>
+    </div>
+
+    <footer style="height: 62px; flex-shrink: 0; margin: 0 32px; border-top: 1px solid {{t.line}}; display: flex; align-items: center; justify-content: flex-end; gap: 28px; font-size: 17px; color: {{t.text2}}">
+      <span>Ⓐ Instalar o actualizar</span><span>Ⓧ Buscar</span><span>L / R Categoría</span><span>Ⓑ Atrás</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modo":{"editor":"enum","options":["Oscuro","Claro"],"default":"Oscuro"},"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const oscuro = (this.props.modo ?? 'Oscuro') === 'Oscuro';
+    const t = oscuro
+      ? { bg:'#0B0F0A', panel:'#0F140E', card:'#131A11', chip:'#18201A', line:'#24301F', text:'#EEF2E3', text2:'#C9D1C2', muted:'#93A08C', accent2:'#34D583', onAccent:'#06140C', focus:'#CEF781', sel:'#1B2918', selText:'#CEF781', okBg:'#123222', ok:'#9DEA9A', warnBg:'#2A2210', warn:'#F0C66E' }
+      : { bg:'#EEF2E9', panel:'#E3E9DC', card:'#FFFFFF', chip:'#F2F5EE', line:'#CCD5C3', text:'#152013', text2:'#33402F', muted:'#5A6655', accent2:'#14804A', onAccent:'#FFFFFF', focus:'#1F7A3E', sel:'#D2E7CC', selText:'#0F5A2E', okBg:'#DDF1E3', ok:'#14663A', warnBg:'#FBEFD5', warn:'#7A4B00' };
+    const nav = [
+      { label:'Inicio', href:'Main.dc.html', k:'home' },
+      { label:'Packs y firmwares', href:'Packs.dc.html', badge:'1', k:'packs' },
+      { label:'Apps', href:'Apps.dc.html', badge:'3', k:'apps', sel:true },
+      { label:'Bacán Shop', href:'Bacan.dc.html', k:'shop' },
+      { label:'Nextendo', href:'Nextendo.dc.html', k:'nextendo' },
+      { label:'Herramientas', href:'Herramientas.dc.html', k:'tools' }
+    ].map(n => ({ ...n, ['is_' + n.k]: true, bg: n.sel ? t.sel : 'transparent', color: n.sel ? t.selText : t.text2, badge: n.badge || false }));
+    const chips = ['Con actualización · 3', 'Todas', 'Mejoran tus juegos', 'Emuladores', 'Instaladores', 'Sistema'].map((label, i) => ({
+      label, bg: i === 0 ? t.text : 'transparent', color: i === 0 ? t.bg : t.text2, border: i === 0 ? t.text : t.line
+    }));
+    const tags = {
+      nueva: { tag:'Versión nueva', tagBg:t.warnBg, tagColor:t.warn },
+      ok: { tag:'Instalada', tagBg:t.okBg, tagColor:t.ok },
+      no: { tag:'Instalar', tagBg:t.chip, tagColor:t.muted }
+    };
+    const apps = [
+      { name:'JKSV BACÁN', ini:'JK', cat:'Partidas y respaldos', color:'#2F6B4A', st:'nueva', sel:true },
+      { name:'sphaira', ini:'SP', cat:'Menú de homebrew', color:'#3B5BA5', st:'nueva' },
+      { name:'Akira', ini:'AK', cat:'Navegador', color:'#7A3A44', st:'nueva' },
+      { name:'Checkpoint', ini:'CP', cat:'Partidas', color:'#555F6E', st:'ok' },
+      { name:'EdiZon SE', ini:'EZ', cat:'Mejoran tus juegos', color:'#8A5A1E', st:'ok' },
+      { name:'Tico', ini:'TI', cat:'Emuladores', color:'#5A4580', st:'no' },
+      { name:'Moonlight', ini:'ML', cat:'Juegos desde tu PC', color:'#24607A', st:'no' }
+    ].map(a => ({ ...a, ...tags[a.st], bg: a.sel ? t.card : 'transparent', border: a.sel ? t.focus : 'transparent' }));
+    return { t, nav, chips, apps };
+  }
+}
+</script>
+</body>
+</html>

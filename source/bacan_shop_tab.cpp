@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "app_updates.hpp"
+#include "pagina_oqb.hpp"
 #include "fs.hpp"
 #include "instalar_app.hpp"
 #include "list_download_tab.hpp"
@@ -57,7 +58,7 @@ namespace {
 
     /* La ficha de arriba: icono, nombre, una pildora con el estado y una frase
        de que es. No recibe foco: la accion va en la fila de abajo. */
-    class Ficha : public brls::View
+    class Ficha : public brls::View, public ConBoton
     {
     private:
         std::string estado;
@@ -87,7 +88,7 @@ namespace {
             dibujarImagen(vg, imagen(vg, "romfs:/bacan/icono.png"), cx + 26.0f, cy + (ch - lado) / 2.0f, lado, 22.0f, this->alpha);
 
             const float tx = cx + 26.0f + lado + 26.0f;
-            const float ancho = cw - (tx - cx) - 26.0f;
+            const float ancho = cw - (tx - cx) - 26.0f - this->reservaDerecha;
 
             nvgFontFaceId(vg, ctx->fontStash->regular);
             nvgFontSize(vg, 32.0f);
@@ -224,7 +225,7 @@ namespace {
        aqui porque es lo que se usa despues de instalar un juego. */
     void agregarTrucos(brls::List* lista)
     {
-        lista->addView(new brls::Header("menus/bacan/trucos"_i18n));
+        lista->addView(new HeaderOqb("menus/bacan/trucos_partidas"_i18n));
         const auto [nueva, tengo] = versionesTrucos();
         PackListItem* item = new PackListItem("menus/bacan/trucos_item"_i18n, "", "menus/bacan/trucos_sub"_i18n);
         if (tengo.empty())
@@ -244,7 +245,7 @@ namespace {
        JKSV BACAN, que ya sabe elegir el usuario y respalda la partida actual
        antes; aqui solo se avisa y, si falta, se instala JKSV. Sin partidas
        para ningun juego instalado no se muestra nada. */
-    void agregarPartidas(brls::List* lista, const nlohmann::ordered_json& nxlinks)
+    void agregarPartidas(brls::List* lista, const nlohmann::ordered_json& nxlinks, bool conTitulo)
     {
         if (!nxlinks.is_object())
             return;
@@ -289,11 +290,27 @@ namespace {
         std::string sub = juegos.empty() ? "" : juegos + ". ";
         sub += conJksv ? "menus/bacan/partidas_sub"_i18n : "menus/bacan/partidas_sin_jksv_sub"_i18n;
 
-        lista->addView(new brls::Header("menus/bacan/partidas"_i18n));
+        // Junto a los trucos (misma seccion, lado a lado); sin trucos, con su titulo.
+        if (conTitulo) lista->addView(new HeaderOqb("menus/bacan/trucos_partidas"_i18n));
         PackListItem* item = new PackListItem(
             conPartida.size() == 1 ? "menus/bacan/partidas_item_uno"_i18n : fmt::format("menus/bacan/partidas_item"_i18n, conPartida.size()), "", sub);
         if (conJksv) {
             item->setPositiveValue("JKSV BACAN");
+            // Se restauran desde JKSV BACAN: al elegirla, como hacerlo.
+            item->getClickEvent()->subscribe([](brls::View* view) {
+                /* En una ventana con su titulo y letra de lectura: en un dialogo de
+                   borealis, con su letra grande, el texto no entraba. */
+                brls::List* l = new brls::List();
+                brls::Label* texto = new brls::Label(brls::LabelStyle::REGULAR, "menus/bacan/partidas_como"_i18n, true);
+                texto->setFontSize(brls::Application::getStyle()->Label.descriptionFontSize + 2);
+                l->addView(texto);
+                brls::ListItem* volver = new brls::ListItem("menus/common/back"_i18n);
+                volver->getClickEvent()->subscribe([](brls::View* v) { brls::Application::popView(); });
+                l->addView(volver);
+                brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+                frame->setContentView(l);
+                brls::PopupFrame::open("menus/bacan/partidas"_i18n, frame, "", "");
+            });
         }
         else if (!jksv.empty()) {
             item->setWarningValue("menus/bacan/instalar_jksv"_i18n);
@@ -306,6 +323,13 @@ namespace {
     /* Apps que mejoran la experiencia al jugar. La lista sale del catalogo
        ("bacan_sugeridas" en nx-links.json, un arreglo de nombres) para poder
        cambiarla sin sacar otra version; si no la trae, estas. */
+    // Una app sugerida, con su icono para la tarjeta de PaginaOqb.
+    class ItemConIcono : public PackListItem, public ConIcono
+    {
+    public:
+        using PackListItem::PackListItem;
+    };
+
     constexpr const char* SUGERIDAS[] = {"JKSV BACAN", "SimpleModDownloader", "SimpleModManager", "SaltyNX", "ARCropolis y Skyline"};
 
     void agregarSugerencias(BacanShopTab* lista, const nlohmann::ordered_json& nxlinks)
@@ -335,8 +359,12 @@ namespace {
                 if (d != descs->end() && d->is_string())
                     texto = d->get<std::string>();
             }
-            PackListItem* item = new PackListItem(nombre, "", texto);
-            ListDownloadTab::ponerIcono(item, nxlinks, direccion);
+            ItemConIcono* item = new ItemConIcono(nombre, "", texto);
+            item->iconoRuta = appUpdates::rutaIcono(nxlinks, direccion);
+            if (item->iconoRuta.empty()) {
+                item->iconoBytes = appUpdates::iconoInstalado(nxlinks, direccion);
+                if (item->iconoBytes.empty()) item->iconoRuta = "romfs:/iconos/generico.png";
+            }
             if (appUpdates::isInstalled(nxlinks, direccion)) {
                 if (appUpdates::hasUpdate(nxlinks, instaladas, direccion))
                     item->setWarningValue("menus/apps/new_version"_i18n);
@@ -350,7 +378,7 @@ namespace {
             item->getClickEvent()->subscribe([links, nombre, direccion](brls::View* view) { instalarAppDelCatalogo(links, nombre, direccion); });
             lista->sugeridas.emplace_back(item, direccion);
             if (!conTitulo) {
-                lista->addView(new brls::Header("menus/bacan/mejora"_i18n));
+                lista->addView(new HeaderOqb("menus/bacan/mejora"_i18n));
                 conTitulo = true;
             }
             lista->addView(item);
@@ -464,11 +492,11 @@ BacanShopTab::BacanShopTab(const nlohmann::ordered_json& nxlinks, const std::vec
         this->addView(instalar);
         this->accion = instalar;
 
-        this->addView(new brls::Header("menus/bacan/que_trae"_i18n));
+        this->addView(new HeaderOqb("menus/bacan/que_trae"_i18n));
         this->addView(new QueTrae());
         if (conTrucos)
             agregarTrucos(this);
-        agregarPartidas(this, nxlinks);
+        agregarPartidas(this, nxlinks, !conTrucos);
         return;
     }
 
@@ -561,12 +589,14 @@ BacanShopTab::BacanShopTab(const nlohmann::ordered_json& nxlinks, const std::vec
         filas.push_back(item);
     }
 
-    this->addView(new brls::Header("menus/bacan/listo"_i18n, true, fmt::format("menus/bacan/listo_cuenta"_i18n, listos, filas.size())));
+    /* Rediseno: firmas, emuNAND, bloqueo y espacio ya se ven en Inicio; aca no
+       se repiten. */
+    (void)listos;
     for (PackListItem* f : filas)
-        this->addView(f);
+        delete f;
 
     if (conTrucos)
         agregarTrucos(this);
-    agregarPartidas(this, nxlinks);
+    agregarPartidas(this, nxlinks, !conTrucos);
     agregarSugerencias(this, nxlinks);
 }

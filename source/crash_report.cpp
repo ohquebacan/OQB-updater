@@ -188,9 +188,9 @@ namespace crash {
         /* El informe dice que programa cayo y con que codigo, no por que: la causa se
            da como probable y con la condicion que la hace probable. */
         if (g.programId == "0100000000001000")
-            return "Falló el menú HOME. Una causa frecuente son los temas: si instalaste uno hace poco, "
-                   "es probable que sea eso y puedes quitarlo con NXThemes Installer o el payload OQB-LimpiaTema. "
-                   "Si no instalaste ninguno, la causa es otra.";
+            return "Falló el menú HOME. Lo más probable es un tema o un menú alternativo (HomeNX, Switch U). Para quitarlo, "
+                   "en Hekate toca «More Configs» › «LIMPIAR TEMA», elige «Limpiar tema» con POWER y confirma con VOL+. "
+                   "Si no tenías ninguno, la causa es otra: verifica que el HATS PACK esté instalado correctamente y actualizado.";
         if (proceso == "ovlloader")
             return "Falló un overlay de Ultrahand" + (g.module.empty() ? std::string(".") : " (" + g.module + ").") +
                    " Lo más probable es que no funcione con esta versión: actualízalo o quítalo de switch/.overlays.";

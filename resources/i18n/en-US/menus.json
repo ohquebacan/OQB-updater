@@ -207,7 +207,10 @@
         "clean_up_nothing": "There was nothing to clean up.",
         "clean_up_done": "Freed {} across {} items.\n\n{}",
         "diagnostics": "Error diagnostics",
-        "diagnostics_desc": "Which programs crashed, when and why"
+        "diagnostics_desc": "Which programs crashed, when and why",
+        "tema": "Theme",
+        "tema_sub": "The app's color, also on the loading screen.",
+        "tema_actual": "Current"
     },
     "utils": {
         "fw_warning": "Because of the size of FW archives, downloading firmwares in Applet Mode is not supported. Please launch the app with full RAM access.",
@@ -240,7 +243,8 @@
         "custom_packs_misc": "◆ Downloads containing homebrew and tools.",
         "custom_download": "Custom download",
         "add_custom_link": "Add a custom link",
-        "delete_custom_link": "Delete"
+        "delete_custom_link": "Delete",
+        "conservar_tema": "You have a theme or an alternative menu installed. Keep it?\n\nIf you are going to update the firmware afterwards, better remove it: it may not work with the new version and keep the HOME Menu from starting. Put it back once you have the new firmware.\n\nYes: keep it. No: remove it."
     },
     "firmware": {
         "offer_app": "Do you also want to install {} to play online with Nextendo Network? It downloads along with the firmware.",
@@ -347,7 +351,12 @@
         "what_to_do": "What to do:",
         "video": "Video tutorial",
         "wiki": "Nextendo error wiki",
-        "wiki_text": "Nextendo's full guide, with more detail on each error."
+        "wiki_text": "Nextendo's full guide, with more detail on each error.",
+        "cuenta_titulo": "Create your Nextendo account",
+        "cuenta_texto": "Scan it with your phone. With that account you play online from compatible games.",
+        "jugando_ahora": "playing now",
+        "clock_sync_sub": "Asks a time server and fixes the clock now.",
+        "clock_auto_sub": "The console switch: with it on, the corrected time shows."
     },
     "forwarders": {
         "create_title": "Create HOME menu shortcut",
@@ -380,7 +389,11 @@
         "notice": "OQB-updater {} is running, and {} is available.\n\nUpdating replaces the app only. Nothing else on the SD card is touched.",
         "notice_now": "Update now",
         "notice_later": "Later",
-        "done_reopen": "Done. The app will close when you press the button. Open it again from the HOME Menu to use the new version."
+        "done_reopen": "Done. The app will close when you press the button. Open it again from the HOME Menu to use the new version.",
+        "anterior": "Go back to the previous design (3.2)",
+        "anterior_sub": "Installs 3.2, with the old design. You can update to the latest any time.",
+        "anterior_titulo": "Go back to {}",
+        "anterior_confirm": "OQB Updater version {} will be installed, with the previous design.\n\nYour settings and downloads are not touched. To get the new design back, use «Update app» from the old version."
     },
     "search": {
         "entry": "Search",
@@ -545,7 +558,9 @@
         "partidas_item_uno": "There's a full save for 1 of your games",
         "partidas_sub": "Open JKSV BACAN, pick the game and look for [Full save]: it backs up yours before replacing it.",
         "partidas_sin_jksv_sub": "They're restored with JKSV BACAN, which backs up your save first. Press A to install it.",
-        "instalar_jksv": "Install JKSV"
+        "instalar_jksv": "Install JKSV",
+        "trucos_partidas": "Cheats and saves",
+        "partidas_como": "1. Open JKSV BACÁN.\n2. Choose the game.\n3. Under «New», choose the one marked [Partida completa] and hold A to confirm.\n\nJKSV backs up your current save before replacing it, so you can go back to it."
     },
     "limpia": {
         "titulo": "Clean install",
@@ -590,7 +605,8 @@
         "confirmar": "{} will be deleted and {} installed.\n\nDeleted files can't be recovered. The list is saved to /config/aio-switch-updater/limpieza.log.",
         "trabajando": "Cleaning and installing",
         "ports": "Ports and emulators with their games",
-        "cat_port": "Port"
+        "cat_port": "Port",
+        "explica": "A clean install installs {} and leaves your SD like freshly formatted, with only what the pack brings.\n\n1. The pack is downloaded and your SD is checked. Nothing is deleted yet.\n2. You see what will be removed and what stays, and choose whether to keep apps that aren't in the pack, mods and themes.\n3. You confirm by holding A for three seconds. Only then is anything deleted (all logged in limpieza.log) and the pack installed.\n\nYour games, saves, emuNAND, hekate backups and anything in preserve.txt are never touched."
     },
     "trucos": {
         "titulo": "Cheats",
@@ -639,5 +655,92 @@
         "pedir_base_boton": " Download the cheat database",
         "d_otra_sub_sin_lista": "You have {}, but the database only has cheats for another version of the game that isn't in its list. If you can, change the game's version; otherwise wait for the database to add yours.",
         "d_desconocida_sub_sin_lista": "The database doesn't know your version yet, and its cheats are for another version of the game. They probably won't work with yours."
+    },
+    "inicio": {
+        "menu": "Home",
+        "menu_packs": "Packs and firmware",
+        "titulo": "HOME",
+        "subtitulo": "What's on your console and what's worth doing",
+        "ams": "Atmosphère",
+        "firmware": "Firmware",
+        "pack": "Installed pack",
+        "arranque": "Boot",
+        "libre": "Free space",
+        "pack_nuevo": "A new version of the pack is out",
+        "actualizar": " Update",
+        "apps": "Apps to update",
+        "apps_al_dia": "Apps up to date",
+        "apps_al_dia_sub": "None has a new version",
+        "y_mas": " and {} more",
+        "trucos": "Games with cheats",
+        "trucos_revisar": "Open it to check your games",
+        "trucos_otra": "{} need another version",
+        "trucos_listos": "Ready to use",
+        "partidas": "Full saves",
+        "partidas_sub": "For your games, with JKSV",
+        "nextendo_on": "On and working",
+        "nextendo_off": "Off",
+        "proteccion_ok": "Protection and status: all good",
+        "proteccion_avisos": "Protection: {} things to check",
+        "proteccion_falla": "A protection is probably not active",
+        "ver_estado": "See status ›",
+        "abrir": "Open",
+        "firmwares_titulo": "Firmware",
+        "firmwares_sub": "Download a firmware to update with Daybreak",
+        "packs_resumen": "Atmosphère {}{} · {}",
+        "limpia_corto": "Clean install",
+        "apps_nuevas": "With updates",
+        "apps_nuevas_sub": "Apps you have that have a new version",
+        "grupo_sd": "SD card and files",
+        "titulo_packs": "PACKS AND FIRMWARE",
+        "sub_packs": "Atmosphère, hekate and apps, ready for your console",
+        "titulo_apps": "APPS",
+        "sub_apps": "Search, update or install homebrew",
+        "titulo_tools": "TOOLS",
+        "sub_tools": "Grouped by what you want to do",
+        "boton_instalar": "Install",
+        "boton_actualizar": "Update",
+        "apps_categoria": "Category",
+        "apps_buscar": "Search",
+        "apps_instalar": "Install or update",
+        "apps_buscar_en": " Search {} apps",
+        "apps_chip_nuevas": "With updates · {}",
+        "apps_chip_todas": "All",
+        "apps_sin_instalar": "Install",
+        "apps_vacio": "No apps in this category.",
+        "apps_tienes": "You have",
+        "apps_nueva": "New",
+        "apps_boton_actualizar": " Update",
+        "apps_boton_reinstalar": " Reinstall",
+        "apps_boton_instalar": " Install",
+        "grupo_juegos_home": "Games and HOME menu",
+        "grupo_consola_red": "Console, controllers and internet",
+        "titulo_bacan": "BACÁN SHOP",
+        "sub_bacan": "Your game store, with cheats, saves and boosts",
+        "sub_nextendo": "Play online without a Nintendo account",
+        "pack_card": "HATS PACK",
+        "pack_nueva": "New version available · {}",
+        "pack_sin": "Install the pack from Packs and firmwares",
+        "al_dia": "Up to date",
+        "app_card": "OQB Updater {}",
+        "app_nueva": "Version {} available",
+        "app_sin_red": "No connection to check",
+        "reinstalar": "Reinstall"
+    },
+    "estado": {
+        "titulo": "STATUS",
+        "subtitulo": "Your protections and your OQB registration",
+        "prot_ok": "Protections active",
+        "prot_ok_sub": "The console cannot connect to Nintendo",
+        "prot_falla": "Some protections are down",
+        "prot_falla_sub": "The console can connect to Nintendo. Press A to see what's missing.",
+        "prot_nextendo": "Off because of Nextendo",
+        "prot_nextendo_sub": "This is normal while you use Nextendo. Press A for details.",
+        "bien": "{} of {} OK",
+        "diag_nada": "No errors recorded on the SD card.",
+        "diag_ultimo": "Last: {} ({}) on {}. Press A for details.",
+        "diag_limpio": "No errors",
+        "diag_uno": "1 error",
+        "diag_varios": "{} errors"
     }
 }

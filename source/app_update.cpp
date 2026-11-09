@@ -1,6 +1,7 @@
 #include "app_update.hpp"
 
 #include <borealis.hpp>
+#include <cstdio>
 
 #include "confirm_page.hpp"
 #include "constants.hpp"
@@ -50,8 +51,27 @@ namespace appUpdate {
         brls::Application::pushView(stagedFrame);
     }
 
+    void pushFlowVersion(const std::string& tag)
+    {
+        const std::string url = "https://github.com/ohquebacan/OQB-updater/releases/download/" + tag + "/OQB-updater.zip";
+        brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
+        stagedFrame->setTitle(fmt::format("menus/app_update/anterior_titulo"_i18n, tag));
+        stagedFrame->addStage(new ConfirmPage(stagedFrame, fmt::format("menus/app_update/anterior_confirm"_i18n, tag)));
+        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() {
+            // Que la version anterior no salte con el aviso de actualizar a esta.
+            if (FILE* f = std::fopen(DISENO_ANTERIOR_PATH, "w")) std::fclose(f);
+            util::downloadArchive(url, contentType::app);
+        }));
+        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() { util::extractArchive(contentType::app); }));
+        stagedFrame->addStage(new ConfirmPage_AppUpdate(stagedFrame, util::isForwarder() ? "menus/app_update/done_reopen"_i18n : "menus/common/all_done"_i18n));
+        brls::Application::pushView(stagedFrame);
+    }
+
     void showNoticeIfAvailable(const std::string& tag)
     {
+        // Esta es la version nueva: si alguien vuelve atras y luego regresa, que se
+        // borre la marca de "diseno anterior".
+        std::remove(DISENO_ANTERIOR_PATH);
         if (noticeShown || !isAvailable(tag))
             return;
         noticeShown = true;

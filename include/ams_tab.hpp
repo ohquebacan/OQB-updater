@@ -2,6 +2,8 @@
 
 #include <borealis.hpp>
 #include <json.hpp>
+#include <functional>
+#include <map>
 #include <set>
 
 #include "constants.hpp"
@@ -29,8 +31,16 @@ protected:
     void CreateNotFoundLabel();
     virtual void RegisterListItemAction(brls::ListItem* listItem);
 
+    // La instalacion de cada pack propio, por su clave (OQB-HATS-PACK-23.0.zip).
+    std::map<std::string, std::function<void()>> porClave;
+
 public:
     AmsTab(const nlohmann::ordered_json& nxlinks, const bool erista = true);
+
+    /* Abre la instalacion del pack con esa clave, la misma que su tarjeta en
+       Packs. Devuelve false si esta lista no lo trae. Inicio la usa para
+       actualizar directo el pack que esta en la SD. */
+    bool instalarPorClave(const std::string& clave);
 };
 
 class AmsTab_Regular : public AmsTab
@@ -44,7 +54,11 @@ private:
     std::string GetRepoName(const std::string& repo);
 
 public:
-    AmsTab_Regular(const nlohmann::ordered_json& nxlinks, const bool erista = true);
+    // conFirmwares: la entrada de Firmwares al final (antes era otra pestana).
+    AmsTab_Regular(const nlohmann::ordered_json& nxlinks, const bool erista = true, bool conFirmwares = false);
+
+private:
+    bool conFirmwares = false;
 };
 
 class AmsTab_Custom : public AmsTab

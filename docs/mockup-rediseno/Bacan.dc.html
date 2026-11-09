@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Bacán Shop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Upheaval";src:url("/_blob/a55fd87e4e65ff01d4ddfcba28cf4ef4") format("truetype");font-display:block}
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; display: flex; background: {{t.bg}}; color: {{t.text}}; font-family: 'Instrument Sans', system-ui, sans-serif; overflow: hidden">
+
+  <nav aria-label="Secciones" style="width: 250px; flex-shrink: 0; box-sizing: border-box; padding: 28px 18px 22px; background: {{t.panel}}; border-right: 1px solid {{t.line}}; display: flex; flex-direction: column; gap: 6px">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 0 10px 22px">
+      <svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true"><path d="M17 1 25 15H9z" fill="{{t.accent2}}"></path><path d="M9 15 17 29H1zM25 15 33 29H17z" fill="{{t.text}}"></path></svg>
+      <span style="font-family: Upheaval, sans-serif; font-size: 20px; line-height: 1; letter-spacing: 0.5px">OQB UPDATER</span>
+    </div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+      <a href="{{n.href}}" style="display: flex; align-items: center; gap: 14px; height: 52px; padding: 0 14px; border-radius: 12px; text-decoration: none; font-size: 18px; font-weight: 500; color: {{n.color}}; background: {{n.bg}}">
+        <span style="flex: 1">{{n.label}}</span>
+        <sc-if value="{{n.badge}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: {{t.accent2}}; color: {{t.onAccent}}">{{n.badge}}</span></sc-if>
+      </a>
+    </sc-for>
+  </nav>
+
+  <main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <div style="flex: 1; min-height: 0; box-sizing: border-box; padding: 30px 40px 0; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+      <header style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-family: Upheaval, sans-serif; font-weight: 400; font-size: 40px; line-height: 1; letter-spacing: 1px">BACÁN SHOP</h1>
+        <span style="font-size: 17px; color: {{t.text2}}">Tu tienda de juegos, con trucos, partidas y mejoras</span>
+      </header>
+
+      <section aria-label="La tienda" style="display: flex; align-items: center; gap: 22px; padding: 18px 22px; border-radius: 16px; background: {{t.card}}; border: 1px solid {{t.line}}">
+        <div style="width: 84px; height: 84px; border-radius: 20px; background: #E6B95C; color: #1A1206; display: flex; align-items: center; justify-content: center; font-family: Upheaval, sans-serif; font-size: 30px; flex-shrink: 0">BS</div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: center; gap: 14px">
+            <h2 style="margin: 0; font-size: 26px; font-weight: 700">Bacán Shop</h2>
+            <span style="font-size: 14px; font-weight: 700; padding: 5px 12px; border-radius: 999px; background: {{t.okBg}}; color: {{t.ok}}">v2.21.29 · Al día</span>
+          </div>
+          <span style="font-size: 16px; color: {{t.text2}}">Baja juegos y actualizaciones directo en la consola. Las descargas van a la SD y se instalan solas.</span>
+        </div>
+        <a href="Bacan.dc.html" style="padding: 12px 20px; border-radius: 12px; border: 1px solid {{t.line}}; text-decoration: none; font-size: 16px; font-weight: 600; white-space: nowrap">Volver a instalar</a>
+      </section>
+
+      <sc-for list="{{secciones}}" as="s" hint-placeholder-count="3">
+        <section style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0 0 0 4px; font-size: 15px; font-weight: 600; color: {{t.ok}}">{{s.titulo}}</h3>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+            <sc-for list="{{s.items}}" as="i" hint-placeholder-count="2">
+              <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px 18px; border-radius: 14px; background: {{t.card}}; border: 2px solid {{i.border}}">
+                <span style="font-size: 18px; font-weight: 600">{{i.t}}</span>
+                <span style="display: flex; align-items: center; gap: 10px">
+                  <span style="font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: {{i.pBg}}; color: {{i.pColor}}">{{i.p}}</span>
+                  <span style="font-size: 14px; color: {{t.muted}}">{{i.s}}</span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-for>
+    </div>
+
+    <footer style="height: 62px; flex-shrink: 0; margin: 0 32px; border-top: 1px solid {{t.line}}; display: flex; align-items: center; justify-content: flex-end; gap: 28px; font-size: 17px; color: {{t.text2}}">
+      <span>Ⓐ Abrir</span><span>Ⓑ Atrás</span><span>＋ Salir</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modo":{"editor":"enum","options":["Oscuro","Claro"],"default":"Oscuro"},"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const oscuro = (this.props.modo ?? 'Oscuro') === 'Oscuro';
+    const t = oscuro
+      ? { bg:'#0B0F0A', panel:'#0F140E', card:'#131A11', chip:'#18201A', line:'#24301F', text:'#EEF2E3', text2:'#C9D1C2', muted:'#93A08C', accent2:'#34D583', onAccent:'#06140C', focus:'#CEF781', sel:'#1B2918', selText:'#CEF781', okBg:'#123222', ok:'#9DEA9A', warnBg:'#2A2210', warn:'#F0C66E' }
+      : { bg:'#EEF2E9', panel:'#E3E9DC', card:'#FFFFFF', chip:'#F2F5EE', line:'#CCD5C3', text:'#152013', text2:'#33402F', muted:'#5A6655', accent2:'#14804A', onAccent:'#FFFFFF', focus:'#1F7A3E', sel:'#D2E7CC', selText:'#0F5A2E', okBg:'#DDF1E3', ok:'#14663A', warnBg:'#FBEFD5', warn:'#7A4B00' };
+    const nav = [
+      { label:'Inicio', href:'Main.dc.html' },
+      { label:'Packs y firmwares', href:'Packs.dc.html' },
+      { label:'Apps', href:'Apps.dc.html', badge:'3' },
+      { label:'Bacán Shop', href:'Bacan.dc.html', sel:true },
+      { label:'Nextendo', href:'Nextendo.dc.html' },
+      { label:'Herramientas', href:'Herramientas.dc.html' }
+    ].map(n => ({ ...n, bg: n.sel ? t.sel : 'transparent', color: n.sel ? t.selText : t.text2, badge: n.badge || false }));
+    const ok = { pBg:t.okBg, pColor:t.ok }, aviso = { pBg:t.warnBg, pColor:t.warn }, gris = { pBg:t.chip, pColor:t.muted };
+    const it = (tt, p, s, tono, sel) => ({ t: tt, p, s, ...tono, border: sel ? t.focus : t.line });
+    return {
+      t, nav,
+      secciones: [
+        { titulo:'Trucos y partidas', items:[
+          it('Trucos para tus juegos', '42 listos', '7 necesitan otra versión', aviso, true),
+          it('Partidas completas', '12 para ti', 'Se ponen con JKSV BACÁN', ok)
+        ]},
+        { titulo:'Mejoran tus juegos', items:[
+          it('JKSV BACÁN', 'Instalada', 'Partidas y respaldos en la nube', ok),
+          it('SimpleModDownloader', 'Instalar', 'Mods de GameBanana', gris)
+        ]}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

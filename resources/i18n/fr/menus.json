@@ -170,7 +170,10 @@
     "outdated_titles": "Mises à jour manquantes",
     "latest_version_not_found": "Impossible de trouver les informations de mise à jour",
     "outdated_titles_desc": "Des mises à jour sont disponibles pour les titres suivants :",
-    "scanning": "Checking {} of {}... (B to cancel)"
+    "scanning": "Checking {} of {}... (B to cancel)",
+    "tema": "Thème",
+    "tema_sub": "La couleur de l'app, aussi sur l'écran de chargement.",
+    "tema_actual": "Actuel"
   },
   "utils": {
     "fw_warning": "En raison de la taille des archives FW, le téléchargement de firmwares en mode applet n'est pas pris en charge. Veuillez lancer l'application avec un accès complet à la RAM.",
@@ -203,7 +206,8 @@
     "custom_packs_misc": "◆ Téléchargements contenant des homebrews et des outils.",
     "custom_download": "Téléchargement personnalisé",
     "add_custom_link": "Ajouter un lien personnalisé",
-    "delete_custom_link": "Supprimer"
+    "delete_custom_link": "Supprimer",
+    "conservar_tema": "Vous avez un thème ou un menu alternatif installé. Le conserver ?\n\nSi vous mettez ensuite à jour le firmware, mieux vaut le supprimer et le remettre après.\n\nOui : le conserver. Non : le supprimer."
   },
   "firmware": {
     "launch_daybreak": "Voulez-vous lancer Daybreak pour installer la mise à jour système téléchargée ?"
@@ -310,7 +314,9 @@
     "partidas_item_uno": "Sauvegarde complète pour 1 de vos jeux",
     "partidas_sub": "Ouvrez JKSV BACAN, choisissez le jeu et cherchez [Full save] : il sauvegarde la vôtre avant de la remplacer.",
     "partidas_sin_jksv_sub": "Elles se restaurent avec JKSV BACAN, qui sauvegarde la vôtre d'abord. Appuyez sur A pour l'installer.",
-    "instalar_jksv": "Installer JKSV"
+    "instalar_jksv": "Installer JKSV",
+    "trucos_partidas": "Codes et sauvegardes",
+    "partidas_como": "1. Ouvrez JKSV BACÁN.\n2. Choisissez le jeu.\n3. Dans «Nouveau», choisissez [Partida completa] et maintenez A pour confirmer.\n\nJKSV sauvegarde votre partie actuelle avant de la remplacer."
   },
   "limpia": {
     "titulo": "Installation propre",
@@ -355,7 +361,8 @@
     "confirmar": "{} seront supprimés et {} installé.\n\nCe qui est supprimé ne peut pas être récupéré. La liste est dans /config/aio-switch-updater/limpieza.log.",
     "trabajando": "Nettoyage et installation",
     "ports": "Ports et émulateurs avec leurs jeux",
-    "cat_port": "Port"
+    "cat_port": "Port",
+    "explica": "L'installation propre installe {} et laisse votre SD comme fraîchement formatée, avec seulement ce que contient le pack.\n\n1. Le pack est téléchargé et votre SD est analysée. Rien n'est encore supprimé.\n2. Vous voyez ce qui sera retiré et ce qui reste, et choisissez de garder ou non les apps hors pack, les mods et les thèmes.\n3. Vous confirmez en maintenant A trois secondes. Ce n'est qu'alors que tout est supprimé (noté dans limpieza.log) et le pack installé.\n\nVos jeux, sauvegardes, emuNAND, sauvegardes hekate et ce qui figure dans preserve.txt ne sont jamais touchés."
   },
   "trucos": {
     "titulo": "Codes de triche",
@@ -404,5 +411,105 @@
     "pedir_base_boton": " Télécharger la base de codes",
     "d_otra_sub_sin_lista": "Vous avez {}, mais la base n'a des codes que pour une autre version du jeu, absente de sa liste. Si possible, changez la version du jeu ; sinon, attendez que la base ajoute la vôtre.",
     "d_desconocida_sub_sin_lista": "La base ne connaît pas encore votre version, et ses codes sont pour une autre version du jeu. Ils ne fonctionneront probablement pas avec la vôtre."
+  },
+  "inicio": {
+    "menu": "Accueil",
+    "menu_packs": "Packs et firmwares",
+    "titulo": "ACCUEIL",
+    "subtitulo": "Ce qu'il y a sur votre console et ce qu'il vaut la peine de faire",
+    "ams": "Atmosphère",
+    "firmware": "Firmware",
+    "pack": "Pack installé",
+    "arranque": "Démarrage",
+    "libre": "Espace libre",
+    "pack_nuevo": "Une nouvelle version du pack est sortie",
+    "actualizar": " Mettre à jour",
+    "apps": "Apps à mettre à jour",
+    "apps_al_dia": "Apps à jour",
+    "apps_al_dia_sub": "Aucune nouvelle version",
+    "y_mas": " et {} de plus",
+    "trucos": "Jeux avec codes",
+    "trucos_revisar": "Ouvrez pour vérifier vos jeux",
+    "trucos_otra": "{} demandent une autre version",
+    "trucos_listos": "Prêts à l'emploi",
+    "partidas": "Sauvegardes complètes",
+    "partidas_sub": "Pour vos jeux, avec JKSV",
+    "nextendo_on": "Actif et fonctionnel",
+    "nextendo_off": "Désactivé",
+    "proteccion_ok": "Protection et état : tout va bien",
+    "proteccion_avisos": "Protection : {} points à vérifier",
+    "proteccion_falla": "Une protection n'est probablement pas active",
+    "ver_estado": "Voir l'état ›",
+    "abrir": "Ouvrir",
+    "firmwares_titulo": "Firmware",
+    "firmwares_sub": "Télécharger un firmware à installer avec Daybreak",
+    "packs_resumen": "Atmosphère {}{} · {}",
+    "limpia_corto": "Installation propre",
+    "apps_nuevas": "Avec mise à jour",
+    "apps_nuevas_sub": "Vos apps qui ont une nouvelle version",
+    "grupo_sd": "SD et fichiers",
+    "titulo_packs": "PACKS ET FIRMWARES",
+    "sub_packs": "Atmosphère, hekate et les apps, prêts pour votre console",
+    "titulo_apps": "APPS",
+    "sub_apps": "Cherchez, mettez à jour ou installez des homebrews",
+    "titulo_tools": "OUTILS",
+    "sub_tools": "Regroupés selon ce que vous voulez faire",
+    "boton_instalar": "Installer",
+    "boton_actualizar": "Mettre à jour",
+    "apps_categoria": "Catégorie",
+    "apps_buscar": "Rechercher",
+    "apps_instalar": "Installer ou mettre à jour",
+    "apps_buscar_en": " Rechercher parmi {} apps",
+    "apps_chip_nuevas": "Avec mise à jour · {}",
+    "apps_chip_todas": "Toutes",
+    "apps_sin_instalar": "Installer",
+    "apps_vacio": "Aucune app dans cette catégorie.",
+    "apps_tienes": "Vous avez",
+    "apps_nueva": "Nouvelle",
+    "apps_boton_actualizar": " Mettre à jour",
+    "apps_boton_reinstalar": " Réinstaller",
+    "apps_boton_instalar": " Installer",
+    "grupo_juegos_home": "Jeux et menu HOME",
+    "grupo_consola_red": "Console, manettes et internet",
+    "titulo_bacan": "BACÁN SHOP",
+    "sub_bacan": "Votre boutique de jeux, avec codes, sauvegardes et améliorations",
+    "sub_nextendo": "Jouez en ligne sans compte Nintendo",
+    "pack_card": "HATS PACK",
+    "pack_nueva": "Nouvelle version · {}",
+    "pack_sin": "Installez le pack depuis Packs et firmwares",
+    "al_dia": "À jour",
+    "app_card": "OQB Updater {}",
+    "app_nueva": "Version {} disponible",
+    "app_sin_red": "Pas de connexion",
+    "reinstalar": "Réinstaller"
+  },
+  "nextendo": {
+    "cuenta_titulo": "Créez votre compte Nextendo",
+    "cuenta_texto": "Scannez-le avec votre téléphone. Avec ce compte, vous jouez en ligne aux jeux compatibles.",
+    "jugando_ahora": "en train de jouer",
+    "clock_sync_sub": "Interroge un serveur de temps et corrige l'heure.",
+    "clock_auto_sub": "L'interrupteur de la console."
+  },
+  "estado": {
+    "titulo": "ÉTAT",
+    "subtitulo": "Vos protections et votre inscription OQB",
+    "prot_ok": "Protections actives",
+    "prot_ok_sub": "La console ne peut pas se connecter à Nintendo",
+    "prot_falla": "Des protections sont désactivées",
+    "prot_falla_sub": "La console peut se connecter à Nintendo. Appuyez sur A pour voir.",
+    "prot_nextendo": "Désactivées par Nextendo",
+    "prot_nextendo_sub": "C'est normal pendant que vous utilisez Nextendo.",
+    "bien": "{} sur {} OK",
+    "diag_nada": "Aucune erreur enregistrée.",
+    "diag_ultimo": "Dernière : {} ({}) le {}.",
+    "diag_limpio": "Aucune erreur",
+    "diag_uno": "1 erreur",
+    "diag_varios": "{} erreurs"
+  },
+  "app_update": {
+    "anterior": "Revenir à l'ancien design (3.2)",
+    "anterior_sub": "Installe la 3.2, avec l'ancien design.",
+    "anterior_titulo": "Revenir à la {}",
+    "anterior_confirm": "La version {} d'OQB Updater sera installée, avec l'ancien design."
   }
 }

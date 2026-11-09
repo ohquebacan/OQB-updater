@@ -142,6 +142,10 @@ constexpr const char SEPT_DIRECTORY_PATH[] = "/config/aio-switch-updater/sept/";
 constexpr const char FW_DIRECTORY_PATH[] = "/firmware/";
 
 constexpr const char HIDE_TABS_JSON[] = "/config/aio-switch-updater/hide_tabs.json";
+// Lo deja la 4.0 al volver al diseno anterior: la 3.2 no muestra entonces el
+// aviso emergente de actualizacion (el de abajo y los demas, si). La 4.0 lo
+// borra al arrancar.
+constexpr const char DISENO_ANTERIOR_PATH[] = "/config/aio-switch-updater/diseno_anterior";
 constexpr const char COPY_FILES_TXT[] = "/config/aio-switch-updater/copy_files.txt";
 // Lista que puede traer un pack con lo que hay que borrar al instalarlo: lo que
 // dejo otro pack y este reemplaza (sys-clk cuando se instala el de overclock).

@@ -57,6 +57,14 @@ namespace util {
     std::string readFile(const std::string& path);
     std::string getAppPath();
     bool isForwarder();
+
+    /* Un tema o un menu alternativo activo: romfs, exefs o exefs.nsp en la carpeta
+       del menu HOME o de sus applets. */
+    bool hayTemaActivo();
+
+    /* Lo que eligio el usuario antes de instalar el pack: conservar el tema (no se
+       borran esas carpetas en la limpieza previa) o borrarlo. */
+    void setConservarTema(bool conservar);
     bool installPendingAppUpdate();
     void restartApp();
     bool isErista();

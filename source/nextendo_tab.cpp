@@ -1,4 +1,6 @@
 #include "nextendo_tab.hpp"
+#include "list_download_tab.hpp"
+#include "hora.hpp"
 
 #include <switch.h>
 
@@ -14,12 +16,17 @@
 #include <functional>
 
 #include "app_updates.hpp"
+#include "pagina_oqb.hpp"
 #include "download.hpp"
 #include "fs.hpp"
 #include "instalar_app.hpp"
 #include "donar_page.hpp"
 #include "pack_list_item.hpp"
 #include "confirm_page.hpp"
+#include "oqb_theme.hpp"
+
+#include <atomic>
+#include <thread>
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -77,16 +84,13 @@ namespace {
                       std::function<void(bool)> alResponder = nullptr, const std::string& qrTexto = "")
     {
         brls::List* l = new brls::List();
-        // Un parrafo por bloque: el primero toma el foco y la ventana abre arriba.
-        size_t desde = 0;
-        while (desde <= cuerpo.size()) {
-            const size_t hasta = cuerpo.find("\n\n", desde);
-            const std::string parrafo = cuerpo.substr(desde, hasta == std::string::npos ? std::string::npos : hasta - desde);
-            if (!parrafo.empty())
-                l->addView(new Parrafo(brls::LabelStyle::REGULAR, parrafo, true));
-            if (hasta == std::string::npos)
-                break;
-            desde = hasta + 2;
+        /* Todo el texto en una sola etiqueta: con una por parrafo, la lista dejaba su
+           espacio grande entre cada una y el texto no entraba sin desplazarse. Toma
+           el foco, asi la ventana abre arriba. */
+        if (!cuerpo.empty()) {
+            Parrafo* texto = new Parrafo(brls::LabelStyle::REGULAR, cuerpo, true);
+            texto->setFontSize(brls::Application::getStyle()->Label.descriptionFontSize + 2);
+            l->addView(texto);
         }
         if (!qr.empty())
             l->addView(new QrFilaView(qr, qrTexto.empty() ? "menus/nextendo/scan_page"_i18n : qrTexto));
@@ -136,13 +140,13 @@ namespace {
     {
         std::string out;
         for (const auto& p : pasos)
-            out += (out.empty() ? "" : "\n\n") + std::string("•  ") + p;
+            out += (out.empty() ? "" : "\n") + std::string("•  ") + p;
         return out;
     }
 
     void abrirError(const nlohmann::ordered_json& e)
     {
-        const std::string cuerpo = text(e, "que_es") + "\n\n" + "menus/nextendo/what_to_do"_i18n + "\n\n" + vinetas(lista(e, "que_hacer"));
+        const std::string cuerpo = text(e, "que_es") + "\n\n" + "menus/nextendo/what_to_do"_i18n + "\n" + vinetas(lista(e, "que_hacer"));
         abrirDetalle(text(e, "codigo") + " · " + text(e, "titulo"), cuerpo);
     }
 
@@ -321,7 +325,7 @@ namespace {
         std::sort(jugando.begin(), jugando.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
 
         brls::List* l = new brls::List();
-        l->addView(new brls::Header(total == 1 ? "menus/nextendo/online_one"_i18n : fmt::format("menus/nextendo/online_total"_i18n, total)));
+        l->addView(new HeaderOqb(total == 1 ? "menus/nextendo/online_one"_i18n : fmt::format("menus/nextendo/online_total"_i18n, total)));
         if (jugando.empty())
             l->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/online_nobody"_i18n, true));
         for (const auto& [n, tid] : jugando) {
@@ -337,7 +341,7 @@ namespace {
         }
 
         // Todos los compatibles, con su estado segun la wiki.
-        l->addView(new brls::Header("menus/nextendo/compatible"_i18n));
+        l->addView(new HeaderOqb("menus/nextendo/compatible"_i18n));
         for (auto it = juegos.begin(); it != juegos.end(); ++it) {
             if (!it.value().is_object())
                 continue;
@@ -357,6 +361,95 @@ namespace {
         brls::PopupFrame::open("menus/nextendo/online"_i18n, frame, "menus/nextendo/online_sub"_i18n, "");
     }
 
+    /* Arriba de Nextendo: el QR para crear la cuenta y cuantos juegan ahora. El
+       numero se pide en un hilo (solo datos); mientras llega, no se muestra. */
+    class CuentaYJugadores : public brls::View
+    {
+        QrCodeView* qr;
+        std::thread hilo;
+        std::atomic<int> jugadores{-1};
+        int fuente = -1;
+        bool fuenteIntentada = false;
+
+    public:
+        CuentaYJugadores(const std::string& urlCuenta, const std::string& urlConectados) : qr(new QrCodeView(urlCuenta))
+        {
+            this->qr->setParent(this);
+            this->setHeight(150);
+            if (!urlConectados.empty())
+                this->hilo = std::thread([this, urlConectados] {
+                    try {
+                        std::string texto;
+                        if (download::textoCorto(urlConectados, texto, 6, 1u << 20) != 200) return;
+                        const auto j = nlohmann::json::parse(texto, nullptr, false);
+                        if (!j.is_object() || !j.contains("counts") || !j["counts"].is_object()) return;
+                        int total = 0;
+                        for (const auto& [k, v] : j["counts"].items())
+                            if (v.is_number_integer()) total += v.get<int>();
+                        this->jugadores = total;
+                    }
+                    catch (...) {
+                    }
+                });
+        }
+        ~CuentaYJugadores() override
+        {
+            if (this->hilo.joinable()) this->hilo.join();
+            delete this->qr;
+        }
+        void layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash) override {}
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override
+        {
+            nvgBeginPath(vg);
+            nvgRoundedRect(vg, x, y, width, height, 16.0f);
+            nvgFillColor(vg, this->a(oqb::velo(oqb::oscuro() ? 12 : 10)));
+            nvgFill(vg);
+            nvgStrokeColor(vg, this->a(ctx->theme->sidebarSeparatorColor));
+            nvgStrokeWidth(vg, 1.0f);
+            nvgStroke(vg);
+            // El QR sobre blanco, para que el celular lo lea en modo oscuro tambien.
+            const float lado = height - 28.0f;
+            nvgBeginPath(vg);
+            nvgRoundedRect(vg, x + 16, y + 14, lado, lado, 10.0f);
+            nvgFillColor(vg, nvgRGB(255, 255, 255));
+            nvgFill(vg);
+            this->qr->setBoundaries(x + 22, y + 20, lado - 12, lado - 12);
+            this->qr->frame(ctx);
+            const float tx = x + 16 + lado + 24;
+            nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+            nvgFontFaceId(vg, ctx->fontStash->regular);
+            nvgFontSize(vg, 21.0f);
+            nvgFillColor(vg, this->a(ctx->theme->textColor));
+            nvgBeginPath(vg);
+            nvgText(vg, tx, y + 34, "menus/nextendo/cuenta_titulo"_i18n.c_str(), nullptr);
+            nvgFontSize(vg, 16.0f);
+            nvgTextLineHeight(vg, 1.3f);
+            nvgFillColor(vg, this->a(ctx->theme->descriptionColor));
+            nvgBeginPath(vg);
+            nvgTextBox(vg, tx, y + 66, width - (tx - x) - 220, "menus/nextendo/cuenta_texto"_i18n.c_str(), nullptr);
+            const int n = this->jugadores.load();
+            if (n >= 0) {
+                if (!this->fuenteIntentada) {
+                    this->fuenteIntentada = true;
+                    this->fuente = nvgFindFont(vg, "upheaval");
+                    if (this->fuente < 0) this->fuente = nvgCreateFont(vg, "upheaval", "romfs:/fonts/upheavtt.ttf");
+                }
+                nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP);
+                nvgFontFaceId(vg, this->fuente >= 0 ? this->fuente : ctx->fontStash->regular);
+                nvgFontSize(vg, 44.0f);
+                nvgFillColor(vg, this->a(oqb::oscuro() ? nvgRGB(187, 168, 255) : nvgRGB(75, 50, 168)));
+                nvgBeginPath(vg);
+                nvgText(vg, x + width - 28, y + 36, std::to_string(n).c_str(), nullptr);
+                nvgFontFaceId(vg, ctx->fontStash->regular);
+                nvgFontSize(vg, 15.0f);
+                nvgFillColor(vg, this->a(ctx->theme->descriptionColor));
+                nvgBeginPath(vg);
+                nvgText(vg, x + width - 28, y + 88, "menus/nextendo/jugando_ahora"_i18n.c_str(), nullptr);
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+            }
+        }
+    };
+
 }  // namespace
 
 bool NextendoTab::available(const nlohmann::ordered_json& nxlinks)
@@ -368,22 +461,14 @@ NextendoTab::NextendoTab(const nlohmann::ordered_json& nxlinks, bool activo) : b
 {
     const nlohmann::ordered_json& datos = this->nxlinks["nextendo"];
 
-    // Sin el modo activo: primero que es y como empezar, con el video.
+    /* Sin el modo activo: primero que es. Debajo, crear la cuenta (con el QR) y
+       quien esta jugando; el "Como empezar" sobraba con el checklist y el QR. */
     const std::string presentacion = text(datos, "presentacion");
     if (!activo && !presentacion.empty()) {
-        this->addView(new brls::Header("menus/nextendo/what_is"_i18n));
+        this->addView(new HeaderOqb("menus/nextendo/what_is"_i18n));
         this->addView(new brls::Label(brls::LabelStyle::REGULAR, presentacion, true));
-        const std::string video = text(datos, "video");
-        const std::string empezar = text(datos, "como_empezar");
-        brls::ListItem* item = new brls::ListItem("menus/nextendo/how_to_start"_i18n);
-        item->getClickEvent()->subscribe([empezar, video](brls::View* view) {
-            abrirDetalle("menus/nextendo/how_to_start"_i18n, empezar, video, nullptr, "menus/nextendo/scan_video"_i18n);
-        });
-        this->addView(item);
     }
-
-    this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/intro"_i18n, true));
-    this->addSearch(datos);
+    this->addView(new CuentaYJugadores("https://nextendo.network", text(datos, "conectados")));
     if (!text(datos, "conectados").empty()) {
         brls::ListItem* online = new brls::ListItem("menus/nextendo/online"_i18n, "", "menus/nextendo/online_sub"_i18n);
         const nlohmann::ordered_json copia = datos;
@@ -394,8 +479,10 @@ NextendoTab::NextendoTab(const nlohmann::ordered_json& nxlinks, bool activo) : b
 
     const auto etapas = datos.find("etapas");
     if (etapas != datos.end() && etapas->is_array() && !etapas->empty()) {
-        this->addView(new brls::Header("menus/nextendo/stages"_i18n));
+        this->addView(new HeaderOqb("menus/nextendo/stages"_i18n));
         for (const auto& e : *etapas) {
+            if (text(e, "seccion") == "errores")
+                continue;
             const std::string titulo = text(e, "titulo");
             const std::string cuerpo = vinetas(lista(e, "pasos"));
             brls::ListItem* item = new brls::ListItem(titulo);
@@ -403,21 +490,36 @@ NextendoTab::NextendoTab(const nlohmann::ordered_json& nxlinks, bool activo) : b
             this->addView(item);
         }
     }
+    // Buscar un codigo de error, como una entrada mas de las etapas.
+    this->addSearch(datos);
 
     const auto errores = datos.find("errores");
     if (errores != datos.end() && errores->is_array() && !errores->empty()) {
-        this->addView(new brls::Header("menus/nextendo/errors"_i18n));
+        this->addView(new HeaderOqb("menus/nextendo/errors"_i18n));
         for (const auto& e : *errores) {
             brls::ListItem* item = new brls::ListItem(text(e, "codigo"), "", text(e, "titulo"));
             const nlohmann::ordered_json copia = e;
             item->getClickEvent()->subscribe([copia](brls::View* view) { abrirError(copia); });
             this->addView(item);
         }
+        /* Las etapas que el catalogo manda a esta seccion ("No se que fallo"):
+           una tarjeta mas, al lado del ultimo codigo, no una fila sola. */
+        if (etapas != datos.end() && etapas->is_array()) {
+            for (const auto& e : *etapas) {
+                if (text(e, "seccion") != "errores")
+                    continue;
+                const std::string titulo = text(e, "titulo");
+                const std::string cuerpo = vinetas(lista(e, "pasos"));
+                brls::ListItem* item = new brls::ListItem(titulo);
+                item->getClickEvent()->subscribe([titulo, cuerpo](brls::View* view) { abrirDetalle(titulo, cuerpo); });
+                this->addView(item);
+            }
+        }
     }
 
     const auto notas = datos.find("notas");
     if (notas != datos.end() && notas->is_array() && !notas->empty()) {
-        this->addView(new brls::Header("menus/nextendo/notes"_i18n));
+        this->addView(new HeaderOqb("menus/nextendo/notes"_i18n));
         for (const auto& n : *notas) {
             const std::string titulo = text(n, "titulo"), cuerpo = text(n, "texto");
             brls::ListItem* item = new brls::ListItem(titulo);
@@ -426,7 +528,7 @@ NextendoTab::NextendoTab(const nlohmann::ordered_json& nxlinks, bool activo) : b
         }
     }
 
-    this->addView(new brls::Header("menus/nextendo/more"_i18n));
+    this->addView(new HeaderOqb("menus/nextendo/more"_i18n));
     const std::string video = text(datos, "video"), wiki = text(datos, "wiki");
     if (!video.empty()) {
         brls::ListItem* item = new brls::ListItem("menus/nextendo/video"_i18n);
@@ -474,7 +576,9 @@ void NextendoTab::addSearch(const nlohmann::ordered_json& datos)
 
 void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
 {
-    this->addView(new brls::Header("menus/nextendo/checklist"_i18n));
+    this->addView(new HeaderOqb("menus/nextendo/checklist"_i18n));
+    // Lo que el checklist revisa, como subtitulo de la seccion.
+    this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/intro"_i18n, true));
 
     // Firmware: lo dice la consola.
     {
@@ -491,8 +595,17 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
                                               fmt::format("menus/nextendo/check_firmware_sub"_i18n, lista_txt));
         if (ok)
             item->setPositiveValue("menus/nextendo/ok"_i18n);
-        else
+        else {
             item->setWarningValue("menus/nextendo/check"_i18n);
+            // Con uno que no sirve, A lleva a elegir un firmware para actualizar.
+            const nlohmann::ordered_json links = this->nxlinks;
+            item->getClickEvent()->subscribe([links](brls::View* view) {
+                brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+                frame->setTitle("menus/main/download_firmware"_i18n);
+                frame->setContentView(new ListDownloadTab(contentType::fw, links));
+                brls::Application::pushView(frame);
+            });
+        }
         this->addView(item);
     }
 
@@ -569,6 +682,23 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
             item->setWarningValue(fecha);
         else
             item->setValue(fecha, false, false);
+        /* A: las dos opciones de la hora (antes en Herramientas): sincronizarla
+           ahora y el interruptor de sincronizacion por internet de la consola. */
+        item->getClickEvent()->subscribe([](brls::View* view) {
+            brls::List* l = new brls::List();
+            brls::ListItem* ahora = new brls::ListItem("menus/time/sync"_i18n, "", "menus/nextendo/clock_sync_sub"_i18n);
+            ahora->getClickEvent()->subscribe([](brls::View* v) { hora::sincronizar(); });
+            l->addView(ahora);
+            bool activa = false;
+            const bool leida = hora::leerAutomatica(activa);
+            brls::ListItem* auto_ = new brls::ListItem("menus/time/system_sync"_i18n, "", "menus/nextendo/clock_auto_sub"_i18n);
+            auto_->setValue(!leida ? "menus/about/status_unknown"_i18n : activa ? "menus/time/system_sync_on"_i18n : "menus/time/system_sync_off"_i18n);
+            auto_->getClickEvent()->subscribe([](brls::View* v) { hora::alternarAutomatica(); });
+            l->addView(auto_);
+            brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+            frame->setContentView(l);
+            brls::PopupFrame::open("menus/nextendo/check_clock"_i18n, frame, "", "");
+        });
         this->addView(item);
     }
 

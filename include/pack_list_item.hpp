@@ -27,6 +27,10 @@ public:
     // (por ejemplo, los firmwares compatibles con Nextendo).
     void setPositiveValue(const std::string& value);
 
+    // Para dibujar el valor con su tono fuera de la lista (PaginaOqb).
+    bool esAviso() const { return this->warning && !this->positive; }
+    bool esPositivo() const { return this->positive; }
+
     // Sin valor y sin el marco de aviso (una app que se acaba de actualizar).
     void clearValue();
 

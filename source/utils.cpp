@@ -40,6 +40,12 @@ void pasoInstalacion(const char* p)
 
 namespace util {
 
+    namespace {
+        constexpr const char* CARPETAS_TEMA[] = {"0100000000001000", "0100000000001007", "0100000000001013"};
+        bool g_conservarTema = false;
+    }  // namespace
+
+
     bool isArchive(const std::string& path)
     {
         if (std::filesystem::exists(path)) {
@@ -342,6 +348,11 @@ namespace util {
                     for (const auto& folder : AMS_CONTENTS_KEEP) {
                         preserved.insert(std::string(AMS_CONTENTS) + folder);
                     }
+                    /* El tema o menu alternativo se queda si el usuario lo pidio
+                       (pregunta antes de instalar; solo sale si hay uno activo). */
+                    if (g_conservarTema)
+                        for (const char* tid : CARPETAS_TEMA) preserved.insert(std::string(AMS_CONTENTS) + tid);
+                    g_conservarTema = false;
                     fs::removeDirContentsExcept("/SaltySD", preserved);
                     fs::removeDirContentsExcept(AMS_CONTENTS, preserved);
 
@@ -554,6 +565,18 @@ namespace util {
         }
         return NRO_PATH;
     }
+
+    bool hayTemaActivo()
+    {
+        std::error_code ec;
+        const std::string contents = getContentsPath();
+        for (const char* tid : CARPETAS_TEMA)
+            for (const char* activo : {"romfs", "exefs", "exefs.nsp"})
+                if (std::filesystem::exists(contents + tid + "/" + activo, ec)) return true;
+        return false;
+    }
+
+    void setConservarTema(bool conservar) { g_conservarTema = conservar; }
 
     bool isForwarder()
     {

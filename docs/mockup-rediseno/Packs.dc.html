@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Packs y firmware</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Upheaval";src:url("/_blob/a55fd87e4e65ff01d4ddfcba28cf4ef4") format("truetype");font-display:block}
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; display: flex; background: {{t.bg}}; color: {{t.text}}; font-family: 'Instrument Sans', system-ui, sans-serif; overflow: hidden">
+
+  <nav aria-label="Secciones" style="width: 250px; flex-shrink: 0; box-sizing: border-box; padding: 28px 18px 22px; background: {{t.panel}}; border-right: 1px solid {{t.line}}; display: flex; flex-direction: column; gap: 6px">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 0 10px 22px">
+      <svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true"><path d="M17 1 25 15H9z" fill="{{t.accent2}}"></path><path d="M9 15 17 29H1zM25 15 33 29H17z" fill="{{t.text}}"></path></svg>
+      <span style="font-family: Upheaval, sans-serif; font-size: 20px; line-height: 1; letter-spacing: 0.5px">OQB UPDATER</span>
+    </div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+      <a href="{{n.href}}" style="display: flex; align-items: center; gap: 14px; height: 52px; padding: 0 14px; border-radius: 12px; text-decoration: none; font-size: 18px; font-weight: 500; color: {{n.color}}; background: {{n.bg}}">
+        <span style="flex: 1">{{n.label}}</span>
+        <sc-if value="{{n.badge}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: {{t.accent2}}; color: {{t.onAccent}}">{{n.badge}}</span></sc-if>
+      </a>
+    </sc-for>
+    <div style="margin-top: auto; padding: 0 14px; font-size: 14px; color: {{t.muted}}; font-family: 'JetBrains Mono', monospace">v3.2 · al día</div>
+  </nav>
+
+  <main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <div style="flex: 1; min-height: 0; box-sizing: border-box; padding: 34px 44px 0; display: flex; flex-direction: column; gap: 20px">
+      <header style="display: flex; flex-direction: column; gap: 8px">
+        <h1 style="margin: 0; font-family: Upheaval, sans-serif; font-weight: 400; font-size: 40px; line-height: 1; letter-spacing: 1px">PACKS</h1>
+        <span style="font-size: 17px; color: {{t.text2}}">Atmosphère, hekate y las apps, listos para tu consola</span>
+      </header>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px">
+        <article style="background: {{t.card}}; border: 1px solid {{t.line}}; border-radius: 18px; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: center; justify-content: space-between">
+            <h2 style="margin: 0; font-size: 22px; font-weight: 600">OQB HATS 23.0</h2>
+            <span style="font-size: 13px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: {{t.chip}}; color: {{t.muted}}">No instalado</span>
+          </div>
+          <p style="margin: 0; font-size: 16px; line-height: 1.45; color: {{t.text2}}">El de siempre: para la mayoría de las consolas.</p>
+          <div style="display: flex; gap: 20px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: {{t.muted}}"><span>8 nov 2026</span><span>115 MB</span><span>firmware 23.0</span></div>
+          <div style="display: flex; gap: 10px; margin-top: 6px">
+            <a href="Packs.dc.html" style="flex: 1; text-align: center; padding: 12px; border-radius: 12px; border: 1px solid {{t.line}}; text-decoration: none; font-size: 16px; font-weight: 600">Instalar</a>
+          </div>
+        </article>
+
+        <article style="background: {{t.card}}; border: 2px solid {{t.focus}}; border-radius: 18px; padding: 21px 23px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: center; justify-content: space-between">
+            <h2 style="margin: 0; font-size: 22px; font-weight: 600">OQB HATS 23.0 OC</h2>
+            <span style="font-size: 13px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: {{t.okBg}}; color: {{t.ok}}">En tu SD · 6 nov</span>
+          </div>
+          <p style="margin: 0; font-size: 16px; line-height: 1.45; color: {{t.text2}}">Con overclock (Horizon-OC). Para quien quiere más FPS.</p>
+          <div style="display: flex; gap: 20px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: {{t.muted}}"><span>8 nov 2026</span><span>120 MB</span><span>firmware 23.0</span></div>
+          <div style="display: flex; gap: 10px; margin-top: 6px">
+            <a href="Packs.dc.html" style="flex: 2; text-align: center; padding: 12px; border-radius: 12px; background: {{t.accent2}}; color: {{t.onAccent}}; text-decoration: none; font-size: 16px; font-weight: 700">Ⓐ Actualizar</a>
+            <a href="Packs.dc.html" style="flex: 1; text-align: center; padding: 12px; border-radius: 12px; border: 1px solid {{t.line}}; text-decoration: none; font-size: 15px; font-weight: 600">Ⓧ Instalación limpia</a>
+          </div>
+        </article>
+      </div>
+
+      <section aria-label="Qué cambia" style="background: {{t.card}}; border: 1px solid {{t.line}}; border-radius: 18px; padding: 18px 24px; display: flex; flex-direction: column; gap: 10px">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.4px; color: {{t.muted}}; text-transform: uppercase">Qué cambia del 6 al 8 de noviembre</h3>
+        <sc-for list="{{cambios}}" as="c" hint-placeholder-count="2">
+          <div style="display: flex; align-items: center; gap: 14px; font-size: 17px">
+            <span style="flex: 1">{{c.app}}</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; color: {{t.muted}}">{{c.antes}}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{t.muted}}" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; color: {{t.ok}}; min-width: 90px">{{c.ahora}}</span>
+          </div>
+        </sc-for>
+      </section>
+
+      <a href="Packs.dc.html" style="display: flex; align-items: center; gap: 16px; padding: 16px 24px; border-radius: 16px; background: {{t.card}}; border: 1px solid {{t.line}}; text-decoration: none; color: {{t.text}}">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M8 10h8M8 14h5"></path></svg>
+        <span style="flex: 1; font-size: 17px; font-weight: 600">Firmware</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; color: {{t.muted}}">tienes 23.0.1 · el pack lo soporta</span>
+        <span style="font-size: 15px; color: {{t.text2}}">Ver firmwares ›</span>
+      </a>
+    </div>
+
+    <footer style="height: 62px; flex-shrink: 0; margin: 0 32px; border-top: 1px solid {{t.line}}; display: flex; align-items: center; justify-content: flex-end; gap: 28px; font-size: 17px; color: {{t.text2}}">
+      <span>Ⓐ Actualizar</span><span>Ⓧ Instalación limpia</span><span>Ⓨ Qué trae</span><span>Ⓑ Atrás</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modo":{"editor":"enum","options":["Oscuro","Claro"],"default":"Oscuro"},"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const oscuro = (this.props.modo ?? 'Oscuro') === 'Oscuro';
+    const t = oscuro
+      ? { bg:'#0B0F0A', panel:'#0F140E', card:'#131A11', chip:'#18201A', line:'#24301F', text:'#EEF2E3', text2:'#C9D1C2', muted:'#93A08C', accent2:'#34D583', onAccent:'#06140C', focus:'#CEF781', sel:'#1B2918', selText:'#CEF781', okBg:'#123222', ok:'#9DEA9A' }
+      : { bg:'#EEF2E9', panel:'#E3E9DC', card:'#FFFFFF', chip:'#F2F5EE', line:'#CCD5C3', text:'#152013', text2:'#33402F', muted:'#5A6655', accent2:'#14804A', onAccent:'#FFFFFF', focus:'#1F7A3E', sel:'#D2E7CC', selText:'#0F5A2E', okBg:'#DDF1E3', ok:'#14663A' };
+    const nav = [
+      { label:'Inicio', href:'Main.dc.html', k:'home' },
+      { label:'Packs y firmwares', href:'Packs.dc.html', badge:'1', k:'packs', sel:true },
+      { label:'Apps', href:'Apps.dc.html', badge:'3', k:'apps' },
+      { label:'Bacán Shop', href:'Bacan.dc.html', k:'shop' },
+      { label:'Nextendo', href:'Nextendo.dc.html', k:'nextendo' },
+      { label:'Herramientas', href:'Herramientas.dc.html', k:'tools' }
+    ].map(n => ({ ...n, ['is_' + n.k]: true, bg: n.sel ? t.sel : 'transparent', color: n.sel ? t.selText : t.text2, badge: n.badge || false }));
+    return {
+      t, nav,
+      cambios: [
+        { app:'OQB Updater', antes:'3.1', ahora:'3.2' },
+        { app:'JKSV BACÁN', antes:'2.7', ahora:'3.1' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

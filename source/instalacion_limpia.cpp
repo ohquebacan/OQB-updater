@@ -370,6 +370,50 @@ namespace {
 
 }  // namespace
 
+namespace {
+    // La explicacion antes de empezar: con "Continuar" en vez del "Atras" de ConfirmPage.
+    class Explicacion : public ConfirmPage
+    {
+    public:
+        Explicacion(brls::StagedAppletFrame* frame, const std::string& texto) : ConfirmPage(frame, texto)
+        {
+            this->button->setLabel("menus/common/continue"_i18n);
+            // Es una explicacion de varios pasos: letra de lectura y alineada a la izquierda.
+            this->label->setFontSize(brls::Application::getStyle()->Label.regularFontSize);
+            this->label->setHorizontalAlign(NVG_ALIGN_LEFT);
+        }
+    };
+}  // namespace
+
+void instalacionLimpia::abrirCon(const nlohmann::ordered_json& nxlinks, bool erista, const std::string& nombre, const std::string& url)
+{
+    auto estado = std::make_shared<Estado>();
+    estado->erista = erista;
+    estado->nombre = nombre;
+    estado->url = url;
+    estado->clave = packVersion::keyFromUrl(url);
+    estado->fecha = packVersion::published(packVersion::fetchPublished(), estado->clave).date;
+    if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
+        util::showDialogBoxInfo("menus/errors/mariko_payload_missing"_i18n);
+        return;
+    }
+    brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+    frame->setTitle("menus/limpia/titulo"_i18n);
+    frame->addStage(new Explicacion(frame, fmt::format("menus/limpia/explica"_i18n, nombre)));
+    frame->addStage(new WorkerPage(frame, "menus/common/downloading"_i18n, [estado]() {
+        deep_clean::logPaso("=== inicio instalacion limpia");
+        util::downloadArchive(estado->url, contentType::ams_cfw);
+    }));
+    frame->addStage(new WorkerPage(frame, "menus/limpia/revisando"_i18n, [estado]() {
+        estado->plan = deep_clean::estricta::armar(AMS_FILENAME);
+        if (!estado->plan.valido)
+            ProgressEvent::instance().setStatusCode(STATUS_INCOMPLETE_DOWNLOAD);
+        ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+    }));
+    frame->addStage(new Puente(estado));
+    brls::Application::pushView(frame);
+}
+
 void instalacionLimpia::abrir(const nlohmann::ordered_json& nxlinks, bool erista)
 {
     auto estado = std::make_shared<Estado>();

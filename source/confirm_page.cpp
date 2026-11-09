@@ -147,9 +147,14 @@ void ConfirmPage::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* st
     this->label->setWidth(this->width > MARGEN * 3 ? this->width - MARGEN * 2 : this->width);
     this->label->invalidate(true);
     // this->label->setBackground(brls::ViewBackground::DEBUG);
+    /* Centrado en el espacio que queda sobre el boton, pero nunca por encima del
+       borde: un texto largo (la explicacion de la instalacion limpia) quedaba con
+       la y negativa, fuera de la vista, y la pantalla se veia vacia. */
+    const int zona = (int)this->height - (int)style->CrashFrame.buttonHeight * 3 - 20;
+    const int arriba = std::max(24, (zona - (int)this->label->getHeight()) / 2);
     this->label->setBoundaries(
         this->x + this->width / 2 - this->label->getWidth() / 2,
-        this->y + (this->height - this->label->getHeight() - this->y - style->CrashFrame.buttonHeight) / 2,
+        this->y + arriba,
         this->label->getWidth(),
         this->label->getHeight());
 

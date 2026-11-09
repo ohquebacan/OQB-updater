@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Herramientas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Upheaval";src:url("/_blob/a55fd87e4e65ff01d4ddfcba28cf4ef4") format("truetype");font-display:block}
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; display: flex; background: {{t.bg}}; color: {{t.text}}; font-family: 'Instrument Sans', system-ui, sans-serif; overflow: hidden">
+
+  <nav aria-label="Secciones" style="width: 250px; flex-shrink: 0; box-sizing: border-box; padding: 28px 18px 22px; background: {{t.panel}}; border-right: 1px solid {{t.line}}; display: flex; flex-direction: column; gap: 6px">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 0 10px 22px">
+      <svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true"><path d="M17 1 25 15H9z" fill="{{t.accent2}}"></path><path d="M9 15 17 29H1zM25 15 33 29H17z" fill="{{t.text}}"></path></svg>
+      <span style="font-family: Upheaval, sans-serif; font-size: 20px; line-height: 1; letter-spacing: 0.5px">OQB UPDATER</span>
+    </div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+      <a href="{{n.href}}" style="display: flex; align-items: center; gap: 14px; height: 52px; padding: 0 14px; border-radius: 12px; text-decoration: none; font-size: 18px; font-weight: 500; color: {{n.color}}; background: {{n.bg}}">
+        <span style="flex: 1">{{n.label}}</span>
+        <sc-if value="{{n.badge}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: {{t.accent2}}; color: {{t.onAccent}}">{{n.badge}}</span></sc-if>
+      </a>
+    </sc-for>
+    <div style="margin-top: auto; padding: 0 14px; font-size: 14px; color: {{t.muted}}; font-family: 'JetBrains Mono', monospace">v3.2 · al día</div>
+  </nav>
+
+  <main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <div style="flex: 1; min-height: 0; box-sizing: border-box; padding: 34px 44px 0; display: flex; flex-direction: column; gap: 20px">
+      <header style="display: flex; flex-direction: column; gap: 8px">
+        <h1 style="margin: 0; font-family: Upheaval, sans-serif; font-weight: 400; font-size: 40px; line-height: 1; letter-spacing: 1px">HERRAMIENTAS</h1>
+        <span style="font-size: 17px; color: {{t.text2}}">Agrupadas por lo que quieres hacer</span>
+      </header>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+        <sc-for list="{{grupos}}" as="g" hint-placeholder-count="4">
+          <section style="background: {{t.card}}; border: 1px solid {{t.line}}; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+            <h2 style="margin: 0 0 6px 6px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: {{g.color}}">{{g.titulo}}</h2>
+            <sc-for list="{{g.items}}" as="i" hint-placeholder-count="3">
+              <div style="display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 4px 10px; border-radius: 10px; background: {{i.bg}}; border: 2px solid {{i.border}}">
+                <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+                  <span style="font-size: 16px; font-weight: 600">{{i.t}}</span>
+                  <span style="font-size: 13px; color: {{t.muted}}">{{i.s}}</span>
+                </span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{i.vColor}}">{{i.v}}</span>
+              </div>
+            </sc-for>
+          </section>
+        </sc-for>
+      </div>
+    </div>
+
+    <footer style="height: 62px; flex-shrink: 0; margin: 0 32px; border-top: 1px solid {{t.line}}; display: flex; align-items: center; justify-content: flex-end; gap: 28px; font-size: 17px; color: {{t.text2}}">
+      <span>Ⓐ Abrir</span><span>Ⓑ Atrás</span><span>＋ Salir</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modo":{"editor":"enum","options":["Oscuro","Claro"],"default":"Oscuro"},"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const oscuro = (this.props.modo ?? 'Oscuro') === 'Oscuro';
+    const t = oscuro
+      ? { bg:'#0B0F0A', panel:'#0F140E', card:'#131A11', chip:'#18201A', line:'#24301F', text:'#EEF2E3', text2:'#C9D1C2', muted:'#93A08C', accent2:'#34D583', onAccent:'#06140C', focus:'#CEF781', sel:'#1B2918', selText:'#CEF781', ok:'#9DEA9A', warn:'#F0C66E', info:'#BBA8FF', blue:'#8EB4E6' }
+      : { bg:'#EEF2E9', panel:'#E3E9DC', card:'#FFFFFF', chip:'#F2F5EE', line:'#CCD5C3', text:'#152013', text2:'#33402F', muted:'#5A6655', accent2:'#14804A', onAccent:'#FFFFFF', focus:'#1F7A3E', sel:'#D2E7CC', selText:'#0F5A2E', ok:'#14663A', warn:'#7A4B00', info:'#4B32A8', blue:'#1F4E85' };
+    const nav = [
+      { label:'Inicio', href:'Main.dc.html', k:'home' },
+      { label:'Packs y firmwares', href:'Packs.dc.html', badge:'1', k:'packs' },
+      { label:'Apps', href:'Apps.dc.html', badge:'3', k:'apps' },
+      { label:'Bacán Shop', href:'Bacan.dc.html', k:'shop' },
+      { label:'Nextendo', href:'Nextendo.dc.html', k:'nextendo' },
+      { label:'Herramientas', href:'Herramientas.dc.html', k:'tools', sel:true }
+    ].map(n => ({ ...n, ['is_' + n.k]: true, bg: n.sel ? t.sel : 'transparent', color: n.sel ? t.selText : t.text2, badge: n.badge || false }));
+    const item = (tt, s, v, vColor, sel) => ({ t: tt, s, v: v || '', vColor: vColor || t.muted, bg: sel ? t.sel : 'transparent', border: sel ? t.focus : 'transparent' });
+    const grupos = [
+      { titulo:'Dejar la SD en orden', color:t.ok, items:[
+        item('Instalación limpia del pack', 'Deja en la SD solo lo del pack, con vista previa', '', '', true),
+        item('Limpiar archivos de Mac', '._, .DS_Store y carpetas de indexado', '0 hoy', t.ok),
+        item('Borrar descargas viejas', 'Zips que la app ya instaló', '180 MB', t.warn)
+      ]},
+      { titulo:'Juegos', color:t.warn, items:[
+        item('Juegos desactualizados', 'Qué juegos tienen una versión más nueva', '4', t.warn),
+        item('Accesos directos en HOME', 'Crear o quitar los de tus apps', '6'),
+        item('Proteger carpetas', 'Lo que el pack nunca debe tocar', 'preserve.txt')
+      ]},
+      { titulo:'Consola y mandos', color:t.blue, items:[
+        item('Colores de Joy-Con y Pro', 'Cambiar el color que muestra la consola', ''),
+        item('Payloads y reinicio', 'Inyectar un payload o volver a hekate', ''),
+        item('Internet y hora', 'Prueba de conexión y hora por internet', '')
+      ]},
+      { titulo:'La app', color:t.info, items:[
+        item('Volver a descargar app', 'Para recoger un arreglo publicado en la 3.2', '3.2'),
+        item('Idioma', 'Antes era una pestaña aparte', 'Español'),
+        item('Diagnóstico', 'Lee los errores de Atmosphère y explica la causa', '')
+      ]}
+    ];
+    return { t, nav, grupos };
+  }
+}
+</script>
+</body>
+</html>

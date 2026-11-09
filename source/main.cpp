@@ -133,7 +133,10 @@ namespace {
             const float respiro = avance < 1.0f ? avance : 0.85f + 0.15f * std::cos((t - duracionEncendido()) * 2.2f);
             nvgBeginPath(vg);
             nvgCircle(vg, cx, cy, 230.0f);
-            nvgFillPaint(vg, nvgRadialGradient(vg, cx, cy, 20.0f, 230.0f, this->a(nvgRGBA(52, 213, 131, (unsigned char)(46 * respiro))), this->a(nvgRGBA(52, 213, 131, 0))));
+            NVGcolor brillo = oqb::acentoBase(true), sinBrillo = brillo;
+            brillo.a = 46.0f / 255.0f * respiro;
+            sinBrillo.a = 0.0f;
+            nvgFillPaint(vg, nvgRadialGradient(vg, cx, cy, 20.0f, 230.0f, this->a(brillo), this->a(sinBrillo)));
             nvgFill(vg);
 
             drawTrifuerzaEncendido(vg, cx, cy, t, 3.4f);
@@ -152,7 +155,7 @@ namespace {
             // Raya esmeralda y la version, discretas.
             nvgBeginPath(vg);
             nvgRect(vg, cx - 40.0f, yTitulo + 78.0f, 80.0f, 4.0f);
-            nvgFillColor(vg, this->a(nvgRGB(52, 213, 131)));
+            nvgFillColor(vg, this->a(oqb::acentoBase(true)));
             nvgFill(vg);
 
             const std::string version = std::string("v") + APP_VERSION;
@@ -177,6 +180,20 @@ int main(int argc, char* argv[])
     if (!brls::Application::init(APP_TITLE, oqb::style(), oqb::themeVariants())) {
         brls::Logger::error("Unable to init Borealis application");
         return EXIT_FAILURE;
+    }
+
+    /* Rediseno: Instrument Sans (la del mockup) en toda la app. Lo que no tiene
+       (los simbolos de los botones, chino, coreano) sale de las fuentes de la
+       consola, que quedan de respaldo. */
+    {
+        brls::FontStash* fuentes = brls::Application::getFontStash();
+        NVGcontext* vg = brls::Application::getNVGContext();
+        const int instrument = nvgCreateFont(vg, "instrument", "romfs:/fonts/InstrumentSans-Medium.ttf");
+        if (instrument >= 0) {
+            for (int f : {fuentes->regular, fuentes->sharedSymbols, fuentes->standard, fuentes->korean, fuentes->schinese, fuentes->extSchinese, fuentes->tchinese})
+                if (f > 0) nvgAddFallbackFontId(vg, instrument, f);
+            fuentes->regular = instrument;
+        }
     }
 
     /* La consola reporta el idioma con su variante regional: es-419 para

@@ -1,4 +1,7 @@
 #include "tools_tab.hpp"
+#include "pagina_oqb.hpp"
+
+#include <algorithm>
 
 #include <dirent.h>
 #include <sys/stat.h>
@@ -22,6 +25,7 @@
 #include "limpieza_mac.hpp"
 #include "net_page.hpp"
 #include "ntp.hpp"
+#include "oqb_theme.hpp"
 #include "payload_page.hpp"
 #include "progress_event.hpp"
 #include "protection.hpp"
@@ -117,11 +121,6 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     protectionCheck->setHeight(LISTITEM_HEIGHT);
 
-    brls::ListItem* diagnostics = new brls::ListItem("menus/tools/diagnostics"_i18n);
-    diagnostics->getClickEvent()->subscribe([](brls::View* view) {
-        brls::PopupFrame::open("menus/tools/diagnostics"_i18n, new DiagnosticsPage(), "menus/tools/diagnostics_desc"_i18n, "");
-    });
-    diagnostics->setHeight(LISTITEM_HEIGHT);
 
     brls::ListItem* cheats = new brls::ListItem("menus/tools/cheats"_i18n);
     cheats->getClickEvent()->subscribe([](brls::View* view) {
@@ -153,138 +152,12 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     rebootPayload->setHeight(LISTITEM_HEIGHT);
 
-    /* La hora se pone sola al abrir la app; esta entrada es para forzarla y,
-       sobre todo, para ver que paso. La automatica es muda a proposito: no se
-       interrumpe a nadie al arrancar para contarle que el reloj ya estaba bien. */
-    brls::ListItem* syncTime = new brls::ListItem("menus/time/sync"_i18n);
-    syncTime->getClickEvent()->subscribe([](brls::View* view) {
-        auto message = std::make_shared<std::string>();
-
-        brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-        stagedFrame->setTitle("menus/time/sync"_i18n);
-        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/time/syncing"_i18n, [message]() {
-            auto& progress = ProgressEvent::instance();
-            progress.reset();
-
-            const ntp::SyncResult result = ntp::sync();
-
-            // El dialogo no se puede abrir desde este hilo, asi que el texto se
-            // deja aqui y lo muestra la pagina siguiente.
-            if (!result.ok) {
-                *message = fmt::format("menus/time/failed"_i18n, result.detail);
-            }
-            else {
-                if (result.alreadyInSync) {
-                    *message = fmt::format("menus/time/already"_i18n, result.detail);
-                }
-                else {
-                    *message = fmt::format("menus/time/done"_i18n, result.detail,
-                                           result.drift > 0 ? result.drift : -result.drift,
-                                           result.drift > 0 ? "menus/time/behind"_i18n : "menus/time/ahead"_i18n);
-                }
-
-                /* La parte que faltaba explicar. La consola solo muestra la
-                   hora nueva si tiene puesta la sincronizacion por internet:
-                   sin ella queda guardada y no se ve, y eso parecia que la
-                   herramienta no hubiera hecho nada. */
-                if (!result.userClockWritten && !result.autoCorrectionEnabled) {
-                    *message += "\n\n" + "menus/time/needs_auto"_i18n;
-                }
-            }
-
-            progress.setStep(progress.getMax());
-        }));
-        stagedFrame->addStage(new ConfirmPage_Deferred(stagedFrame, message));
-        brls::Application::pushView(stagedFrame);
-    });
-    syncTime->setHeight(LISTITEM_HEIGHT);
-
-    /* El interruptor de la consola, desde aqui. La app escribe el reloj de red
-       pero no el de usuario, asi que la hora solo se ve con esta opcion puesta:
-       tenerla a mano es la diferencia entre que la sincronizacion sirva o no.
-
-       Nada de esto usa showDialogBoxBlocking: hace busy-wait y esto corre en el
-       hilo de la UI, que se trabaria a si mismo. Los dialogos van encadenados
-       por el callback de close(), como en la pagina de forwarders. */
-    bool autoCorrection = false;
-    const bool autoCorrectionRead =
-        R_SUCCEEDED(setsysIsUserSystemClockAutomaticCorrectionEnabled(&autoCorrection));
-
-    brls::ListItem* clockSync = new brls::ListItem("menus/time/system_sync"_i18n);
-    clockSync->setHeight(LISTITEM_HEIGHT);
-    clockSync->setValue(!autoCorrectionRead ? "menus/about/status_unknown"_i18n
-                        : autoCorrection    ? "menus/time/system_sync_on"_i18n
-                                            : "menus/time/system_sync_off"_i18n);
-    clockSync->getClickEvent()->subscribe([autoCorrection, autoCorrectionRead](brls::View* view) {
-        if (!autoCorrectionRead) {
-            util::showDialogBoxInfo("menus/time/system_sync_unreadable"_i18n);
-            return;
-        }
-
-        const bool turningOn = !autoCorrection;
-
-        // Escribe, vuelve a leer y cuenta lo que quedo de verdad. Que la
-        // funcion exista no garantiza que el sistema acepte el cambio, y dar
-        // por bueno lo que no se comprobo es el error que ya cometimos una vez
-        // con el reloj de usuario.
-        auto applyAndReport = [turningOn]() {
-            setsysSetUserSystemClockAutomaticCorrectionEnabled(turningOn);
-
-            bool now = false;
-            if (R_FAILED(setsysIsUserSystemClockAutomaticCorrectionEnabled(&now))) {
-                util::showDialogBoxInfo("menus/time/system_sync_unreadable"_i18n);
-                return;
-            }
-
-            if (now == turningOn) {
-                util::showDialogBoxInfo(turningOn ? "menus/time/system_sync_now_on"_i18n
-                                                  : "menus/time/system_sync_now_off"_i18n);
-            }
-            else {
-                util::showDialogBoxInfo("menus/time/system_sync_refused"_i18n);
-            }
-        };
-
-        /* El seguro. Activar esto hace que la consola intente contactar el NTP
-           de Nintendo cada tanto, y lo unico que impide que esos intentos
-           salgan es el bloqueo DNS. Asi que antes de activarlo se comprueba que
-           ese bloqueo este puesto, en vez de darlo por hecho. Para apagarlo no
-           hace falta: apagarlo solo quita intentos. */
-        if (turningOn && !protection::dnsBlockingOk(protection::runOnConsole())) {
-            brls::Dialog* warn = new brls::Dialog("menus/time/system_sync_unprotected"_i18n);
-            warn->addButton("menus/time/system_sync_anyway"_i18n, [warn, applyAndReport](brls::View* v) {
-                warn->close(applyAndReport);
-            });
-            warn->addButton("menus/common/no"_i18n, [warn](brls::View* v) { warn->close(); });
-            warn->setCancelable(false);
-            warn->open();
-            return;
-        }
-
-        brls::Dialog* confirm = new brls::Dialog(turningOn ? "menus/time/system_sync_ask_on"_i18n
-                                                           : "menus/time/system_sync_ask_off"_i18n);
-        confirm->addButton("menus/common/yes"_i18n, [confirm, applyAndReport](brls::View* v) {
-            confirm->close(applyAndReport);
-        });
-        confirm->addButton("menus/common/no"_i18n, [confirm](brls::View* v) { confirm->close(); });
-        confirm->setCancelable(false);
-        confirm->open();
-    });
-
     brls::ListItem* netSettings = new brls::ListItem("menus/tools/internet_settings"_i18n);
     netSettings->getClickEvent()->subscribe([](brls::View* view) {
         brls::PopupFrame::open("menus/tools/internet_settings"_i18n, new NetPage(), "", "");
     });
     netSettings->setHeight(LISTITEM_HEIGHT);
 
-    brls::ListItem* browser = new brls::ListItem("menus/tools/browser"_i18n);
-    browser->getClickEvent()->subscribe([](brls::View* view) {
-        std::string url;
-        if (brls::Swkbd::openForText([&url](std::string text) { url = text; }, "cheatslips.com e-mail", "", 256, "https://duckduckgo.com", 0, "Submit", "https://website.tld")) {
-            util::openWebBrowser(url);
-        }
-    });
-    browser->setHeight(LISTITEM_HEIGHT);
 
     brls::ListItem* move = new brls::ListItem("menus/tools/batch_copy"_i18n);
     move->getClickEvent()->subscribe([](brls::View* view) {
@@ -308,9 +181,10 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         long long liberado = 0;
         std::vector<std::string> borrados;
 
+        // CHEATS_VERSION no: es lo que dice que base de trucos hay en la SD (Trucos
+        // pediria bajarla otra vez aunque los trucos sigan ahi).
         for (const char* archivo : {AMS_FILENAME, APP_FILENAME, FIRMWARE_FILENAME,
-                                    CHEATS_FILENAME, BOOTLOADER_FILENAME, CHEATS_VERSION,
-                                    CUSTOM_FILENAME}) {
+                                    CHEATS_FILENAME, BOOTLOADER_FILENAME, CUSTOM_FILENAME}) {
             const long long tam = tamanoArchivo(archivo);
             if (tam < 0)
                 continue;
@@ -448,11 +322,29 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     manageForwarders->setHeight(LISTITEM_HEIGHT);
 
-    brls::ListItem* hideTabs = new brls::ListItem("menus/tools/hide_tabs"_i18n);
-    hideTabs->getClickEvent()->subscribe([](brls::View* view) {
-        brls::PopupFrame::open("menus/tools/hide_tabs"_i18n, new HideTabsPage(), "", "");
+    /* Tema de colores (reemplaza a "Pestanas ocultas", que con el rediseno ya no
+       servia). Se aplica al instante y queda guardado: la pantalla de carga del
+       proximo arranque ya sale con su color. */
+    brls::ListItem* tema = new brls::ListItem("menus/tools/tema"_i18n, "", "menus/tools/tema_sub"_i18n);
+    tema->setValue(oqb::nombreTema(oqb::temaActual()), false, false);
+    tema->setHeight(LISTITEM_HEIGHT);
+    tema->getClickEvent()->subscribe([tema](brls::View* view) {
+        brls::List* l = new brls::List();
+        for (int i = 0; i < oqb::cantidadTemas(); ++i) {
+            brls::ListItem* opcion = new brls::ListItem(oqb::nombreTema(i));
+            if (i == oqb::temaActual())
+                opcion->setValue("menus/tools/tema_actual"_i18n, false, false);
+            opcion->getClickEvent()->subscribe([tema, i](brls::View* v) {
+                oqb::elegirTema(i);
+                tema->setValue(oqb::nombreTema(i), false, false);
+                brls::Application::popView();
+            });
+            l->addView(opcion);
+        }
+        brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+        frame->setContentView(l);
+        brls::PopupFrame::open("menus/tools/tema"_i18n, frame, "menus/tools/tema_sub"_i18n, "");
     });
-    hideTabs->setHeight(LISTITEM_HEIGHT);
 
     /* Siempre visible. Si hay version nueva ofrece actualizar; si ya esta al
        dia permite volver a descargar, que sirve para recoger un rebuild
@@ -488,7 +380,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         if (entradas.empty())
             return;
 
-        brls::Header* cabecera = new brls::Header(titulo);
+        brls::Header* cabecera = new HeaderOqb(titulo);
         cabecera->setHeight(34);
         this->addView(cabecera);
 
@@ -504,22 +396,27 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     std::vector<brls::View*> app, juegos, consola, red, archivos, inicio;
 
     app.push_back(updateApp);  // siempre: sin actualizacion ofrece volver a descargar
+    /* El rediseno de la 4.0 es grande: quien prefiera el diseno anterior puede
+       volver a la 3.2 (su release sigue publicado). "Actualizar" siempre lleva
+       a la ultima. */
+    {
+        brls::ListItem* anterior = new brls::ListItem("menus/app_update/anterior"_i18n, "", "menus/app_update/anterior_sub"_i18n);
+        anterior->setHeight(LISTITEM_HEIGHT);
+        anterior->getClickEvent()->subscribe([](brls::View* view) { appUpdate::pushFlowVersion("3.2"); });
+        app.push_back(anterior);
+    }
     siVisible(app, "language", language);
-    app.push_back(hideTabs);
+    app.push_back(tema);
 
     siVisible(juegos, "cheats", cheats);
     siVisible(juegos, "outdatedtitles", outdatedTitles);
 
     siVisible(consola, "protection", protectionCheck);
-    siVisible(consola, "diagnostics", diagnostics);
     if (erista) siVisible(consola, "rebootpayload", rebootPayload);
     siVisible(consola, "jccolor", JCcolor);
     siVisible(consola, "pccolor", PCcolor);
 
     siVisible(red, "netsettings", netSettings);
-    siVisible(red, "browser", browser);
-    siVisible(red, "synctime", syncTime);
-    siVisible(red, "synctime", clockSync);
 
     siVisible(archivos, "move", move);
     siVisible(archivos, "cleanup", cleanUp);
@@ -529,10 +426,38 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     siVisible(inicio, "createforwarder", createForwarder);
     siVisible(inicio, "manageforwarders", manageForwarders);
 
+    /* Rediseno: primero lo que mas se usa (dejar la SD en orden), la app al
+       final. Cada limpieza dice cuanto hay para liberar. */
+    {
+        long long total = 0;
+        for (const char* archivo : {AMS_FILENAME, APP_FILENAME, FIRMWARE_FILENAME, CHEATS_FILENAME, BOOTLOADER_FILENAME, CUSTOM_FILENAME}) {
+            const long long t = tamanoArchivo(archivo);
+            if (t > 0) total += t;
+        }
+        if (total > (1 << 20)) cleanUp->setValue(fmt::format("{:.0f} MB", total / 1048576.0), false, false);
+    }
+    /* Fuera lo que ya esta en otra seccion: la instalacion limpia (en cada pack),
+       el menu de trucos (Bacán Shop e Inicio) y verificar protecciones (Inicio >
+       Estado). */
+    auto quitar = [](std::vector<brls::View*>& v, brls::View* x) { v.erase(std::remove(v.begin(), v.end(), x), v.end()); };
+    quitar(archivos, limpia);
+    quitar(juegos, cheats);
+    quitar(consola, protectionCheck);
+    std::vector<brls::View*> sdOrden;
+    for (brls::View* v : {static_cast<brls::View*>(cleanUp), static_cast<brls::View*>(cleanMac)})
+        if (std::find(archivos.begin(), archivos.end(), v) != archivos.end()) sdOrden.push_back(v);
+    std::vector<brls::View*> otrosArchivos;
+    for (brls::View* v : archivos)
+        if (std::find(sdOrden.begin(), sdOrden.end(), v) == sdOrden.end()) otrosArchivos.push_back(v);
+
+    /* Cuatro cajas, juntando lo parecido: la SD y los archivos; juegos y menu
+       HOME; consola, mandos e internet; y la app. La hora va en Nextendo, el
+       diagnostico en Inicio > Estado y el navegador se quito. */
+    sdOrden.insert(sdOrden.end(), otrosArchivos.begin(), otrosArchivos.end());
+    juegos.insert(juegos.end(), inicio.begin(), inicio.end());
+    consola.insert(consola.end(), red.begin(), red.end());
+    grupo("menus/inicio/grupo_sd"_i18n, sdOrden);
+    grupo("menus/inicio/grupo_juegos_home"_i18n, juegos);
+    grupo("menus/inicio/grupo_consola_red"_i18n, consola);
     grupo("menus/tools/grupo_app"_i18n, app);
-    grupo("menus/tools/grupo_juegos"_i18n, juegos);
-    grupo("menus/tools/grupo_consola"_i18n, consola);
-    grupo("menus/tools/grupo_red"_i18n, red);
-    grupo("menus/tools/grupo_archivos"_i18n, archivos);
-    grupo("menus/tools/grupo_inicio"_i18n, inicio);
 }

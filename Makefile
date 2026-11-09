@@ -22,7 +22,7 @@ DATA		:=	data
 INCLUDES	:=	include include/vendor /lib/borealis/library/include/borealis/extern/nlohmann
 APP_TITLE	:=	All in One OQB Updater
 APP_AUTHOR	:=	OHQUEBACAN
-APP_VERSION :=	3.2
+APP_VERSION :=	4.0
 TARGET		:=	$(notdir $(CURDIR))
 
 ROMFS				:=	resources

@@ -11,6 +11,9 @@
 #include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
+#include "pagina_oqb.hpp"
+#include "instalacion_limpia.hpp"
+#include "list_download_tab.hpp"
 #include "progress_event.hpp"
 #include "pack_list_item.hpp"
 #include "pack_version.hpp"
@@ -92,7 +95,7 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
             }
 
             if (!grupo.empty() && grupo != grupoActual) {
-                this->addView(new brls::Header(grupo));
+                this->addView(new HeaderOqb(grupo));
                 grupoActual = grupo;
             }
 
@@ -145,20 +148,43 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
                 }
             }
 
-            listItem->getClickEvent()->subscribe([this, text, text_hekate, url, hekate_url, hekate, pack, ams, packKey, packDate](brls::View* view) {
+            auto instalar = [this, text, text_hekate, url, hekate_url, hekate, pack, ams, packKey, packDate]() {
                 if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
                     util::showDialogBoxInfo("menus/errors/mariko_payload_missing"_i18n);
                 }
                 else {
                     CreateStagedFrames(text, url, erista, ams, hekate && !pack, text_hekate, hekate_url, packKey, packDate);
                 }
-            });
+            };
+            listItem->getClickEvent()->subscribe([instalar](brls::View* view) { instalar(); });
+            if (!packKey.empty())
+                this->porClave[packKey] = instalar;
             this->RegisterListItemAction(listItem);
+            /* X: la misma instalacion pero dejando la SD solo con lo del pack
+               (Herramientas > Instalacion limpia, con vista previa). */
+            if (pack || !packKey.empty()) {
+                const nlohmann::ordered_json links = this->nxlinks;
+                const bool eristaPack = this->erista;
+                const std::string nombrePack = link.first;
+                listItem->registerAction("menus/inicio/limpia_corto"_i18n, brls::Key::X, [links, eristaPack, nombrePack, url] {
+                    instalacionLimpia::abrirCon(links, eristaPack, nombrePack, url);
+                    return true;
+                });
+            }
             this->addView(listItem);
         }
         return true;
     }
     return false;
+}
+
+bool AmsTab::instalarPorClave(const std::string& clave)
+{
+    const auto it = this->porClave.find(clave);
+    if (it == this->porClave.end())
+        return false;
+    it->second();
+    return true;
 }
 
 void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams, bool hekate, const std::string& text_hekate, const std::string& hekate_url, const std::string& packKey, const std::string& packDate)
@@ -167,13 +193,20 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
     stagedFrame->setTitle(this->type == contentType::ams_cfw ? "menus/ams_update/getting_ams"_i18n : "menus/ams_update/custom_download"_i18n);
     stagedFrame->addStage(
         new ConfirmPage(stagedFrame, text));
+    /* Con un tema o menu alternativo activo: conservarlo o borrarlo. Antes siempre
+       se borraba (la limpieza previa vacia atmosphere/contents), y quien no iba a
+       cambiar de firmware tenia que volver a ponerlo cada vez. */
+    auto conservarTema = std::make_shared<bool>(false);
+    if (this->type == contentType::ams_cfw && util::hayTemaActivo())
+        stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/ams_update/conservar_tema"_i18n, conservarTema));
     stagedFrame->addStage(
         new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [&, url]() {
             deep_clean::logPaso("=== inicio instalacion pack");
             util::downloadArchive(url, this->type);
         }));
     stagedFrame->addStage(
-        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, packKey, packDate]() {
+        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, packKey, packDate, conservarTema]() {
+            util::setConservarTema(*conservarTema);
             util::extractArchive(this->type);
             /* Se anota la fecha que estaba publicada al empezar, no la de hoy:
                es la del pack que acaba de quedar en la SD. Despues de extraer,
@@ -196,8 +229,9 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
     brls::Application::pushView(stagedFrame);
 }
 
-AmsTab_Regular::AmsTab_Regular(const nlohmann::ordered_json& nxlinks, const bool erista) : AmsTab(nxlinks, erista)
+AmsTab_Regular::AmsTab_Regular(const nlohmann::ordered_json& nxlinks, const bool erista, bool conFirmwares) : AmsTab(nxlinks, erista)
 {
+    this->conFirmwares = conFirmwares;
     this->CreateLists();
 }
 
@@ -220,8 +254,33 @@ void AmsTab_Regular::CreateLists()
     this->type = contentType::ams_cfw;
     auto cfws = util::getValueFromKey(this->nxlinks, "cfws");
 
-    this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/main/ams_text"_i18n + (CurrentCfw::running_cfw == CFW::ams ? "\n" + "menus/ams_update/current_ams"_i18n + CurrentCfw::getAmsInfo() : "") + (erista ? "\n" + "menus/ams_update/erista_rev"_i18n : "\n" + "menus/ams_update/mariko_rev"_i18n), true));
+    /* Rediseno: una linea con lo que hay en la consola, en vez del parrafo que
+       explicaba la diferencia con los firmwares (ahora estan al final de esta
+       misma seccion). */
+    {
+        const std::string info = CurrentCfw::running_cfw == CFW::ams ? CurrentCfw::getAmsInfo() : "";
+        const auto barra = info.find('|');
+        const std::string ams = barra == std::string::npos ? info : info.substr(0, barra);
+        const std::string nand = barra == std::string::npos ? "" : (info.substr(barra + 1) == "E" ? " · emuNAND" : " · sysNAND");
+        this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION,
+                                      fmt::format("menus/inicio/packs_resumen"_i18n, ams.empty() ? "?" : ams, nand, erista ? "Erista" : "Mariko"), true));
+    }
     CreateDownloadItems(util::getValueFromKey(cfws, "Atmosphere"), false);
+
+    /* Firmwares: antes una pestana aparte; ahora una entrada al final de Packs,
+       que es donde se piensa en el sistema de la consola. */
+    if (this->conFirmwares) {
+        this->addView(new HeaderOqb("menus/inicio/firmwares_titulo"_i18n));
+        brls::ListItem* firmwares = new brls::ListItem("menus/main/download_firmware"_i18n, "", "menus/inicio/firmwares_sub"_i18n);
+        const nlohmann::ordered_json links = this->nxlinks;
+        firmwares->getClickEvent()->subscribe([links](brls::View* view) {
+            brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+            frame->setTitle("menus/main/download_firmware"_i18n);
+            frame->setContentView(new ListDownloadTab(contentType::fw, links));
+            brls::Application::pushView(frame);
+        });
+        this->addView(firmwares);
+    }
 }
 
 std::string AmsTab_Regular::GetRepoName(const std::string& repo)

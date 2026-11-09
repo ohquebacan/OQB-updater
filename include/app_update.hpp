@@ -21,6 +21,10 @@ namespace appUpdate {
     // actual, que sirve para recoger un rebuild publicado bajo el mismo tag.
     void pushFlow(const std::string& targetTag, bool hasUpdate);
 
+    /* Instala una version concreta publicada (la 3.2, con el diseno anterior),
+       desde su release y no desde "latest". */
+    void pushFlowVersion(const std::string& tag);
+
     // El aviso de que hay version nueva, para mostrar al abrir la app. No hace
     // nada si no hay actualizacion, y solo se muestra una vez por arranque.
     void showNoticeIfAvailable(const std::string& tag);

@@ -28,6 +28,7 @@ private:
     std::string filter;
     // Abierta desde Trucos: al bajar la base se vuelve ahi, no al inicio.
     bool volverATrucos = false;
+    bool soloNuevas = false;
     // Las filas de apps con su URL: al terminar una instalacion se vuelve a
     // marcar cada una ("Instalada" / "Version nueva") sin rearmar la lista.
     std::vector<std::pair<brls::ListItem*, std::string>> filasApps;
@@ -70,5 +71,6 @@ public:
         return this;
     }
 
-    ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks = nlohmann::ordered_json::object(), const std::string& jsonKey = "", const std::string& filter = "");
+    // soloNuevas: solo las apps con version nueva (Apps > Con actualizacion).
+    ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks = nlohmann::ordered_json::object(), const std::string& jsonKey = "", const std::string& filter = "", bool soloNuevas = false);
 };
