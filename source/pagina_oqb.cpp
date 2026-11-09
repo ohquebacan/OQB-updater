@@ -496,7 +496,8 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                 float h = 22.0f + lineas(vg, e.titulo, anchoTitulo(e, twFila), 2) * 26.0f;
                 if (!e.item->getSubLabel().empty() || !e.item->getValue().empty()) h += 34.0f;
                 nvgFontSize(vg, 15.0f);
-                if (!e.desc.empty()) h += lineas(vg, e.desc, twFila - 44.0f, 3) * 20.0f + 8.0f;
+                // A todo lo ancho la descripcion va en la misma linea del titulo.
+                if (!e.desc.empty() && !(hasta - base == 1 && ancha(orden[base]))) h += lineas(vg, e.desc, twFila - 44.0f, 3) * 20.0f + 8.0f;
                 // La tarjeta a todo lo ancho (Firmware) va mas compacta: entra entera.
                 if (botones) h += hasta - base == 1 && ancha(orden[base]) ? 56.0f : 72.0f;
                 alto = std::max(alto, h + (hasta - base == 1 && ancha(orden[base]) ? 6.0f : 16.0f));
@@ -592,7 +593,20 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                     }
                     ty += 34.0f;
                 }
-                if (!e.desc.empty()) {
+                if (!e.desc.empty() && hasta - base == 1 && ancha(orden[base])) {
+                    /* Tarjeta a todo lo ancho (Firmware): la descripcion a la derecha
+                       del titulo, mas chica y tenue, para que el boton suba y la
+                       tarjeta entre entera en la pantalla. */
+                    nvgFontSize(vg, 20.0f);
+                    const float finTitulo = cx + 22 + nvgTextBounds(vg, 0, 0, e.titulo.c_str(), nullptr, nullptr) + 16.0f;
+                    nvgFontSize(vg, 15.0f);
+                    nvgFillColor(vg, tenue);
+                    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+                    nvgBeginPath(vg);
+                    nvgText(vg, finTitulo, cy + 20.0f + 19.0f, cortar(vg, e.desc, cx + twFila - 22 - finTitulo).c_str(), nullptr);
+                    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+                }
+                else if (!e.desc.empty()) {
                     nvgFontSize(vg, 15.0f);
                     nvgTextLineHeight(vg, 1.3f);
                     nvgFillColor(vg, tenue);
