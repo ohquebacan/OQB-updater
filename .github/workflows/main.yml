@@ -10,7 +10,7 @@ jobs:
     #container: hamletdufromage/devkita64_devkitarm
     container: devkitpro/devkita64
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
 
     - name: update repo
       run: |
@@ -33,7 +33,7 @@ jobs:
     # con el .elf de ESE build exacto. Sin guardarlo, un informe de crash de una
     # version ya publicada no se puede leer: las direcciones no corresponden a
     # ningun binario que se conserve.
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v4
       with:
         name: OQB-updater
         path: |
