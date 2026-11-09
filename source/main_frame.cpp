@@ -464,9 +464,11 @@ void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         nvgText(vg, lx, cy2, "UPDATER", nullptr);
         nvgTextLetterSpacing(vg, 0.0f);
 
-        // La Trifuerza, del alto de la letra (como antes), junto a "OQB".
-        const float th = 37.0f, esc = th / 31.0f;
-        const float tx = finOqb + 12.0f, ty = cy1 - th / 2.0f - 2.0f;
+        /* La Trifuerza, del alto de las mayusculas de "OQB": en Bebas la H mide 0,70
+           del tamano y, centrada la linea, la base queda 0,25 bajo el centro. La
+           punta queda a la altura del borde de arriba de las letras. */
+        const float th = tam * 0.70f, esc = th / 31.0f;
+        const float tx = finOqb + 12.0f, ty = cy1 + tam * 0.25f - th;
         const float tris[3][6] = {{18, 0, 27, 15.5f, 9, 15.5f}, {27, 15.5f, 36, 31, 18, 31}, {9, 15.5f, 18, 31, 0, 31}};
         nvgFillColor(vg, this->a(oqb::acentoFuerte()));
         for (const auto& t : tris) {
