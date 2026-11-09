@@ -494,7 +494,8 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                 if (!sec.titulo.empty() && sec.entradas.front() == orden[k]) conTitulo = true;
                 nvgFontSize(vg, 20.0f);
                 float h = 22.0f + lineas(vg, e.titulo, anchoTitulo(e, twFila), 2) * 26.0f;
-                if (!e.item->getSubLabel().empty() || !e.item->getValue().empty()) h += 34.0f;
+                const bool unaLinea = hasta - base == 1 && ancha(orden[base]);
+                if ((!e.item->getSubLabel().empty() && !unaLinea) || !e.item->getValue().empty()) h += 34.0f;
                 nvgFontSize(vg, 15.0f);
                 // A todo lo ancho la descripcion va en la misma linea del titulo.
                 if (!e.desc.empty() && !(hasta - base == 1 && ancha(orden[base]))) h += lineas(vg, e.desc, twFila - 44.0f, 3) * 20.0f + 8.0f;
@@ -579,7 +580,11 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                 }
                 ty += lineas(vg, e.titulo, anchoTitulo(e, twFila), 2) * 26.0f + 4.0f;
 
-                const std::string sub = e.item->getSubLabel(), valor = e.item->getValue();
+                /* Tarjeta a todo lo ancho (Firmware): el subtitulo o la descripcion
+                   van a la derecha del titulo, en la misma linea. */
+                const bool unaLinea = hasta - base == 1 && ancha(orden[base]);
+                const std::string lateral = unaLinea ? (!e.desc.empty() ? e.desc : e.item->getSubLabel()) : "";
+                const std::string sub = unaLinea ? "" : e.item->getSubLabel(), valor = e.item->getValue();
                 if (!sub.empty() || !valor.empty()) {
                     float sx = cx + 22;
                     if (!valor.empty()) sx += pildora(sx, ty + 14.0f, cortar(vg, valor, twFila * 0.6f), tonoDe(e.item), 14.0f) + 10.0f;
@@ -593,7 +598,7 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                     }
                     ty += 34.0f;
                 }
-                if (!e.desc.empty() && hasta - base == 1 && ancha(orden[base])) {
+                if (!lateral.empty()) {
                     /* Tarjeta a todo lo ancho (Firmware): la descripcion a la derecha
                        del titulo, mas chica y tenue, para que el boton suba y la
                        tarjeta entre entera en la pantalla. */
@@ -603,10 +608,10 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                     nvgFillColor(vg, tenue);
                     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
                     nvgBeginPath(vg);
-                    nvgText(vg, finTitulo, cy + 20.0f + 19.0f, cortar(vg, e.desc, cx + twFila - 22 - finTitulo).c_str(), nullptr);
+                    nvgText(vg, finTitulo, cy + 20.0f + 19.0f, cortar(vg, lateral, cx + twFila - 22 - finTitulo).c_str(), nullptr);
                     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
                 }
-                else if (!e.desc.empty()) {
+                else if (!e.desc.empty() && !unaLinea) {
                     nvgFontSize(vg, 15.0f);
                     nvgTextLineHeight(vg, 1.3f);
                     nvgFillColor(vg, tenue);
