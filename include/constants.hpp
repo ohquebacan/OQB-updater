@@ -73,21 +73,25 @@ constexpr const char ICONOS_PATH[] = "/config/aio-switch-updater/iconos/";
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
 constexpr const char CUSTOM_PACKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/custom_packs.json";
 
+/* Base de trucos: sthetix/nx-cheats-db (9-nov-2026). Mismo formato y nombres que
+   HamletDuFromage/switch-cheats-db, pero con todo lo de esa base y mas del doble de
+   builds (GBAtemp, CheatSlips y otras fuentes), y se publica casi a diario. La de
+   Hamlet se quedo en 2026-09-08 (Mario Wonder solo tenia la 1.0.0). Rama main. */
 // _complete: la base 2026-09-08 publico contents.zip y titles.zip vacios (116 B, solo la
 // carpeta); los trucos estaban en los _complete, que traen tambien los graficos/60 fps.
-constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles_complete.zip";
-constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents_complete.zip";
-constexpr const char GFX_CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles_60fps-res-gfx.zip";
-constexpr const char GFX_CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents_60fps-res-gfx.zip";
-constexpr const char CHEATS_URL_VERSION[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/VERSION";
+constexpr const char CHEATS_URL_TITLES[] = "https://github.com/sthetix/nx-cheats-db/releases/latest/download/titles_complete.zip";
+constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/sthetix/nx-cheats-db/releases/latest/download/contents_complete.zip";
+constexpr const char GFX_CHEATS_URL_TITLES[] = "https://github.com/sthetix/nx-cheats-db/releases/latest/download/titles_60fps-res-gfx.zip";
+constexpr const char GFX_CHEATS_URL_CONTENTS[] = "https://github.com/sthetix/nx-cheats-db/releases/latest/download/contents_60fps-res-gfx.zip";
+constexpr const char CHEATS_URL_VERSION[] = "https://github.com/sthetix/nx-cheats-db/releases/latest/download/VERSION";
 // Si los archivos de GitHub fallan (8-nov-2026: 504 tras 11 s), el tag del release, que es la misma fecha.
-constexpr const char CHEATS_URL_RELEASE[] = "https://api.github.com/repos/HamletDuFromage/switch-cheats-db/releases/latest";
-constexpr const char LOOKUP_TABLE_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/switch-cheats-db/master/versions.json";
-constexpr const char LOOKUP_TABLE_CBOR[] = "https://github.com/HamletDuFromage/switch-cheats-db/raw/master/versions.cbor";
-constexpr const char VERSIONS_DIRECTORY[] = "https://raw.githubusercontent.com/HamletDuFromage/switch-cheats-db/master/versions/";
-constexpr const char CHEATS_DIRECTORY[] = "https://raw.githubusercontent.com/HamletDuFromage/switch-cheats-db/master/cheats/";
-constexpr const char CHEATS_DIRECTORY_GBATEMP[] = "https://raw.githubusercontent.com/HamletDuFromage/switch-cheats-db/master/cheats_gbatemp/";
-constexpr const char CHEATS_DIRECTORY_GFX[] = "https://raw.githubusercontent.com/HamletDuFromage/switch-cheats-db/master/cheats_gfx/";
+constexpr const char CHEATS_URL_RELEASE[] = "https://api.github.com/repos/sthetix/nx-cheats-db/releases/latest";
+constexpr const char LOOKUP_TABLE_URL[] = "https://raw.githubusercontent.com/sthetix/nx-cheats-db/main/versions.json";
+constexpr const char LOOKUP_TABLE_CBOR[] = "https://github.com/sthetix/nx-cheats-db/raw/main/versions.cbor";
+constexpr const char VERSIONS_DIRECTORY[] = "https://raw.githubusercontent.com/sthetix/nx-cheats-db/main/versions/";
+constexpr const char CHEATS_DIRECTORY[] = "https://raw.githubusercontent.com/sthetix/nx-cheats-db/main/cheats/";
+constexpr const char CHEATS_DIRECTORY_GBATEMP[] = "https://raw.githubusercontent.com/sthetix/nx-cheats-db/main/cheats_gbatemp/";
+constexpr const char CHEATS_DIRECTORY_GFX[] = "https://raw.githubusercontent.com/sthetix/nx-cheats-db/main/cheats_gfx/";
 constexpr const char CHEATSLIPS_CHEATS_URL[] = "https://www.cheatslips.com/api/v1/cheats/";
 constexpr const char CHEATSLIPS_TOKEN_URL[] = "https://www.cheatslips.com/api/v1/token";
 constexpr const char TOKEN_PATH[] = "/config/aio-switch-updater/token.json";
