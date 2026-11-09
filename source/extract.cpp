@@ -493,32 +493,30 @@ namespace extract {
 
         int offset = computeOffset(cfw);
 
+        /* Los juegos instalados, por los 13 primeros digitos del Title ID (asi
+           se emparejaban antes: cubre las actualizaciones y DLC del juego). */
+        std::set<std::string> instalados;
+        for (const auto& t : titles) instalados.insert(util::upperCase(t.substr(0, 13)));
+
+        /* El nombre de cada entrada sale del indice del zip, que esta en memoria;
+           solo se abre (leer su cabecera en la SD) la que se va a extraer. Antes
+           se abrian las ~17 000 entradas de la base para extraer unos cientos, y
+           eso era casi todo el tiempo de la extraccion. */
         for (uLong i = 0; i < gi.number_entry; ++i) {
             char szFilename[0x301] = "";
-            unzOpenCurrentFile(zfile);
             unzGetCurrentFileInfo(zfile, NULL, szFilename, sizeof(szFilename), NULL, 0, NULL, 0);
-            std::string filename = szFilename;
+            const std::string filename = szFilename;
 
-            if (ProgressEvent::instance().getInterupt()) {
+            if (ProgressEvent::instance().getInterupt()) break;
+
+            if ((int)filename.size() > offset + 16 + 7 && caselessCompare(filename.substr(offset + 16, 7), "/cheats") &&
+                (extractAll || instalados.count(util::upperCase(filename.substr(offset, 13))))) {
+                unzOpenCurrentFile(zfile);
+                extractEntry(filename, zfile);
                 unzCloseCurrentFile(zfile);
-                break;
             }
 
-            if ((int)filename.size() > offset + 16 + 7 && caselessCompare(filename.substr(offset + 16, 7), "/cheats")) {
-                if (extractAll) {
-                    extractEntry(filename, zfile);
-                }
-                else {
-                    if (std::find_if(titles.begin(), titles.end(), [&filename, offset](std::string title) {
-                            return caselessCompare((title.substr(0, 13)), filename.substr(offset, 13));
-                        }) != titles.end()) {
-                        extractEntry(filename, zfile);
-                    }
-                }
-            }
-
-            ProgressEvent::instance().setStep(i);
-            unzCloseCurrentFile(zfile);
+            if (i % 64 == 0) ProgressEvent::instance().setStep(i);
             unzGoToNextFile(zfile);
         }
         unzClose(zfile);

@@ -92,6 +92,10 @@ namespace util {
     bool descomprimirNombres(NacpStruct* nacp);
     // Tras instalar el pack: vuelve a poner los trucos desde cheats.zip (no se borra).
     void restaurarTrucos();
+    /* Juegos instalados despues de bajar la base: se extraen sus trucos desde
+       cheats.zip (sin volver a descargar nada), solo los de los juegos que
+       todavia no tienen carpeta de trucos. */
+    void completarTrucos();
     bool isApplet();
     std::string getContentsPath();
     // Dónde guardar (o actualizar) un .nro: respeta la carpeta propia de la app si ya existe.

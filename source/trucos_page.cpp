@@ -308,6 +308,9 @@ namespace {
                 }
                 return;
             }
+            /* Cambio la lista de juegos (o la base): los recien instalados reciben
+               sus trucos de la base que ya esta en la SD, sin descargar. */
+            util::completarTrucos();
             const std::string base = versionesDeLaBase();
             auto control = std::make_unique<NsApplicationControlData>();
             for (s32 i = 0; i < cuantos && !this->cancelar; ++i) {

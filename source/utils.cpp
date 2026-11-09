@@ -747,6 +747,20 @@ namespace util {
         extract::extractCheats(CHEATS_FILENAME, titles, CurrentCfw::running_cfw, version);
     }
 
+    void completarTrucos()
+    {
+        std::string version = readFile(CHEATS_VERSION);
+        while (!version.empty() && std::isspace(static_cast<unsigned char>(version.back()))) version.pop_back();
+        std::error_code ec;
+        if (version.empty() || !std::filesystem::exists(CHEATS_FILENAME, ec)) return;
+        const std::string contents = getContentsPath();
+        std::vector<std::string> faltan;
+        for (const auto& t : extract::excludeTitles(CHEATS_EXCLUDE, extract::getInstalledTitlesNs()))
+            if (!std::filesystem::is_directory(contents + t + "/cheats", ec)) faltan.push_back(t);
+        if (faltan.empty()) return;
+        extract::extractCheats(CHEATS_FILENAME, faltan, CurrentCfw::running_cfw, version);
+    }
+
     bool baseTrucosValida(const std::string& zip)
     {
         bool hay = false;
