@@ -123,7 +123,9 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
                 if (!instalada.empty() && instalada != packDate) {
                     /* Marcado, no solo escrito: en una lista de varios packs el
                        aviso tiene que encontrarse sin leerla entera. */
-                    packItem->setWarningValue("menus/packs/update_available"_i18n);
+                    /* La fecha de la version publicada, en dorado: el boton A ya dice
+                       "Actualizar" (PaginaOqb, botonAviso). */
+                    packItem->setWarningValue(fmt::format("menus/packs/version_of"_i18n, fechaLegible(packDate)));
                     listItem->setSubLabel(fmt::format("menus/packs/installed_date"_i18n, fechaLegible(instalada)));
                 }
                 else {
@@ -139,10 +141,10 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
                          afirmar nada de la consola. Tampoco se dice que este
                          desactualizado: quien ya lo tenia no dejo rastro, y
                          avisarle a ciegas seria mentirle la mitad de las veces. */
-                    if (instalada == packDate)
-                        listItem->setValue("menus/packs/up_to_date"_i18n, true);
-                    else
-                        listItem->setValue(fmt::format("menus/packs/version_of"_i18n, fechaLegible(packDate)), true);
+                    /* Siempre la fecha de la version, tambien la del instalado: los
+                       packs pueden publicarse por separado. Que esta en la SD lo dice
+                       la etiqueta INSTALADA junto al titulo (PaginaOqb). */
+                    listItem->setValue(fmt::format("menus/packs/version_of"_i18n, fechaLegible(packDate)), true);
 
                     if (!packInfo.note.empty())
                         listItem->setSubLabel(packInfo.note);

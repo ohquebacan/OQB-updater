@@ -197,6 +197,9 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         if (this->fuente < 0) this->fuente = nvgCreateFont(vg, "upheaval", "romfs:/fonts/upheavtt.ttf");
         // Upheaval no trae tildes (la Á de BACÁN): esas salen de la fuente normal.
         if (this->fuente >= 0) nvgAddFallbackFontId(vg, this->fuente, ctx->fontStash->regular);
+        this->fuenteFuerte = nvgFindFont(vg, "bebas");
+        if (this->fuenteFuerte < 0) this->fuenteFuerte = nvgCreateFont(vg, "bebas", "romfs:/fonts/BebasNeue-Regular.ttf");
+        if (this->fuenteFuerte >= 0) nvgAddFallbackFontId(vg, this->fuenteFuerte, ctx->fontStash->regular);
     }
     const int regular = ctx->fontStash->regular;
     const NVGcolor texto = this->a(ctx->theme->textColor);
@@ -459,6 +462,25 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         for (const Seccion& sec : this->secciones) orden.insert(orden.end(), sec.entradas.begin(), sec.entradas.end());
         // Con botones, una entrada sin X (Firmware) va sola y a todo lo ancho.
         auto ancha = [&](int i) { return botones && !(!this->op.hintX.empty() && this->tieneX(this->entradas[i].item)); };
+        /* El pack que esta en la SD lleva la etiqueta INSTALADA a la derecha del
+           titulo; el titulo se acomoda en lo que queda. */
+        const std::string etiquetaInstalada = "menus/packs/instalada"_i18n;
+        auto esInstalado = [](const Entrada& e) {
+            auto* p = dynamic_cast<PackListItem*>(e.item);
+            return p && p->esInstalado();
+        };
+        auto anchoEtiqueta = [&]() {
+            nvgSave(vg);
+            nvgFontFaceId(vg, this->fuenteFuerte >= 0 ? this->fuenteFuerte : regular);
+            nvgFontSize(vg, 22.0f);
+            nvgTextLetterSpacing(vg, 1.0f);
+            const float w = nvgTextBounds(vg, 0, 0, etiquetaInstalada.c_str(), nullptr, nullptr) + 22.0f;
+            nvgRestore(vg);
+            return w;
+        };
+        auto anchoTitulo = [&](const Entrada& e, float twFila) {
+            return twFila - 44.0f - (esInstalado(e) ? anchoEtiqueta() + 12.0f : 0.0f);
+        };
         for (size_t base = 0, hasta = 0; base < orden.size(); base = hasta) {
             hasta = base + 1;
             if (!ancha(orden[base]))
@@ -471,15 +493,16 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                 const Seccion& sec = this->secciones[e.seccion];
                 if (!sec.titulo.empty() && sec.entradas.front() == orden[k]) conTitulo = true;
                 nvgFontSize(vg, 20.0f);
-                float h = 22.0f + lineas(vg, e.titulo, twFila - 44.0f, 2) * 26.0f;
+                float h = 22.0f + lineas(vg, e.titulo, anchoTitulo(e, twFila), 2) * 26.0f;
                 if (!e.item->getSubLabel().empty() || !e.item->getValue().empty()) h += 34.0f;
                 nvgFontSize(vg, 15.0f);
                 if (!e.desc.empty()) h += lineas(vg, e.desc, twFila - 44.0f, 3) * 20.0f + 8.0f;
-                if (botones) h += 72.0f;
-                alto = std::max(alto, h + 16.0f);
+                // La tarjeta a todo lo ancho (Firmware) va mas compacta: entra entera.
+                if (botones) h += hasta - base == 1 && ancha(orden[base]) ? 56.0f : 72.0f;
+                alto = std::max(alto, h + (hasta - base == 1 && ancha(orden[base]) ? 6.0f : 16.0f));
             }
             alto = std::max(alto, 80.0f);
-            const float tituloH = conTitulo ? 40.0f : 0.0f;
+            const float tituloH = conTitulo ? 38.0f : 0.0f;
             for (size_t k = base; k < hasta; ++k) {
                 const int indice = orden[k];
                 Entrada& e = this->entradas[indice];
@@ -491,8 +514,8 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                 const float cx = ox + e.x, cy = oy + e.y;
                 if (!sec.titulo.empty() && sec.entradas.front() == indice) {
                     /* El titulo de la seccion (Recomendado, Variantes...) como el de
-                       los grupos: barra de acento y Upheaval a 20 px, que se encuentre
-                       de un vistazo. */
+                       los grupos pero en Bebas Neue: gruesa y sin pixeles, que se
+                       encuentre de un vistazo. */
                     const NVGcolor colorTitulo = this->a(oqb::acentoClaro());
                     nvgBeginPath(vg);
                     nvgRoundedRect(vg, cx + 4, oy + py + 4, 5, 22, 2.5f);
@@ -501,13 +524,13 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                     std::string mayus = sec.titulo;
                     for (auto& c : mayus)
                         if (c >= 'a' && c <= 'z') c = (char)(c - 'a' + 'A');
-                    nvgFontFaceId(vg, this->fuente >= 0 ? this->fuente : regular);
-                    nvgFontSize(vg, 20.0f);
+                    nvgFontFaceId(vg, this->fuenteFuerte >= 0 ? this->fuenteFuerte : regular);
+                    nvgFontSize(vg, 28.0f);
                     nvgTextLetterSpacing(vg, 1.0f);
                     nvgFillColor(vg, colorTitulo);
                     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
                     nvgBeginPath(vg);
-                    nvgText(vg, cx + 18, oy + py + 15, cortar(vg, mayus, twFila - 24).c_str(), nullptr);
+                    nvgText(vg, cx + 18, oy + py + 16, cortar(vg, mayus, twFila - 24).c_str(), nullptr);
                     nvgTextLetterSpacing(vg, 0.0f);
                     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
                     nvgFontFaceId(vg, regular);
@@ -533,8 +556,27 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                 float ty = cy + 20.0f;
                 nvgFontSize(vg, 20.0f);
                 nvgFillColor(vg, texto);
-                parrafo(vg, cx + 22, ty, e.titulo, twFila - 44.0f, 26.0f, 2);
-                ty += lineas(vg, e.titulo, twFila - 44.0f, 2) * 26.0f + 4.0f;
+                parrafo(vg, cx + 22, ty, e.titulo, anchoTitulo(e, twFila), 26.0f, 2);
+                if (instalado) {
+                    // La etiqueta llena, del acento del tema, que se lea de lejos.
+                    const float ew = anchoEtiqueta(), eh = 28.0f;
+                    const float ex = cx + twFila - 18.0f - ew, ey = ty - 2.0f;
+                    nvgBeginPath(vg);
+                    nvgRoundedRect(vg, ex, ey, ew, eh, 8.0f);
+                    nvgFillColor(vg, this->a(oqb::acentoFuerte()));
+                    nvgFill(vg);
+                    nvgFontFaceId(vg, this->fuenteFuerte >= 0 ? this->fuenteFuerte : regular);
+                    nvgFontSize(vg, 22.0f);
+                    nvgTextLetterSpacing(vg, 1.0f);
+                    nvgFillColor(vg, this->a(oqb::oscuro() ? nvgRGB(6, 20, 12) : nvgRGB(255, 255, 255)));
+                    nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+                    nvgBeginPath(vg);
+                    nvgText(vg, ex + ew / 2, ey + eh / 2 + 1.0f, etiquetaInstalada.c_str(), nullptr);
+                    nvgTextLetterSpacing(vg, 0.0f);
+                    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+                    nvgFontFaceId(vg, regular);
+                }
+                ty += lineas(vg, e.titulo, anchoTitulo(e, twFila), 2) * 26.0f + 4.0f;
 
                 const std::string sub = e.item->getSubLabel(), valor = e.item->getValue();
                 if (!sub.empty() || !valor.empty()) {
@@ -560,8 +602,9 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                     /* Los botones ocupan todo el ancho de abajo de la tarjeta; se
                        elige cada uno con la cruceta y A hace lo que dice. */
                     const bool conX = !this->op.hintX.empty() && this->tieneX(e.item);
-                    const float bh = 46.0f, bgap = 10.0f;
-                    const float by = e.y + alto - 18.0f - bh;
+                    const bool compacta = hasta - base == 1 && ancha(orden[base]);
+                    const float bh = compacta ? 40.0f : 46.0f, bgap = 10.0f;
+                    const float by = e.y + alto - (compacta ? 14.0f : 18.0f) - bh;
                     const float b1x = e.x + 18.0f, b1w = conX ? (twFila - 36.0f - bgap) / 2 : twFila - 36.0f;
                     const std::string textoA = !conX ? "menus/inicio/abrir"_i18n
                                                      : (tonoDe(e.item) == 2 && !this->op.botonAviso.empty() ? this->op.botonAviso : this->op.botonA);

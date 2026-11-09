@@ -467,6 +467,7 @@
     "packs": {
         "up_to_date": "Instalado · al día",
         "version_of": "Versión del {}",
+        "instalada": "INSTALADA",
         "update_available": "Hay actualización",
         "installed_date": "Instalaste la del {}",
         "date_format": "{2}/{1}/{0}"

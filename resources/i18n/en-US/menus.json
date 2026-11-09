@@ -446,6 +446,7 @@
     "packs": {
         "up_to_date": "Installed · up to date",
         "version_of": "Version from {}",
+        "instalada": "INSTALLED",
         "update_available": "Update available",
         "installed_date": "You installed the one from {}",
         "date_format": "{1}/{2}/{0}"

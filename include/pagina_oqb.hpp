@@ -102,6 +102,7 @@ private:
     int elegida = 0;
     float scroll = 0.0f, scrollObjetivo = 0.0f;
     int fuente = -1;
+    int fuenteFuerte = -1;  // Bebas Neue: titulos de seccion y la etiqueta INSTALADA
     bool fuenteIntentada = false;
 
     void leerOrigen();
