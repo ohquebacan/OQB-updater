@@ -31,6 +31,10 @@ public:
     bool esAviso() const { return this->warning && !this->positive; }
     bool esPositivo() const { return this->positive; }
 
+    // El pack que esta en la SD: su tarjeta se tine del color del tema.
+    void setInstalado(bool v) { this->instalado = v; }
+    bool esInstalado() const { return this->instalado; }
+
     // Sin valor y sin el marco de aviso (una app que se acaba de actualizar).
     void clearValue();
 
@@ -44,4 +48,5 @@ public:
 private:
     bool warning = false;
     bool positive = false;
+    bool instalado = false;
 };

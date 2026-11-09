@@ -479,7 +479,7 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                 alto = std::max(alto, h + 16.0f);
             }
             alto = std::max(alto, 80.0f);
-            const float tituloH = conTitulo ? 28.0f : 0.0f;
+            const float tituloH = conTitulo ? 40.0f : 0.0f;
             for (size_t k = base; k < hasta; ++k) {
                 const int indice = orden[k];
                 Entrada& e = this->entradas[indice];
@@ -490,17 +490,43 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                 e.h = alto;
                 const float cx = ox + e.x, cy = oy + e.y;
                 if (!sec.titulo.empty() && sec.entradas.front() == indice) {
-                    nvgFontSize(vg, 15.0f);
-                    nvgFillColor(vg, this->a(oqb::verdeTexto()));
+                    /* El titulo de la seccion (Recomendado, Variantes...) como el de
+                       los grupos: barra de acento y Upheaval a 20 px, que se encuentre
+                       de un vistazo. */
+                    const NVGcolor colorTitulo = this->a(oqb::acentoClaro());
                     nvgBeginPath(vg);
-                    nvgText(vg, cx + 4, oy + py, sec.titulo.c_str(), nullptr);
+                    nvgRoundedRect(vg, cx + 4, oy + py + 4, 5, 22, 2.5f);
+                    nvgFillColor(vg, colorTitulo);
+                    nvgFill(vg);
+                    std::string mayus = sec.titulo;
+                    for (auto& c : mayus)
+                        if (c >= 'a' && c <= 'z') c = (char)(c - 'a' + 'A');
+                    nvgFontFaceId(vg, this->fuente >= 0 ? this->fuente : regular);
+                    nvgFontSize(vg, 20.0f);
+                    nvgTextLetterSpacing(vg, 1.0f);
+                    nvgFillColor(vg, colorTitulo);
+                    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                    nvgBeginPath(vg);
+                    nvgText(vg, cx + 18, oy + py + 15, cortar(vg, mayus, twFila - 24).c_str(), nullptr);
+                    nvgTextLetterSpacing(vg, 0.0f);
+                    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+                    nvgFontFaceId(vg, regular);
                 }
+                // El pack que esta en la SD: toda la tarjeta con el tinte del tema.
+                auto* pack = dynamic_cast<PackListItem*>(e.item);
+                const bool instalado = pack && pack->esInstalado();
                 nvgBeginPath(vg);
                 nvgRoundedRect(vg, cx, cy, twFila, alto, 16.0f);
                 nvgFillColor(vg, fondo);
                 nvgFill(vg);
-                nvgStrokeColor(vg, borde);
-                nvgStrokeWidth(vg, 1.0f);
+                if (instalado) {
+                    NVGcolor tinte = oqb::acentoFuerte();
+                    tinte.a = oqb::oscuro() ? 0.16f : 0.12f;
+                    nvgFillColor(vg, this->a(tinte));
+                    nvgFill(vg);
+                }
+                nvgStrokeColor(vg, instalado ? this->a(oqb::acentoFuerte()) : borde);
+                nvgStrokeWidth(vg, instalado ? 2.0f : 1.0f);
                 nvgStroke(vg);
                 if (!botones && ubicar(indice, -1, e.x, e.y, twFila, alto) && conFoco) marco(e.x, e.y, twFila, alto, 16.0f);
 

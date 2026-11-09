@@ -118,6 +118,7 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
                    la SD. Antes el normal y el de overclock decian los dos "al
                    dia" tras instalar uno y luego el otro. */
                 const std::string instalada = packVersion::current() == packKey ? packVersion::installed(packKey) : "";
+                packItem->setInstalado(!instalada.empty());
 
                 if (!instalada.empty() && instalada != packDate) {
                     /* Marcado, no solo escrito: en una lista de varios packs el
