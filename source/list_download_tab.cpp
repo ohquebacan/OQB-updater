@@ -242,9 +242,15 @@ void ListDownloadTab::createList(contentType type)
                        basta: el pack trae 0100000000001013 con un exefs.nsp1 desactivado, y el
                        aviso salia siempre, incluso despues de que el pack lo hubiera limpiado.
                        Un solo aviso aunque haya varias carpetas. */
-                    const bool hayTema = util::hayTemaActivo();
-                    if (hayTema)
+                    /* Con un tema activo, el firmware nuevo puede no arrancar el menu HOME:
+                       se avisa y, si sigue, se quita antes de descargar. */
+                    if (util::hayTemaActivo()) {
                         stagedFrame->addStage(new DialoguePage_confirm(stagedFrame, "menus/main/theme_warning"_i18n));
+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/firmware/quitando_tema"_i18n, []() {
+                            util::quitarTemaActivo();
+                            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+                        }));
+                    }
                 }
                 // Firmware compatible con Nextendo: ofrecer la app de una vez.
                 auto llevarOferta = std::make_shared<bool>(false);

@@ -65,6 +65,10 @@ namespace util {
     /* Lo que eligio el usuario antes de instalar el pack: conservar el tema (no se
        borran esas carpetas en la limpieza previa) o borrarlo. */
     void setConservarTema(bool conservar);
+
+    /* Quita el tema o menu alternativo activo (romfs, exefs, exefs.nsp de las
+       carpetas del menu HOME y sus applets). Lo demas de esas carpetas se queda. */
+    void quitarTemaActivo();
     bool installPendingAppUpdate();
     void restartApp();
     bool isErista();

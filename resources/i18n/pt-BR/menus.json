@@ -133,7 +133,7 @@
     "tools": "Ferramentas",
     "launch_warning": "Por favor, preste atenção nos seguintes pontos antes de usar o aplicativo:\n\n◆ Leia sobre como atualizar manualmente seu Switch primeiro. Isso ajudará você a entender melhor o aplicativo e voc^e saberá o que fazer caso algo dê errado.\n◆ Para evitar qualquer risco de corrupção de dados, é FORTEMENTE desencorajado usar este aplicativo em um cartão SD formatado como exFAT.\n\n◆ As informações mais recentes sobre recursos que foram introduzidos e/ou alterados estão disponíveis no menu Ferramentas→Histórico de alterações.\n\nEsta tela não será exibida novamente.",
     "footer_text": "v{} | {:.1f}GB disponíveis",
-    "theme_warning": "Parece que você tem um tema personalizado instalado, isso pode fazer com que seu sistema falhe ao inicializar após atualizar seu firmware.\nPor favor, considere excluí-lo antes de fazer a atualização.\n\nDo you wish to proceed regardless?",
+    "theme_warning": "Você tem um tema ou menu alternativo. Ele será removido para atualizar o firmware. Coloque-o de volta depois.\n\nContinuar?",
     "payloads_label": "◆ Baixar payloads RCM para {}",
     "hekate_ipl_label": "◆ Baixar um arquivo de configuração hekate_ipl.ini simplificado. Isso substituirá o seu hekate_ipl.ini atual."
   },
@@ -205,11 +205,11 @@
     "custom_packs_misc": "◆ Downloads contendo homebrew e ferramentas.",
     "custom_download": "Download personalizado",
     "add_custom_link": "Adicionar um link personalizado",
-    "delete_custom_link": "Excluir",
-    "conservar_tema": "Você tem um tema ou menu alternativo instalado. Manter?\n\nSe depois for atualizar o firmware, é melhor removê-lo e colocá-lo de volta depois.\n\nSim: manter. Não: remover."
+    "delete_custom_link": "Excluir"
   },
   "firmware": {
-    "launch_daybreak": "Deseja iniciar o Daybreak para instalar a atualização do sistema baixada?"
+    "launch_daybreak": "Deseja iniciar o Daybreak para instalar a atualização do sistema baixada?",
+    "quitando_tema": "Removendo o tema…"
   },
   "net": {
     "title": "Configurações de internet"

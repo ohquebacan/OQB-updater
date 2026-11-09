@@ -578,6 +578,18 @@ namespace util {
 
     void setConservarTema(bool conservar) { g_conservarTema = conservar; }
 
+    void quitarTemaActivo()
+    {
+        const std::string contents = getContentsPath();
+        std::error_code ec;
+        for (const char* tid : CARPETAS_TEMA) {
+            const std::string base = contents + tid + "/";
+            for (const char* dir : {"romfs", "exefs"})
+                if (std::filesystem::is_directory(base + dir, ec)) fs::removeDir(base + dir);
+            std::filesystem::remove(base + "exefs.nsp", ec);
+        }
+    }
+
     bool isForwarder()
     {
         /* Abierta desde su icono del menu HOME (un forwarder instalado): corre

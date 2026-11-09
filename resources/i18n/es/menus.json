@@ -157,7 +157,7 @@
         "tools": "Herramientas",
         "launch_warning": "Por favor, presta atención a los siguientes puntos antes de usar la app:\n\n◆ Lee primero sobre cómo actualizar manualmente tu Switch. Esto te ayudará a entender mejor lo que hace esta app y sabrás qué hacer en caso de que algo salga mal.\n◆ Para evitar cualquier riesgo de corrupción de datos se desaconseja encarecidamente utilizar esta aplicación en una tarjeta SD exFAT.\n\n◆ La última información sobre las características introducidas y/o cambios está disponible en el menú Herramientas→Cambios.\n\nEsta pantalla no se mostrará de nuevo.",
         "footer_text": "v{} | {:.1f}GB Disponibles",
-        "theme_warning": "Tienes un tema o un menú alternativo instalado. Al actualizar el firmware, es probable que impida que la consola arranque. Te recomendamos quitarlo antes de actualizar; si ya lo hiciste, no tienes de qué preocuparte.\n\n¿Quieres continuar?",
+        "theme_warning": "Tienes un tema o un menú alternativo instalado. Para actualizar el firmware se va a quitar: puede no funcionar con la versión nueva y no dejar arrancar el menú HOME.\n\nVuelve a ponerlo cuando ya tengas el firmware nuevo.\n\n¿Quieres continuar?",
         "payloads_label": "◆ Descarga 'RCM payloads' a {}",
         "hekate_ipl_label": "◆ Descarga un hekate_ipl.ini básico \"funcional\". Esto sobrescribirá tu hekate_ipl.ini actual.",
         "apps": "Apps",
@@ -243,14 +243,14 @@
         "custom_packs_misc": "◆ Descargas que contienen homebrew y herramientas.",
         "custom_download": "Descarga personalizada",
         "add_custom_link": "Añadir un enlace personalizado",
-        "delete_custom_link": "Borrar",
-        "conservar_tema": "Tienes un tema o un menú alternativo instalado. ¿Lo conservas?\n\nSi después vas a actualizar el firmware, mejor bórralo: puede no funcionar con la versión nueva y no dejar arrancar el menú HOME. Vuelve a ponerlo cuando ya tengas el firmware nuevo.\n\nSí: se conserva. No: se borra."
+        "delete_custom_link": "Borrar"
     },
     "firmware": {
         "offer_app": "¿Quieres instalar también {} para jugar en línea con Nextendo Network? Se descarga junto con el firmware.",
         "tutorial_title": "Cómo usar Nextendo",
         "tutorial_text": "Escanea el código con tu teléfono para ver el video tutorial: cómo configurar Nextendo Network y jugar en línea sin una cuenta de Nintendo.",
-        "launch_daybreak": "¿Quieres ejecutar Daybreak para instalar la actualización de firmware descargada?"
+        "launch_daybreak": "¿Quieres ejecutar Daybreak para instalar la actualización de firmware descargada?",
+        "quitando_tema": "Quitando el tema…"
     },
     "net": {
         "title": "Configuración de Internet"

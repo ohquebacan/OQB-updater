@@ -193,20 +193,17 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
     stagedFrame->setTitle(this->type == contentType::ams_cfw ? "menus/ams_update/getting_ams"_i18n : "menus/ams_update/custom_download"_i18n);
     stagedFrame->addStage(
         new ConfirmPage(stagedFrame, text));
-    /* Con un tema o menu alternativo activo: conservarlo o borrarlo. Antes siempre
-       se borraba (la limpieza previa vacia atmosphere/contents), y quien no iba a
-       cambiar de firmware tenia que volver a ponerlo cada vez. */
-    auto conservarTema = std::make_shared<bool>(false);
-    if (this->type == contentType::ams_cfw && util::hayTemaActivo())
-        stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/ams_update/conservar_tema"_i18n, conservarTema));
+    /* El tema o menu alternativo se conserva siempre al actualizar el pack: sin
+       cambiar de firmware sigue funcionando, y borrarlo obligaba a ponerlo de nuevo
+       cada vez. Se quita al bajar un firmware (ListDownloadTab, contentType::fw). */
     stagedFrame->addStage(
         new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [&, url]() {
             deep_clean::logPaso("=== inicio instalacion pack");
             util::downloadArchive(url, this->type);
         }));
     stagedFrame->addStage(
-        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, packKey, packDate, conservarTema]() {
-            util::setConservarTema(*conservarTema);
+        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, packKey, packDate]() {
+            util::setConservarTema(true);
             util::extractArchive(this->type);
             /* Se anota la fecha que estaba publicada al empezar, no la de hoy:
                es la del pack que acaba de quedar en la SD. Despues de extraer,

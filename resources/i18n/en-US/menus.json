@@ -159,7 +159,7 @@
         "tools": "Tools",
         "launch_warning": "Please pay attention to the following points before using the app:\n\n◆ Read up on how to manually update your Switch first. This will help you understand the app better and you'll know what to do in case something goes wrong.\n◆ In order to avoid any risk of data corruption, using this app on an exFAT SD card is STRONGLY discouraged.\n\n◆ The latest information about features that have been introduced and/or changed is available in the  Tools→Changelog menu.\n\nThis screen won't show again.",
         "footer_text": "v{} | {:.1f}GB available",
-        "theme_warning": "You have a theme or an alternative menu installed. Updating the firmware will probably keep the console from booting. We recommend removing it before updating; if you already did, there's nothing to worry about.\n\nDo you want to continue?",
+        "theme_warning": "You have a theme or an alternative menu installed. It will be removed to update the firmware: it may not work with the new version and keep the HOME Menu from starting.\n\nPut it back once you have the new firmware.\n\nDo you want to continue?",
         "payloads_label": "◆ Download RCM payloads to {}",
         "hekate_ipl_label": "◆ Download a stripped down \"just works\" hekate_ipl.ini config file. This will overwrite your current hekate_ipl.ini."
     },
@@ -243,14 +243,14 @@
         "custom_packs_misc": "◆ Downloads containing homebrew and tools.",
         "custom_download": "Custom download",
         "add_custom_link": "Add a custom link",
-        "delete_custom_link": "Delete",
-        "conservar_tema": "You have a theme or an alternative menu installed. Keep it?\n\nIf you are going to update the firmware afterwards, better remove it: it may not work with the new version and keep the HOME Menu from starting. Put it back once you have the new firmware.\n\nYes: keep it. No: remove it."
+        "delete_custom_link": "Delete"
     },
     "firmware": {
         "offer_app": "Do you also want to install {} to play online with Nextendo Network? It downloads along with the firmware.",
         "tutorial_title": "How to use Nextendo",
         "tutorial_text": "Scan the code with your phone to watch the video tutorial: how to set up Nextendo Network and play online without a Nintendo account.",
-        "launch_daybreak": "Do you want to launch Daybreak to install the downloaded sysupdate?"
+        "launch_daybreak": "Do you want to launch Daybreak to install the downloaded sysupdate?",
+        "quitando_tema": "Removing the theme…"
     },
     "net": {
         "title": "Internet settings"
