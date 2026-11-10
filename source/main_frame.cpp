@@ -395,7 +395,8 @@ MainFrame::MainFrame() : TabFrame()
         const std::string clavePack = packVersion::current();
         const int llavesEstado = datos.llavesEstado;
         const std::string firmwareConsola = datos.firmware;
-        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack, llavesEstado, firmwareConsola](InicioTab::Destino d) {
+        const std::string arranqueActual = datos.arranque;
+        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack, llavesEstado, firmwareConsola, arranqueActual](InicioTab::Destino d) {
             switch (d) {
                 case InicioTab::Destino::Estado: {
                     // Rediseno: protecciones, Cliente OQB y apoyo (los datos de la consola ya estan en Inicio).
@@ -426,7 +427,7 @@ MainFrame::MainFrame() : TabFrame()
                     std::string texto;
                     if (llavesEstado == 2) texto = "menus/inicio/llaves_explica_no"_i18n;
                     else if (llavesEstado == 1) texto = fmt::format("menus/inicio/llaves_explica_viejas"_i18n, firmwareConsola);
-                    else texto = fmt::format("menus/inicio/llaves_explica_ok"_i18n, "/switch/prod.keys");
+                    else texto = "menus/inicio/llaves_explica_ok"_i18n;
                     if (!util::existeEnSd(payload)) {
                         brls::Dialog* d = new brls::Dialog(texto + "\n\n" + "menus/inicio/llaves_sin_payload"_i18n);
                         d->addButton("menus/common/ok"_i18n, [d](brls::View*) { d->close(); });
@@ -434,7 +435,7 @@ MainFrame::MainFrame() : TabFrame()
                         d->open();
                         return;
                     }
-                    brls::Dialog* d = new brls::Dialog(texto + "\n\n" + "menus/inicio/llaves_pasos"_i18n);
+                    brls::Dialog* d = new brls::Dialog(texto + "\n\n" + fmt::format("menus/inicio/llaves_pasos"_i18n, arranqueActual.empty() ? "?" : arranqueActual, firmwareConsola));
                     d->addButton("menus/inicio/llaves_ahora_no"_i18n, [d](brls::View*) { d->close(); });
                     d->addButton("menus/inicio/llaves_reiniciar"_i18n, [d, payload](brls::View*) {
                         d->close();
