@@ -13,6 +13,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <cctype>
 #include <set>
 #include <string>
 #include <thread>
@@ -45,6 +46,7 @@ namespace {
         u32 version = 0;
         std::string bid;              // build de la version instalada, si la base lo conoce
         int trucos = 0;               // trucos en el archivo de esa build
+        std::string copiaDe;          // build de otra version con el mismo codigo: trucos copiados sin adaptar
         std::vector<Version> versiones;  // de la base, de la mas nueva a la mas vieja
         u32 ultima = 0;
         bool hayUltima = false;
@@ -174,6 +176,52 @@ namespace {
         return n;
     }
 
+    // Las lineas de codigo de un archivo de trucos (sin nombres), normalizadas.
+    std::set<std::string> lineasDeCodigo(const std::string& ruta)
+    {
+        std::set<std::string> out;
+        std::ifstream f(ruta);
+        std::string linea;
+        while (std::getline(f, linea)) {
+            std::string n;
+            bool espacio = false;
+            for (const char c : linea) {
+                if (std::isspace(static_cast<unsigned char>(c))) {
+                    espacio = !n.empty();
+                    continue;
+                }
+                if (!std::isxdigit(static_cast<unsigned char>(c))) {
+                    n.clear();
+                    break;
+                }
+                if (espacio) n += ' ';
+                espacio = false;
+                n += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+            }
+            if (n.size() >= 8) out.insert(n);
+        }
+        return out;
+    }
+
+    /* Trucos de una version que son, casi linea por linea, los de otra build del
+       mismo juego: alguien los subio con el Build ID equivocado (paso con Mario
+       Wonder 1.2.1, que trae los de la 1.0.0). Si la actualizacion no movio esa
+       parte del juego funcionan; si la movio, no hacen nada o cierran el juego. */
+    std::string buildCopiada(const std::string& carpeta, const std::string& bid, const std::set<std::string>& conTrucos)
+    {
+        if (conTrucos.size() < 2) return "";
+        const auto propias = lineasDeCodigo(carpeta + bid + ".txt");
+        if (propias.size() < 3) return "";
+        for (const auto& otra : conTrucos) {
+            if (otra == bid || otra == "0000000000000000") continue;  // la base trae algun archivo con build en ceros
+            const auto ajenas = lineasDeCodigo(carpeta + otra + ".txt");
+            size_t iguales = 0;
+            for (const auto& l : propias) iguales += ajenas.count(l);
+            if (iguales * 10 >= propias.size() * 9) return otra;
+        }
+        return "";
+    }
+
     const std::string CACHE_JUEGOS = std::string(CONFIG_PATH) + "trucos_juegos.json";
 
     // Lo que ya se reviso, para no repetirlo cada vez que se entra (sin iconos).
@@ -185,7 +233,7 @@ namespace {
         for (const auto& g : juegos) {
             nlohmann::json v = nlohmann::json::array();
             for (const auto& ver : g.versiones) v.push_back({ver.numero, ver.bid, ver.conTrucos});
-            lista.push_back({{"tid", g.tid}, {"nombre", g.nombre}, {"visible", g.visible}, {"version", g.version}, {"bid", g.bid}, {"trucos", g.trucos},
+            lista.push_back({{"tid", g.tid}, {"nombre", g.nombre}, {"visible", g.visible}, {"version", g.version}, {"bid", g.bid}, {"trucos", g.trucos}, {"copiaDe", g.copiaDe},
                              {"ultima", g.ultima}, {"hayUltima", g.hayUltima}, {"estado", (int)g.estado}, {"versiones", v}});
         }
         const std::string tmp = CACHE_JUEGOS + ".tmp";
@@ -211,6 +259,7 @@ namespace {
             x.version = g.value("version", (u32)0);
             x.bid = g.value("bid", "");
             x.trucos = g.value("trucos", 0);
+            x.copiaDe = g.value("copiaDe", "");
             x.ultima = g.value("ultima", (u32)0);
             x.hayUltima = g.value("hayUltima", false);
             x.estado = static_cast<Estado>(g.value("estado", (int)SIN_TRUCOS));
@@ -293,7 +342,8 @@ namespace {
                juego, lo lento) se comprueban despues, por detras, y si alguna
                cambio se avisa para volver a revisar. */
             // "n2": nombres ya descomprimidos (libnx#714); la cache vieja tenia "?".
-            std::string firma = "n2 base " + marcaBase();
+            // "n3": ademas marca los trucos copiados de otra version.
+            std::string firma = "n3 base " + marcaBase();
             for (s32 i = 0; i < cuantos; ++i) firma += fmt::format(";{:016X}", registros[i].application_id);
             if (!forzar && leerCache(firma, out)) {
                 this->hechos = cuantos;
@@ -371,6 +421,7 @@ namespace {
                 if (!j.bid.empty() && conTrucos.count(j.bid)) {
                     j.estado = CON_TRUCOS;
                     j.trucos = contarTrucos(carpeta + j.bid + ".txt");
+                    j.copiaDe = buildCopiada(carpeta, j.bid, conTrucos);
                 }
                 else if (conTrucos.empty())
                     j.estado = SIN_TRUCOS;
@@ -760,10 +811,11 @@ namespace {
                     nvgFillColor(vg, this->a(oqb::velo(25)));
                 nvgFill(vg);
 
-                const std::string pill = etiquetaDe(j.estado);
+                const bool copia = j.estado == CON_TRUCOS && !j.copiaDe.empty();
+                const std::string pill = copia ? "menus/trucos/pill_copia"_i18n : etiquetaDe(j.estado);
                 nvgFontSize(vg, 15.0f);
                 const float wp = nvgTextBounds(vg, 0, 0, pill.c_str(), nullptr, nullptr) + 22.0f;
-                pildora(vg, izq + anchoIzq - 14.0f - wp, fy + fila / 2, pill, coloresDe(j.estado), this->alpha);
+                pildora(vg, izq + anchoIzq - 14.0f - wp, fy + fila / 2, pill, coloresDe(copia ? OTRA_VERSION : j.estado), this->alpha);
 
                 const float tx = ix + lado + 14.0f, tw = izq + anchoIzq - 28.0f - wp - tx;
                 nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
@@ -816,6 +868,14 @@ namespace {
                     e = SIN_TRUCOS;
                     titulo = "menus/trucos/d_sin_base"_i18n;
                     cuerpo = "menus/trucos/d_sin_base_sub"_i18n;
+                }
+                else if (e == CON_TRUCOS && !j->copiaDe.empty()) {
+                    e = OTRA_VERSION;  // el color de aviso
+                    std::string de = j->copiaDe;
+                    for (const auto& v : j->versiones)
+                        if (v.bid == j->copiaDe) de = nombreVersion(*j, v.numero);
+                    titulo = "menus/trucos/d_copia"_i18n;
+                    cuerpo = fmt::format("menus/trucos/d_copia_sub"_i18n, j->trucos, de);
                 }
                 else if (e == CON_TRUCOS) {
                     titulo = "menus/trucos/d_ok"_i18n;
