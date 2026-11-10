@@ -101,6 +101,11 @@ constexpr const char FILES_IGNORE[] = "/config/aio-switch-updater/preserve.txt";
 constexpr const char INTERNET_JSON[] = "/config/aio-switch-updater/internet.json";
 constexpr const char UPDATED_TITLES_PATH[] = "/config/aio-switch-updater/updated.dat";
 constexpr const char CHEATS_VERSION[] = "/config/aio-switch-updater/cheats_version.dat";
+// Trucos propios de OQB: los que la base no trae o trae mal (Mario Wonder 1.2.1
+// venia con los de la 1.0.0). Se aplican encima de la base.
+constexpr const char TRUCOS_OQB_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/trucos-oqb.json";
+constexpr const char TRUCOS_OQB[] = "/config/aio-switch-updater/trucos-oqb.json";
+constexpr const char TRUCOS_OQB_PUESTOS[] = "/config/aio-switch-updater/trucos-oqb-puestos.json";
 constexpr const char AMS_CONTENTS[] = "/atmosphere/contents/";
 
 // Carpetas de /atmosphere/contents/ que sobreviven al borrado previo a instalar

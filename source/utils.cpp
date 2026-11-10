@@ -296,6 +296,8 @@ namespace util {
                 std::vector<std::string> titles = extract::getInstalledTitlesNs();
                 titles = extract::excludeTitles(CHEATS_EXCLUDE, titles);
                 extract::extractCheats(CHEATS_FILENAME, titles, CurrentCfw::running_cfw, version);
+                // Encima, los propios de OQB (pisan los de la base que se acaban de poner).
+                if (!ProgressEvent::instance().getInterupt()) aplicarTrucosOqb(true, true);
                 break;
             }
             case contentType::fw:
@@ -745,6 +747,87 @@ namespace util {
         std::vector<std::string> titles = extract::getInstalledTitlesNs();
         titles = extract::excludeTitles(CHEATS_EXCLUDE, titles);
         extract::extractCheats(CHEATS_FILENAME, titles, CurrentCfw::running_cfw, version);
+        aplicarTrucosOqb(false, true);
+    }
+
+    std::string versionTrucosOqb()
+    {
+        std::ifstream f(TRUCOS_OQB);
+        if (!f) return "";
+        const nlohmann::json j = nlohmann::json::parse(f, nullptr, false);
+        return j.is_object() && j.contains("version") && j["version"].is_string() ? j["version"].get<std::string>() : "";
+    }
+
+    void aplicarTrucosOqb(bool bajar, bool forzar, const std::vector<std::string>& forzarJuegos)
+    {
+        std::error_code ec;
+        if (bajar) {
+            bool viejo = true;
+            if (std::filesystem::exists(TRUCOS_OQB, ec)) {
+                const auto t = std::filesystem::last_write_time(TRUCOS_OQB, ec);
+                viejo = ec || std::filesystem::file_time_type::clock::now() - t > std::chrono::hours(24);
+            }
+            std::string texto;
+            if (viejo && download::textoCorto(TRUCOS_OQB_URL, texto, 20, 4u << 20) == 200) {
+                const nlohmann::json j = nlohmann::json::parse(texto, nullptr, false);
+                if (j.is_object() && j.contains("juegos") && j["juegos"].is_object()) {
+                    const std::string tmp = std::string(TRUCOS_OQB) + ".tmp";
+                    {
+                        std::ofstream f(tmp, std::ios::binary | std::ios::trunc);
+                        f << texto;
+                    }
+                    std::filesystem::remove(TRUCOS_OQB, ec);
+                    std::filesystem::rename(tmp, TRUCOS_OQB, ec);
+                }
+            }
+        }
+        std::ifstream f(TRUCOS_OQB);
+        if (!f) return;
+        const nlohmann::json j = nlohmann::json::parse(f, nullptr, false);
+        if (!j.is_object() || !j.contains("juegos") || !j["juegos"].is_object()) return;
+
+        // Lo que pusimos nosotros (ruta -> hash), para no pisar lo que el usuario edite.
+        nlohmann::json puestos = nlohmann::json::object();
+        {
+            std::ifstream p(TRUCOS_OQB_PUESTOS);
+            if (p) {
+                puestos = nlohmann::json::parse(p, nullptr, false);
+                if (!puestos.is_object()) puestos = nlohmann::json::object();
+            }
+        }
+        const auto hashDe = [](const std::string& s) { return std::to_string(std::hash<std::string>{}(s)); };
+        const std::string contents = getContentsPath();
+        std::set<std::string> forzados;
+        for (const auto& t : forzarJuegos) forzados.insert(upperCase(t.substr(0, 16)));
+        bool cambio = false;
+        for (const auto& t : extract::excludeTitles(CHEATS_EXCLUDE, extract::getInstalledTitlesNs())) {
+            const std::string tid = upperCase(t.substr(0, 16));
+            if (!j["juegos"].contains(tid) || !j["juegos"][tid].is_object()) continue;
+            for (const auto& [bidCrudo, texto] : j["juegos"][tid].items()) {
+                const std::string bid = upperCase(bidCrudo);
+                if (!texto.is_string() || bid.size() != 16 || !extract::isBID(bid)) continue;
+                const std::string nuevo = texto.get<std::string>();
+                const std::string ruta = contents + tid + "/cheats/" + bid + ".txt";
+                const std::string actual = std::filesystem::exists(ruta, ec) ? readFile(ruta) : std::string();
+                if (actual == nuevo) continue;
+                const bool nuestro = puestos.contains(ruta) && puestos[ruta].is_string() && puestos[ruta].get<std::string>() == hashDe(actual);
+                if (!actual.empty() && !forzar && !nuestro && !forzados.count(tid)) continue;
+                std::filesystem::create_directories(contents + tid + "/cheats", ec);
+                const std::string tmp = ruta + ".tmp";
+                {
+                    std::ofstream o(tmp, std::ios::binary | std::ios::trunc);
+                    o << nuevo;
+                }
+                std::filesystem::remove(ruta, ec);
+                std::filesystem::rename(tmp, ruta, ec);
+                puestos[ruta] = hashDe(nuevo);
+                cambio = true;
+            }
+        }
+        if (cambio) {
+            std::ofstream p(TRUCOS_OQB_PUESTOS, std::ios::trunc);
+            p << puestos.dump();
+        }
     }
 
     void completarTrucos()
@@ -757,8 +840,9 @@ namespace util {
         std::vector<std::string> faltan;
         for (const auto& t : extract::excludeTitles(CHEATS_EXCLUDE, extract::getInstalledTitlesNs()))
             if (!std::filesystem::is_directory(contents + t + "/cheats", ec)) faltan.push_back(t);
-        if (faltan.empty()) return;
-        extract::extractCheats(CHEATS_FILENAME, faltan, CurrentCfw::running_cfw, version);
+        if (!faltan.empty()) extract::extractCheats(CHEATS_FILENAME, faltan, CurrentCfw::running_cfw, version);
+        // Los propios de OQB: los recien extraidos se pisan; lo demas, solo si lo pusimos nosotros.
+        aplicarTrucosOqb(true, false, faltan);
     }
 
     bool baseTrucosValida(const std::string& zip)

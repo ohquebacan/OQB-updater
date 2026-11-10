@@ -342,8 +342,11 @@ namespace {
                juego, lo lento) se comprueban despues, por detras, y si alguna
                cambio se avisa para volver a revisar. */
             // "n2": nombres ya descomprimidos (libnx#714); la cache vieja tenia "?".
+            /* Los trucos propios de OQB: se piden una vez al dia y se ponen en los
+               juegos que los tienen (sin pisar lo que el usuario haya editado). */
+            util::aplicarTrucosOqb(true, false);
             // "n3": ademas marca los trucos copiados de otra version.
-            std::string firma = "n3 base " + marcaBase();
+            std::string firma = "n3 base " + marcaBase() + " oqb " + util::versionTrucosOqb();
             for (s32 i = 0; i < cuantos; ++i) firma += fmt::format(";{:016X}", registros[i].application_id);
             if (!forzar && leerCache(firma, out)) {
                 this->hechos = cuantos;

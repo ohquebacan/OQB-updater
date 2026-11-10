@@ -96,6 +96,14 @@ namespace util {
        cheats.zip (sin volver a descargar nada), solo los de los juegos que
        todavia no tienen carpeta de trucos. */
     void completarTrucos();
+    /* Los trucos propios de OQB (TRUCOS_OQB_URL) encima de los de la base, para
+       los juegos instalados. bajar: pide el archivo (si el guardado tiene mas de
+       un dia). forzar: escribe aunque el archivo de la SD no lo hayamos puesto
+       nosotros (recien se extrajo la base y lo piso). Sin forzar no se pisa un
+       archivo que el usuario haya editado. */
+    void aplicarTrucosOqb(bool bajar, bool forzar, const std::vector<std::string>& forzarJuegos = {});
+    // La version del archivo de trucos OQB guardado ("" si no hay).
+    std::string versionTrucosOqb();
     bool isApplet();
     std::string getContentsPath();
     // Dónde guardar (o actualizar) un .nro: respeta la carpeta propia de la app si ya existe.
