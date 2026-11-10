@@ -29,6 +29,15 @@ public:
     // Al terminar, cierra este marco y el de abajo (la ventana desde la que se
     // abrio) con el boton `etiqueta`: p. ej. bajar la base desde Trucos vuelve a Trucos.
     ConfirmPage* volverDosAtras(const std::string& etiqueta);
+    // Texto largo de varios pasos (como la explicacion de la instalacion limpia):
+    // letra de lectura, alineado a la izquierda y boton "Continuar".
+    ConfirmPage* explicacion()
+    {
+        this->button->setLabel(brls::i18n::getStr("menus/common/continue"));
+        this->label->setFontSize(brls::Application::getStyle()->Label.regularFontSize);
+        this->label->setHorizontalAlign(NVG_ALIGN_LEFT);
+        return this;
+    }
 };
 
 class ConfirmPage_Done : public ConfirmPage

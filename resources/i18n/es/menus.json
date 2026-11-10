@@ -628,7 +628,8 @@
         "trabajando": "Limpiando e instalando",
         "ports": "Ports y emuladores con sus juegos",
         "cat_port": "Port",
-        "explica": "La instalación limpia instala {} y deja tu SD como recién formateada, solo con lo del pack.\n\n1. Se baja el pack y se revisa tu SD. Todavía no se borra nada.\n2. Ves la lista de lo que se quita y lo que se queda, y eliges si conservar las apps que no son del pack, los mods y los temas.\n3. Se confirma manteniendo A tres segundos. Recién ahí se borra (todo queda anotado en limpieza.log) y se instala el pack.\n\nNunca se tocan tus juegos, partidas, emuNAND, los respaldos de hekate ni lo que esté en preserve.txt."
+        "explica": "La instalación limpia instala {} y deja tu SD como recién formateada, solo con lo del pack.\n\n1. Se baja el pack y se revisa tu SD. Todavía no se borra nada.\n2. Ves la lista de lo que se quita y lo que se queda, y eliges si conservar las apps que no son del pack, los mods y los temas.\n3. Se confirma manteniendo A tres segundos. Recién ahí se borra (todo queda anotado en limpieza.log) y se instala el pack.\n\nNunca se tocan tus juegos, partidas, emuNAND, los respaldos de hekate ni lo que esté en preserve.txt.",
+        "explica_normal": "La instalación normal actualiza {} sin tocar lo tuyo. Es la forma indicada si solo quieres actualizar rápido.\n\n1. Se baja el pack.\n2. Se cambian Atmosphère, hekate y sus archivos por los del pack. Lo que el pack ya no trae se quita, para que no cause problemas al arrancar.\n3. Se instala el pack y se vuelven a poner tus trucos y tu tema.\n\nSe quedan tus apps, juegos, partidas, emuNAND, los mods guardados en /mods, tus entradas de hekate, tus payloads y lo que esté en preserve.txt. Los mods que activaste con SimpleModManager hay que volver a activarlos.\n\nSi la consola da problemas o quieres dejar la SD como nueva, usa la instalación limpia."
     },
     "trucos": {
         "titulo": "Trucos",

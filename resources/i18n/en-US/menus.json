@@ -607,7 +607,8 @@
         "trabajando": "Cleaning and installing",
         "ports": "Ports and emulators with their games",
         "cat_port": "Port",
-        "explica": "A clean install installs {} and leaves your SD like freshly formatted, with only what the pack brings.\n\n1. The pack is downloaded and your SD is checked. Nothing is deleted yet.\n2. You see what will be removed and what stays, and choose whether to keep apps that aren't in the pack, mods and themes.\n3. You confirm by holding A for three seconds. Only then is anything deleted (all logged in limpieza.log) and the pack installed.\n\nYour games, saves, emuNAND, hekate backups and anything in preserve.txt are never touched."
+        "explica": "A clean install installs {} and leaves your SD like freshly formatted, with only what the pack brings.\n\n1. The pack is downloaded and your SD is checked. Nothing is deleted yet.\n2. You see what will be removed and what stays, and choose whether to keep apps that aren't in the pack, mods and themes.\n3. You confirm by holding A for three seconds. Only then is anything deleted (all logged in limpieza.log) and the pack installed.\n\nYour games, saves, emuNAND, hekate backups and anything in preserve.txt are never touched.",
+        "explica_normal": "The normal install updates {} without touching your stuff. It's the right choice if you just want to update quickly.\n\n1. The pack is downloaded.\n2. Atmosphère, hekate and their files are replaced with the pack's. Whatever the pack no longer includes is removed so it doesn't cause boot problems.\n3. The pack is installed and your cheats and theme are put back.\n\nYour apps, games, saves, emuNAND, mods stored in /mods, your hekate entries, your payloads and whatever is in preserve.txt stay. Mods you turned on with SimpleModManager need to be turned on again.\n\nIf the console has problems or you want the SD like new, use the clean install."
     },
     "trucos": {
         "titulo": "Cheats",

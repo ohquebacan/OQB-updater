@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "ams_tab.hpp"
 
 #include <filesystem>
@@ -194,8 +195,17 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
 {
     brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
     stagedFrame->setTitle(this->type == contentType::ams_cfw ? "menus/ams_update/getting_ams"_i18n : "menus/ams_update/custom_download"_i18n);
-    stagedFrame->addStage(
-        new ConfirmPage(stagedFrame, text));
+    /* En un pack, la primera pantalla explica que hace la instalacion normal,
+       como la limpia: que se cambia, que se queda y cuando conviene la otra. */
+    if (this->type == contentType::ams_cfw && !packKey.empty()) {
+        std::string nombre = packKey.substr(0, packKey.rfind(".zip"));
+        std::replace(nombre.begin(), nombre.end(), '-', ' ');
+        ConfirmPage* explica = new ConfirmPage(stagedFrame, fmt::format("menus/limpia/explica_normal"_i18n, nombre));
+        explica->explicacion();
+        stagedFrame->addStage(explica);
+    }
+    else
+        stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
     /* El tema o menu alternativo se conserva siempre al actualizar el pack: sin
        cambiar de firmware sigue funcionando, y borrarlo obligaba a ponerlo de nuevo
        cada vez. Se quita al bajar un firmware (ListDownloadTab, contentType::fw). */
