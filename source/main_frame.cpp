@@ -30,6 +30,8 @@
 #include "bacan_shop_tab.hpp"
 #include "download.hpp"
 #include "fs.hpp"
+#include "confirm_page.hpp"
+#include "worker_page.hpp"
 #include "progress_event.hpp"
 #include <filesystem>
 #include "extract.hpp"
@@ -439,37 +441,33 @@ MainFrame::MainFrame() : TabFrame()
                 case InicioTab::Destino::Partidas: this->irA(this->itemBacan); return;
                 case InicioTab::Destino::Nextendo: this->irA(this->itemNextendo); return;
                 case InicioTab::Destino::Warmboot: {
-                    brls::Dialog* d = new DialogoCentrado(fmt::format("menus/inicio/wb_explica"_i18n, wbVersion, wbVersion), 330);
-                    d->addButton("menus/inicio/llaves_ahora_no"_i18n, [d](brls::View*) { d->close(); });
-                    d->addButton("menus/inicio/wb_instalar"_i18n, [d, wbVersion, wbUrl](brls::View*) {
-                        d->close();
-                        /* Dos archivos: warmboot_mariko/wb_XX.bin y
-                           bootloader/sys/l4t/sc7exit_b01.bin (el anterior queda como .bak). */
-                        const std::string zip = std::string(CONFIG_PATH) + "warmboot.zip";
-                        /* La senal de "cancelar" de una operacion anterior (p. ej. la
-                           actualizacion de la app) seguia puesta y cortaba esta
-                           descarga al primer byte. Las demas la limpian al empezar. */
-                        ProgressEvent::instance().reset();
+                    /* Con el flujo de siempre (pantallas de progreso), no desde los
+                       botones de un Dialog: hacerlo ahi mientras el Dialog se cerraba
+                       y abrir otro encima botaba la app (crash 10-nov 04:16). */
+                    brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+                    frame->setTitle(fmt::format("Warmboot {}", wbVersion));
+                    ConfirmPage* explica = new ConfirmPage(frame, fmt::format("menus/inicio/wb_explica"_i18n, wbVersion, wbVersion));
+                    explica->explicacion();
+                    frame->addStage(explica);
+                    const std::string zip = std::string(CONFIG_PATH) + "warmboot.zip";
+                    frame->addStage(new WorkerPage(frame, "menus/common/downloading"_i18n, [wbUrl, zip]() {
                         const long rc = download::downloadFile(wbUrl, zip, OFF);
-                        if (rc != 200 || !util::existeEnSd(zip)) {
-                            util::showDialogBoxInfo("menus/inicio/wb_error"_i18n);
-                            return;
-                        }
+                        std::error_code ec;
+                        if (rc != 200 || !std::filesystem::exists(zip, ec))
+                            ProgressEvent::instance().setStatusCode(rc > 399 ? rc : STATUS_DOWNLOAD_FAILED);
+                    }));
+                    frame->addStage(new WorkerPage(frame, "menus/common/extracting"_i18n, [zip]() {
+                        // Dos archivos: warmboot_mariko/wb_XX.bin y bootloader/sys/l4t/sc7exit_b01.bin (el anterior queda como .bak).
                         const std::string sc7 = "/bootloader/sys/l4t/sc7exit_b01.bin";
                         std::error_code ec;
-                        if (util::existeEnSd(sc7)) std::filesystem::copy_file(sc7, sc7 + ".bak", std::filesystem::copy_options::overwrite_existing, ec);
-                        ProgressEvent::instance().reset();
+                        if (std::filesystem::exists(sc7, ec)) std::filesystem::copy_file(sc7, sc7 + ".bak", std::filesystem::copy_options::overwrite_existing, ec);
                         extract::extract(zip, ROOT_PATH);
-                        // Comprobado: los dos archivos tienen que haber quedado en la SD.
-                        if (!std::filesystem::exists("/bootloader/sys/l4t/sc7exit_b01.bin", ec) || !std::filesystem::exists("/warmboot_mariko", ec)) {
-                            util::showDialogBoxInfo("menus/inicio/wb_error"_i18n);
-                            return;
-                        }
                         std::filesystem::remove(zip, ec);
-                        util::showDialogBoxInfo(fmt::format("menus/inicio/wb_ok"_i18n, wbVersion));
-                    });
-                    d->setCancelable(true);
-                    d->open();
+                        if (!std::filesystem::exists(sc7, ec) || !std::filesystem::exists("/warmboot_mariko", ec))
+                            ProgressEvent::instance().setStatusCode(STATUS_DOWNLOAD_FAILED);
+                    }));
+                    frame->addStage(new ConfirmPage_Done(frame, fmt::format("menus/inicio/wb_ok"_i18n, wbVersion)));
+                    brls::Application::pushView(frame);
                     return;
                 }
                 case InicioTab::Destino::Llaves: {
