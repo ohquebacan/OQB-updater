@@ -1,6 +1,7 @@
 #include "inicio_tab.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 
 #include "iconos_oqb.hpp"
@@ -152,25 +153,33 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
     /* Aviso de firmware nuevo que Atmosphère todavia no soporta (lo manda el
        catalogo). Franja discreta; roja si la consola ya esta en ese firmware. */
     if (!this->datos.fwAviso.empty()) {
+        /* Mas notoria: algo mas gruesa, borde del color del aviso y un pulso
+           suave (el fondo y el borde suben y bajan cada ~1,6 s). */
+        const float t = std::chrono::duration<float>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const float pulso = 0.5f + 0.5f * std::sin(t * 3.9f);  // 0..1
         const NVGcolor c = this->a(this->datos.fwAvisoGrave ? oqb::rojoTexto() : oqb::doradoTexto());
-        const NVGcolor fondo = this->datos.fwAvisoGrave ? nvgRGBA(226, 75, 74, oqb::oscuro() ? 40 : 30) : nvgRGBA(230, 185, 92, oqb::oscuro() ? 40 : 60);
-        nvgFontSize(vg, 15.0f);
-        nvgTextLineHeight(vg, 1.25f);
+        const NVGcolor base = this->datos.fwAvisoGrave ? nvgRGBA(226, 75, 74, 255) : nvgRGBA(230, 185, 92, 255);
+        const float alfaFondo = (oqb::oscuro() ? 0.16f : 0.22f) + 0.14f * pulso;
+        nvgFontSize(vg, 16.0f);
+        nvgTextLineHeight(vg, 1.3f);
         float caja[4];
-        nvgTextBoxBounds(vg, 0, 0, ancho - 56.0f, this->datos.fwAviso.c_str(), nullptr, caja);
-        const float bh = std::max(40.0f, caja[3] - caja[1] + 22.0f);
+        nvgTextBoxBounds(vg, 0, 0, ancho - 64.0f, this->datos.fwAviso.c_str(), nullptr, caja);
+        const float bh = std::max(52.0f, caja[3] - caja[1] + 32.0f);
         nvgBeginPath(vg);
-        nvgRoundedRect(vg, px, py - 8.0f, ancho, bh, 10.0f);
-        nvgFillColor(vg, this->a(fondo));
+        nvgRoundedRect(vg, px, py - 8.0f, ancho, bh, 12.0f);
+        nvgFillColor(vg, this->a(nvgRGBAf(base.r, base.g, base.b, alfaFondo)));
         nvgFill(vg);
-        iconos::dibujar(vg, iconos::Icono::Escudo, px + 20.0f, py - 8.0f + bh / 2, 16.0f, c);
+        nvgStrokeColor(vg, this->a(nvgRGBAf(base.r, base.g, base.b, 0.35f + 0.5f * pulso)));
+        nvgStrokeWidth(vg, 2.0f);
+        nvgStroke(vg);
+        iconos::dibujar(vg, iconos::Icono::Escudo, px + 24.0f, py - 8.0f + bh / 2, 20.0f, c);
         nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
         nvgFillColor(vg, c);
         nvgBeginPath(vg);
-        nvgTextBox(vg, px + 40.0f, py + 3.0f, ancho - 56.0f, this->datos.fwAviso.c_str(), nullptr);
+        nvgTextBox(vg, px + 48.0f, py + 8.0f, ancho - 64.0f, this->datos.fwAviso.c_str(), nullptr);
         for (int i = 0; i < (int)this->tarjetas.size(); ++i)
-            if (this->tarjetas[i].destino == Destino::Warmboot) marcoFoco(i, px, py - 8.0f, ancho, bh, 10.0f);
-        py += bh + 8.0f;
+            if (this->tarjetas[i].destino == Destino::Warmboot) marcoFoco(i, px, py - 8.0f, ancho, bh, 12.0f);
+        py += bh + 10.0f;
     }
 
     // Fichas con los datos de la consola.
