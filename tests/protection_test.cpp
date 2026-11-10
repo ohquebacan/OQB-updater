@@ -286,6 +286,109 @@ int main()
             std::cout << "FALLA  Nextendo a medias deberia reportarse\n";
             ++failures;
         }
+        if (!protection::nextendoOnSysnand(checks))
+            std::cout << "ok     con carpeta emuMMC y sin saber la NAND no se avisa de sysNAND\n";
+        else {
+            std::cout << "FALLA  sin saber la NAND y con emuMMC no deberia avisarse de sysNAND\n";
+            ++failures;
+        }
+    }
+    {
+        /* El caso de la foto: arranco en sysNAND, sysmmc.txt manda a Nextendo,
+           emummc.txt bloquea y el PRODINFO de sysNAND sigue en blanco. Se avisa
+           de las dos cosas, pero no se corta: todo sigue explicado por Nextendo. */
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/emummc.txt", HOSTS_BLOCK);
+        write(sd + "/atmosphere/hosts/sysmmc.txt", "51.178.29.194 *.nintendo.com\n");
+        Rt rt;
+        rt.dns = Rt::Dns::Redirected;
+        rt.dnsAddress = "51.178.29.194";
+        rt.dnsDetail = "accounts.nintendo.com → 51.178.29.194";
+        rt.nand = Rt::Nand::Sys;
+        rt.blankProdinfo = 1;
+        const auto checks = protection::run(sd, rt);
+        expect("Nextendo en sysNAND es aviso", checks, protection::NEXTENDO_SYSNAND_CHECK, protection::Status::Warning);
+        expect("Nextendo en sysNAND con PRODINFO en blanco esta a medias", checks, protection::NEXTENDO_CHECK,
+               protection::Status::Warning);
+        if (protection::nextendoOnSysnand(checks) && protection::nextendoIncomplete(checks) &&
+            protection::failedOnlyByNextendo(checks))
+            std::cout << "ok     Nextendo en sysNAND avisa sin cortar\n";
+        else {
+            std::cout << "FALLA  Nextendo en sysNAND deberia avisar y seguir explicado por Nextendo\n";
+            ++failures;
+        }
+
+        // Mismo arranque, pero mostrando el numero de serie: completo, solo el aviso de sysNAND.
+        rt.blankProdinfo = 0;
+        const auto shown = protection::run(sd, rt);
+        expect("Nextendo en sysNAND completo sale en verde", shown, protection::NEXTENDO_CHECK, protection::Status::Ok);
+        expect("y el aviso de sysNAND sigue", shown, protection::NEXTENDO_SYSNAND_CHECK, protection::Status::Warning);
+
+        // Sin saber el PRODINFO del arranque, se lee el de sysmmc en el ini.
+        rt.blankProdinfo = -1;
+        write(sd + "/exosphere.ini", "[exosphere]\nblank_prodinfo_emummc=1\nblank_prodinfo_sysmmc=0\n");
+        expect("en sysNAND se lee blank_prodinfo_sysmmc", protection::run(sd, rt), protection::NEXTENDO_CHECK,
+               protection::Status::Ok);
+    }
+    {
+        // En emuNAND no se avisa de sysNAND, y el PRODINFO del arranque manda sobre el ini.
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/emummc.txt", "51.178.29.194 *.nintendo.com\n");
+        write(sd + "/exosphere.ini", "[exosphere]\nblank_prodinfo_emummc=0\nblank_prodinfo_sysmmc=1\n");
+        Rt rt;
+        rt.nand = Rt::Nand::Emu;
+        rt.blankProdinfo = 1;
+        const auto checks = protection::run(sd, rt);
+        expect("el PRODINFO real del arranque manda sobre el ini", checks, protection::NEXTENDO_CHECK,
+               protection::Status::Warning);
+        if (!protection::nextendoOnSysnand(checks))
+            std::cout << "ok     Nextendo en emuNAND no avisa de sysNAND\n";
+        else {
+            std::cout << "FALLA  Nextendo en emuNAND no deberia avisar de sysNAND\n";
+            ++failures;
+        }
+    }
+    {
+        /* Nextendo configurado solo para emuNAND, arrancando en sysNAND: ahi no
+           se usa, asi que ni aviso de sysNAND ni "a medias". Igual con la prueba
+           de DNS (bloqueado) que sin ella (manda el hosts de sysNAND). */
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/emummc.txt", "51.178.29.194 *.nintendo.com\n");
+        Rt rt;
+        rt.nand = Rt::Nand::Sys;
+        rt.blankProdinfo = 1;
+        rt.dns = Rt::Dns::Blocked;
+        const auto blocked = protection::run(sd, rt);
+        rt.dns = Rt::Dns::NotTested;
+        const auto untested = protection::run(sd, rt);
+        if (!protection::nextendoOnSysnand(blocked) && !protection::nextendoIncomplete(blocked) &&
+            !protection::nextendoOnSysnand(untested) && !protection::nextendoIncomplete(untested))
+            std::cout << "ok     Nextendo solo en la otra NAND no avisa en este arranque\n";
+        else {
+            std::cout << "FALLA  Nextendo solo en la otra NAND no deberia avisar en este arranque\n";
+            ++failures;
+        }
+
+        // Y al reves: arrancando en emuNAND, ahi si esta activo y no es sysNAND.
+        rt.nand = Rt::Nand::Emu;
+        const auto emu = protection::run(sd, rt);
+        if (!protection::nextendoOnSysnand(emu) && protection::nextendoIncomplete(emu))
+            std::cout << "ok     en la NAND donde si esta activo, se revisa el PRODINFO\n";
+        else {
+            std::cout << "FALLA  en emuNAND con Nextendo activo deberia revisarse el PRODINFO\n";
+            ++failures;
+        }
+    }
+    {
+        // Sin Nextendo, arrancar en sysNAND no es asunto de este aviso.
+        Rt rt;
+        rt.nand = Rt::Nand::Sys;
+        if (!protection::nextendoOnSysnand(protection::run(makeSd(), rt)))
+            std::cout << "ok     sin Nextendo no se avisa de sysNAND\n";
+        else {
+            std::cout << "FALLA  sin Nextendo no deberia avisarse de sysNAND\n";
+            ++failures;
+        }
     }
     {
         // Un servidor que no es de Nextendo (puede ser el de Nintendo): falla a

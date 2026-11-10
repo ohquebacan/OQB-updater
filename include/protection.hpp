@@ -50,6 +50,20 @@ namespace protection {
         std::string dnsAddress;  // solo la direccion, para reconocer a Nextendo
         uint32_t firmware = 0;   // (mayor << 16) | (menor << 8) | micro; 0 = no se sabe
         uint32_t atmosphere = 0; // igual que firmware
+        /* En que NAND arranco la consola, segun Exosphere (config 65007).
+           Unknown en las pruebas y si no se pudo preguntar: entonces se
+           deduce por la carpeta emuMMC de la SD, como antes. */
+        enum class Nand
+        {
+            Unknown,
+            Sys,
+            Emu,
+        };
+        Nand nand = Nand::Unknown;
+        /* Si el PRODINFO esta en blanco en ESTE arranque, segun Exosphere
+           (config 65005). -1 = no se sabe y se lee exosphere.ini. Es mejor
+           que el ini: dice lo que de verdad se aplico al arrancar. */
+        int blankProdinfo = -1;
     };
 
     // Ejecuta todas las comprobaciones, en orden de importancia.
@@ -74,8 +88,15 @@ namespace protection {
     // Nombre de la comprobacion que solo aparece con Nextendo activo.
     constexpr const char NEXTENDO_CHECK[] = "Nextendo configurado";
 
+    // Aviso que solo aparece con Nextendo activo arrancando en sysNAND.
+    constexpr const char NEXTENDO_SYSNAND_CHECK[] = "Nextendo en sysNAND";
+
     // true si Nextendo redirige pero no muestra el numero de serie.
     bool nextendoIncomplete(const std::vector<Check>& checks);
+
+    /* true si Nextendo esta activo arrancando en sysNAND. Hay quien lo usa
+       asi a proposito, asi que es aviso y no corta nada; solo se explica. */
+    bool nextendoOnSysnand(const std::vector<Check>& checks);
 
     // true si hay fallas y todas son por Nextendo.
     bool failedOnlyByNextendo(const std::vector<Check>& checks);

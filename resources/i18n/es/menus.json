@@ -20,7 +20,8 @@
         "status_unknown": "No se pudo leer",
         "status_protection_nextendo": "Nextendo",
         "status_protection_nextendo_sub": "Nextendo apaga el bloqueo para conectarse a sus servidores. Es normal mientras lo uses. Presiona A para ver el detalle.",
-        "status_protection_nextendo_incomplete_sub": "Nextendo quedó a medias y no va a funcionar. Presiona A para ver qué falta."
+        "status_protection_nextendo_incomplete_sub": "Nextendo quedó a medias y no va a funcionar. Presiona A para ver qué falta.",
+        "status_protection_nextendo_sysnand_sub": "Nextendo está activo en la consola original (sysNAND). Mejor úsalo en emuNAND para evitar baneos. Presiona A para ver cómo."
     },
     "cheats": {
         "installed": "Trucos instalados",
@@ -785,6 +786,8 @@
         "prot_falla_sub": "La consola puede conectarse a Nintendo. Presiona A para ver qué falta.",
         "prot_nextendo": "Apagadas por Nextendo",
         "prot_nextendo_sub": "Es normal mientras uses Nextendo. Presiona A para ver el detalle.",
+        "prot_nextendo_incomplete_sub": "Nextendo quedó a medias y probablemente no funcione. Presiona A para ver qué falta.",
+        "prot_nextendo_sysnand_sub": "Nextendo está activo en sysNAND. Mejor úsalo en emuNAND para evitar baneos. Presiona A.",
         "bien": "{} de {} bien",
         "diag_nada": "No hay errores registrados en la SD.",
         "diag_ultimo": "Último: {} ({}) el {}. Presiona A para ver el detalle.",

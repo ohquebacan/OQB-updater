@@ -242,7 +242,13 @@ void EstadoView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
         nvgFontSize(vg, 16.0f);
         nvgFillColor(vg, tenue);
         nvgBeginPath(vg);
-        nvgText(vg, px + 100, py + 58, cortar(vg, nextendo ? "menus/estado/prot_nextendo_sub"_i18n : falla ? "menus/estado/prot_falla_sub"_i18n : "menus/estado/prot_ok_sub"_i18n, ancho - 330).c_str(), nullptr);
+        /* Con Nextendo en sysNAND casi siempre sale tambien "a medias" (Prelude
+           solo destapa el PRODINFO de emuNAND), y el aviso de sysNAND explica
+           las dos cosas, asi que va primero. */
+        const std::string subNextendo = protection::nextendoOnSysnand(this->checks) ? "menus/estado/prot_nextendo_sysnand_sub"_i18n
+                                        : protection::nextendoIncomplete(this->checks) ? "menus/estado/prot_nextendo_incomplete_sub"_i18n
+                                                                                       : "menus/estado/prot_nextendo_sub"_i18n;
+        nvgText(vg, px + 100, py + 58, cortar(vg, nextendo ? subNextendo : falla ? "menus/estado/prot_falla_sub"_i18n : "menus/estado/prot_ok_sub"_i18n, ancho - 330).c_str(), nullptr);
         pildora(vg, px + ancho - 26, py + 44, fmt::format("menus/estado/bien"_i18n, bien, this->checks.size()), this->a(tono), this->a(conAlfa(tono, 0.16f)));
 
         const float cw = (ancho - 52 - 24) / 2;

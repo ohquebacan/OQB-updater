@@ -21,7 +21,8 @@
         "status_unknown": "Could not read",
         "status_protection_nextendo": "Nextendo",
         "status_protection_nextendo_sub": "Nextendo turns off blocking to reach its servers. This is normal while you use it. Press A for the details.",
-        "status_protection_nextendo_incomplete_sub": "Nextendo is only half set up and will not work. Press A to see what is missing."
+        "status_protection_nextendo_incomplete_sub": "Nextendo is only half set up and will not work. Press A to see what is missing.",
+        "status_protection_nextendo_sysnand_sub": "Nextendo is on in the original console (sysNAND). Use it in emuNAND to avoid bans. Press A to see how."
     },
     "cheats": {
         "installed": "Installed cheats",
@@ -764,6 +765,8 @@
         "prot_falla_sub": "The console can connect to Nintendo. Press A to see what's missing.",
         "prot_nextendo": "Off because of Nextendo",
         "prot_nextendo_sub": "This is normal while you use Nextendo. Press A for details.",
+        "prot_nextendo_incomplete_sub": "Nextendo is only half set up and will probably not work. Press A to see what is missing.",
+        "prot_nextendo_sysnand_sub": "Nextendo is on in sysNAND. Use it in emuNAND to avoid bans. Press A.",
         "bien": "{} of {} OK",
         "diag_nada": "No errors recorded on the SD card.",
         "diag_ultimo": "Last: {} ({}) on {}. Press A for details.",

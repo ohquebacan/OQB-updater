@@ -249,7 +249,11 @@ namespace protection {
         std::vector<std::string> not_nextendo = {"Bloqueo DNS en este firmware"};
         if (rt.dns == Runtime::Dns::Redirected && !nextendo) not_nextendo.push_back("DNS MITM activado");
 
+        /* Que dio cada fichero de hosts, para saber despues si Nextendo esta
+           activo en ESTE arranque y no solo configurado para la otra NAND. */
+        std::vector<std::pair<std::string, HostsResult>> hosts_results;
         const auto note = [&](const std::string& name, HostsResult r) {
+            hosts_results.emplace_back(name, r);
             if (r == HostsResult::RedirectsNextendo) nextendo = true;
             if (r == HostsResult::RedirectsOther) not_nextendo.push_back(name);
         };
@@ -360,17 +364,82 @@ namespace protection {
                 }
             }
 
+            /* En que NAND se esta usando. Exosphere lo dice; si no se pudo
+               preguntar (las pruebas), se deduce como antes: con carpeta
+               emuMMC se da por emuNAND. */
+            const bool sysnand = rt.nand == Runtime::Nand::Sys ||
+                                 (rt.nand == Runtime::Nand::Unknown && !std::filesystem::exists(root + EMUMMC_DIR));
+
+            /* Nextendo activo en ESTE arranque, no solo configurado. Puede haber
+               un emummc.txt que manda a Nextendo mientras se arranca en sysNAND
+               bloqueado: eso no es "Nextendo en sysNAND" ni esta a medias.
+               - La prueba de DNS lo dice directo cuando se pudo hacer.
+               - Si no, manda el hosts de esta NAND (o default.txt si no existe).
+               - Sin saber la NAND (las pruebas), se queda lo de antes. */
+            bool here = true;
+            if (rt.dns == Runtime::Dns::Blocked) {
+                here = false;
+            }
+            else if (rt.dns == Runtime::Dns::Redirected) {
+                here = isNextendoServer(rt.dnsAddress);
+            }
+            else if (rt.nand != Runtime::Nand::Unknown) {
+                const std::string own = rt.nand == Runtime::Nand::Sys ? "hosts/sysmmc.txt" : "hosts/emummc.txt";
+                const auto result_of = [&](const std::string& n) {
+                    for (const auto& [name, r] : hosts_results)
+                        if (name == n) return r;
+                    return HostsResult::Absent;
+                };
+                HostsResult active = result_of(own);
+                if (active == HostsResult::Absent) active = result_of("hosts/default.txt");
+                here = active == HostsResult::RedirectsNextendo;
+            }
+
+            /* 4a. Nextendo en sysNAND. Prelude (4.0.5) escribe sysmmc.txt y
+                   emummc.txt a la vez, asi que activarlo desde emuNAND tambien
+                   manda la sysNAND a Nextendo, se quiera o no. Y solo destapa el
+                   PRODINFO de emuNAND (deja blank_prodinfo_sysmmc=1), asi que en
+                   sysNAND lo mas probable es que no funcione. Hay quien lo usa
+                   asi a proposito, asi que no se corta nada: solo se avisa. */
+            if (here && sysnand) {
+                checks.push_back({NEXTENDO_SYSNAND_CHECK, Status::Warning,
+                                  "Estás usando Nextendo en la consola original (sysNAND). Te recomendamos no "
+                                  "usarlo aquí: la sysNAND es la que se conecta a Nintendo, y usar Nextendo en ella "
+                                  "puede aumentar el riesgo de baneo cuando vuelva a conectarse. Úsalo arrancando "
+                                  "en emuNAND, que está para esto. Ojo: Prelude activa Nextendo en las dos a la "
+                                  "vez, aunque lo hayas activado desde emuNAND. Para dejar la sysNAND limpia, "
+                                  "vuelve a Nintendo en Prelude antes de arrancarla (lo apaga en las dos) y vuelve "
+                                  "a activarlo cuando entres a emuNAND. Si lo usas en sysNAND a propósito, "
+                                  "puedes seguir"});
+            }
+
             /* 4. Nextendo a medias. Prelude cambia dos cosas: los hosts, para
                   mandar la consola a sus servidores, y el PRODINFO, para que la
                   consola muestre su numero de serie y esos servidores la
                   reconozcan. Si solo llego lo primero, Nextendo no funciona. Pasa
                   cuando el pack se copio desde la computadora sin reemplazar y
-                  quedo un exosphere.ini de antes; la app si reemplaza. */
-            if (std::filesystem::exists(root + EMUMMC_DIR)) {
-                std::string value;
-                const bool hidden = !findIniValue(readFile(root + EXOSPHERE_INI), "blank_prodinfo_emummc", value) ||
-                                    value == "1";
-                if (hidden) {
+                  quedo un exosphere.ini de antes; la app si reemplaza. Se mira
+                  el PRODINFO de la NAND en la que se arranco. */
+            if (here && (sysnand || std::filesystem::exists(root + EMUMMC_DIR))) {
+                bool hidden;
+                if (rt.blankProdinfo >= 0) {
+                    hidden = rt.blankProdinfo == 1;
+                }
+                else {
+                    std::string value;
+                    const char* key = sysnand ? "blank_prodinfo_sysmmc" : "blank_prodinfo_emummc";
+                    hidden = !findIniValue(readFile(root + EXOSPHERE_INI), key, value) || value == "1";
+                }
+                if (hidden && sysnand) {
+                    /* En sysNAND reinstalar el pack no lo arregla: Prelude solo
+                       destapa el PRODINFO de emuNAND. */
+                    checks.push_back({NEXTENDO_CHECK, Status::Warning,
+                                      "Nextendo está activo aquí, pero la sysNAND no muestra su número de serie, así "
+                                      "que lo más probable es que sus servidores no la reconozcan. Es lo esperado: "
+                                      "Prelude solo muestra el número de serie en emuNAND. Si Nextendo te funciona "
+                                      "igual en sysNAND, puedes ignorar esto. Si no, úsalo arrancando en emuNAND"});
+                }
+                else if (hidden) {
                     checks.push_back({NEXTENDO_CHECK, Status::Warning,
                                       "Nextendo está activo, pero la consola no muestra su número de serie, así que "
                                       "sus servidores no la van a reconocer. Esto pasa cuando el pack se copia a la "
@@ -401,6 +470,16 @@ namespace protection {
         u64 ams = 0;
         if (R_SUCCEEDED(splGetConfig(static_cast<SplConfigItem>(65000), &ams))) {
             rt.atmosphere = version((ams >> 56) & 0xFF, (ams >> 48) & 0xFF, (ams >> 40) & 0xFF);
+        }
+
+        // 65007: tipo de emuMMC del arranque (0 = sysNAND). 65005: PRODINFO en blanco.
+        u64 emummc = 0;
+        if (R_SUCCEEDED(splGetConfig(static_cast<SplConfigItem>(65007), &emummc))) {
+            rt.nand = emummc == 0 ? Runtime::Nand::Sys : Runtime::Nand::Emu;
+        }
+        u64 blank = 0;
+        if (R_SUCCEEDED(splGetConfig(static_cast<SplConfigItem>(65005), &blank))) {
+            rt.blankProdinfo = blank != 0 ? 1 : 0;
         }
 
         /* Un host que los hosts del pack bloquean y que Atmosphere no bloquea
@@ -452,6 +531,13 @@ namespace protection {
     {
         return std::any_of(checks.begin(), checks.end(), [](const Check& c) {
             return c.name == NEXTENDO_CHECK && c.status == Status::Warning;
+        });
+    }
+
+    bool nextendoOnSysnand(const std::vector<Check>& checks)
+    {
+        return std::any_of(checks.begin(), checks.end(), [](const Check& c) {
+            return c.name == NEXTENDO_SYSNAND_CHECK && c.status == Status::Warning;
         });
     }
 
