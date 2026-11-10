@@ -36,14 +36,17 @@ namespace {
 InicioTab::InicioTab(Datos d, std::function<void(Destino)> irA) : datos(std::move(d)), ir(std::move(irA))
 {
     // Arriba, dos tarjetas: el pack de la SD y esta app, cada una con su estado.
-    this->tarjetas.push_back({Destino::Packs, 0, 0});
-    this->tarjetas.push_back({Destino::App, 0, 1});
+    // Fila 0: la ficha de prod.keys (la unica de los datos de arriba que se elige).
+    this->tarjetas.push_back({Destino::Llaves, 0, 0});
+    this->tarjetas.push_back({Destino::Packs, 1, 0});
+    this->tarjetas.push_back({Destino::App, 1, 1});
     int col = 0;
-    this->tarjetas.push_back({Destino::Apps, 1, col++});
-    if (this->datos.hayTrucos) this->tarjetas.push_back({Destino::Trucos, 1, col++});
-    if (this->datos.partidas >= 0) this->tarjetas.push_back({Destino::Partidas, 1, col++});
-    if (this->datos.hayNextendo) this->tarjetas.push_back({Destino::Nextendo, 1, col++});
-    this->tarjetas.push_back({Destino::Estado, 2, 0});
+    this->tarjetas.push_back({Destino::Apps, 2, col++});
+    if (this->datos.hayTrucos) this->tarjetas.push_back({Destino::Trucos, 2, col++});
+    if (this->datos.partidas >= 0) this->tarjetas.push_back({Destino::Partidas, 2, col++});
+    if (this->datos.hayNextendo) this->tarjetas.push_back({Destino::Nextendo, 2, col++});
+    this->tarjetas.push_back({Destino::Estado, 3, 0});
+    this->elegida = 1;  // se empieza en el pack, como antes
 
     this->registerAction("", brls::Key::DUP, [this] { return this->mover(-1, 0); }, true);
     this->registerAction("", brls::Key::DDOWN, [this] { return this->mover(1, 0); }, true);
@@ -82,7 +85,7 @@ bool InicioTab::mover(int dFila, int dCol)
         return false;  // borde: a la izquierda vuelve al menu
     }
     // Arriba/abajo: la fila siguiente que exista, en la columna mas cercana.
-    for (int fila = actual.fila + dFila; fila >= 0 && fila <= 2; fila += dFila) {
+    for (int fila = actual.fila + dFila; fila >= 0 && fila <= 3; fila += dFila) {
         int mejor = -1, distancia = 1000;
         for (int i = 0; i < (int)this->tarjetas.size(); ++i) {
             if (this->tarjetas[i].fila != fila) continue;
@@ -135,6 +138,37 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
     nvgText(vg, px, py + 48.0f, "menus/inicio/subtitulo"_i18n.c_str(), nullptr);
     py += 84.0f;
 
+    auto marcoFoco = [&](int indice, float bx, float by, float bw, float bh, float radio) {
+        if (!conFoco || indice != this->elegida) return;
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, bx - 3, by - 3, bw + 6, bh + 6, radio + 3);
+        nvgStrokeColor(vg, foco);
+        nvgStrokeWidth(vg, 3.0f);
+        nvgStroke(vg);
+    };
+
+    /* Aviso de firmware nuevo que Atmosphère todavia no soporta (lo manda el
+       catalogo). Franja discreta; roja si la consola ya esta en ese firmware. */
+    if (!this->datos.fwAviso.empty()) {
+        const NVGcolor c = this->a(this->datos.fwAvisoGrave ? oqb::rojoTexto() : oqb::doradoTexto());
+        const NVGcolor fondo = this->datos.fwAvisoGrave ? nvgRGBA(226, 75, 74, oqb::oscuro() ? 40 : 30) : nvgRGBA(230, 185, 92, oqb::oscuro() ? 40 : 60);
+        nvgFontSize(vg, 15.0f);
+        nvgTextLineHeight(vg, 1.25f);
+        float caja[4];
+        nvgTextBoxBounds(vg, 0, 0, ancho - 56.0f, this->datos.fwAviso.c_str(), nullptr, caja);
+        const float bh = std::max(40.0f, caja[3] - caja[1] + 22.0f);
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, px, py - 8.0f, ancho, bh, 10.0f);
+        nvgFillColor(vg, this->a(fondo));
+        nvgFill(vg);
+        iconos::dibujar(vg, iconos::Icono::Escudo, px + 20.0f, py - 8.0f + bh / 2, 16.0f, c);
+        nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+        nvgFillColor(vg, c);
+        nvgBeginPath(vg);
+        nvgTextBox(vg, px + 40.0f, py + 3.0f, ancho - 56.0f, this->datos.fwAviso.c_str(), nullptr);
+        py += bh + 8.0f;
+    }
+
     // Fichas con los datos de la consola.
     {
         const std::pair<std::string, std::string> fichas[] = {
@@ -142,11 +176,13 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
             {"menus/inicio/pack"_i18n, this->datos.pack},     {"menus/inicio/arranque"_i18n, this->datos.arranque},
             {"menus/inicio/libre"_i18n, this->datos.libre}};
         float fx = px;
+        nvgFontSize(vg, 17.0f);
+        const float anchoLlaves = std::max(nvgTextBounds(vg, 0, 0, this->datos.llavesTexto.c_str(), nullptr, nullptr), 80.0f) + 42.0f;
         for (const auto& [etiqueta, valor] : fichas) {
             if (valor.empty()) continue;
             nvgFontSize(vg, 17.0f);
             const float w = std::max(nvgTextBounds(vg, 0, 0, valor.c_str(), nullptr, nullptr), 80.0f) + 32.0f;
-            if (fx + w > px + ancho) break;
+            if (fx + w > px + ancho - anchoLlaves) break;
             nvgBeginPath(vg);
             nvgRoundedRect(vg, fx, py, w, 60.0f, 12.0f);
             nvgFillColor(vg, tarjeta);
@@ -161,17 +197,33 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
             nvgText(vg, fx + 16.0f, py + 30.0f, valor.c_str(), nullptr);
             fx += w + 10.0f;
         }
+        // prod.keys: la ficha que se elige (A explica y ofrece sacarlas).
+        {
+            const std::string valor = this->datos.llavesTexto;
+            const NVGcolor c = this->a(this->datos.llavesEstado == 0 || this->datos.llavesEstado == 3 ? oqb::verdeTexto()
+                                       : this->datos.llavesEstado == 1                                ? oqb::doradoTexto()
+                                                                                                       : oqb::rojoTexto());
+            nvgFontSize(vg, 17.0f);
+            const float w = std::max(nvgTextBounds(vg, 0, 0, valor.c_str(), nullptr, nullptr), 80.0f) + 32.0f;
+            const float lx = std::min(fx, px + ancho - w);
+            nvgBeginPath(vg);
+            nvgRoundedRect(vg, lx, py, w, 60.0f, 12.0f);
+            nvgFillColor(vg, tarjeta);
+            nvgFill(vg);
+            for (int i = 0; i < (int)this->tarjetas.size(); ++i)
+                if (this->tarjetas[i].destino == Destino::Llaves) marcoFoco(i, lx, py, w, 60.0f, 12.0f);
+            nvgFontSize(vg, 13.0f);
+            nvgFillColor(vg, tenue);
+            nvgBeginPath(vg);
+            nvgText(vg, lx + 16.0f, py + 10.0f, "menus/inicio/llaves"_i18n.c_str(), nullptr);
+            nvgFontSize(vg, 17.0f);
+            nvgFillColor(vg, c);
+            nvgBeginPath(vg);
+            nvgText(vg, lx + 16.0f, py + 30.0f, valor.c_str(), nullptr);
+        }
         py += 76.0f;
     }
 
-    auto marcoFoco = [&](int indice, float bx, float by, float bw, float bh, float radio) {
-        if (!conFoco || indice != this->elegida) return;
-        nvgBeginPath(vg);
-        nvgRoundedRect(vg, bx - 3, by - 3, bw + 6, bh + 6, radio + 3);
-        nvgStrokeColor(vg, foco);
-        nvgStrokeWidth(vg, 3.0f);
-        nvgStroke(vg);
-    };
 
     /* Arriba, dos tarjetas: el pack que esta en la SD y esta app. Dorado si hay
        version nueva (A la instala directo), verde si esta al dia. */
@@ -179,7 +231,7 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         const float gap = 14.0f, bh = 92.0f, tw = (ancho - gap) / 2.0f;
         for (int i = 0; i < (int)this->tarjetas.size(); ++i) {
             const Tarjeta& t = this->tarjetas[i];
-            if (t.fila != 0) continue;
+            if (t.fila != 1) continue;
             const float tx = px + t.col * (tw + gap);
             const bool esPack = t.destino == Destino::Packs;
             const bool nuevo = esPack ? this->datos.packNuevo : this->datos.appNueva;
@@ -231,12 +283,13 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
     {
         int columnas = 0;
         for (const auto& t : this->tarjetas)
-            if (t.fila == 1) ++columnas;
-        const float gap = 14.0f, th = 166.0f;
+            if (t.fila == 2) ++columnas;
+        // Con el aviso de firmware arriba, los accesos un poco mas bajos para que entre todo.
+        const float gap = 14.0f, th = this->datos.fwAviso.empty() ? 166.0f : 146.0f;
         const float tw = columnas ? (ancho - gap * (columnas - 1)) / columnas : ancho;
         for (int i = 0; i < (int)this->tarjetas.size(); ++i) {
             const Tarjeta& t = this->tarjetas[i];
-            if (t.fila != 1) continue;
+            if (t.fila != 2) continue;
             const float tx = px + t.col * (tw + gap);
             std::string num, titulo, sub;
             iconos::Icono icono = iconos::Icono::Apps;
@@ -287,20 +340,21 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
             nvgFillColor(vg, this->a(fondoIcono));
             nvgFill(vg);
             iconos::dibujar(vg, icono, tx + 38.0f, py + 38.0f, 22.0f, this->a(color));
+            const bool compacta = th < 160.0f;
             nvgFontFaceId(vg, titulos);
-            nvgFontSize(vg, 40.0f);
+            nvgFontSize(vg, compacta ? 34.0f : 40.0f);
             nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
             nvgFillColor(vg, texto);
             nvgBeginPath(vg);
-            nvgText(vg, tx + 18.0f, py + 68.0f, num.c_str(), nullptr);
+            nvgText(vg, tx + 18.0f, py + (compacta ? 62.0f : 68.0f), num.c_str(), nullptr);
             nvgFontFaceId(vg, regular);
             nvgFontSize(vg, 16.0f);
             nvgBeginPath(vg);
-            nvgText(vg, tx + 18.0f, py + 112.0f, cortar(vg, titulo, tw - 36.0f).c_str(), nullptr);
+            nvgText(vg, tx + 18.0f, py + th - (compacta ? 48.0f : 54.0f), cortar(vg, titulo, tw - 36.0f).c_str(), nullptr);
             nvgFontSize(vg, 14.0f);
             nvgFillColor(vg, tenue);
             nvgBeginPath(vg);
-            nvgText(vg, tx + 18.0f, py + 136.0f, cortar(vg, sub, tw - 36.0f).c_str(), nullptr);
+            nvgText(vg, tx + 18.0f, py + th - (compacta ? 26.0f : 30.0f), cortar(vg, sub, tw - 36.0f).c_str(), nullptr);
         }
         py += th + 16.0f;
     }

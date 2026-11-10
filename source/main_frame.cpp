@@ -5,7 +5,10 @@
 #include <cmath>
 #include <fstream>
 #include <json.hpp>
+#include <map>
 #include <set>
+#include <vector>
+#include <cctype>
 #include <thread>
 
 #include "about_tab.hpp"
@@ -111,6 +114,65 @@ namespace {
             nxlinksGuardado["_partidas"] = partidasObtenidas;
         }
         consultado = nxlinksGuardado.is_object() && !nxlinksGuardado.empty();
+    }
+
+    // "23.5.0" -> {23,5,0} para comparar.
+    std::vector<int> partesVersion(const std::string& v)
+    {
+        std::vector<int> out;
+        int n = 0;
+        bool hay = false;
+        for (char c : v + ".") {
+            if (std::isdigit(static_cast<unsigned char>(c))) {
+                n = n * 10 + (c - '0');
+                hay = true;
+            }
+            else if (c == '.') {
+                out.push_back(hay ? n : 0);
+                n = 0;
+                hay = false;
+            }
+            else
+                break;
+        }
+        while (out.size() < 3) out.push_back(0);
+        return out;
+    }
+
+    /* Generacion de llave maestra -> primer firmware que la usa. Sale de
+       Atmosphère (pkg1_key_generation.hpp). El catalogo puede agregar las nuevas
+       ("llaves_firmware": {"17": "24.0.0"}, en hex) sin sacar version. */
+    std::map<int, std::string> tablaLlaves(const nlohmann::ordered_json& nxlinks)
+    {
+        std::map<int, std::string> t = {{0x00, "1.0.0"},  {0x01, "3.0.0"},  {0x02, "3.0.1"},  {0x03, "4.0.0"},  {0x04, "5.0.0"},  {0x05, "6.0.0"},
+                                        {0x06, "6.2.0"},  {0x07, "7.0.0"},  {0x08, "8.1.0"},  {0x09, "9.0.0"},  {0x0A, "9.1.0"},  {0x0B, "12.1.0"},
+                                        {0x0C, "13.0.0"}, {0x0D, "14.0.0"}, {0x0E, "15.0.0"}, {0x0F, "16.0.0"}, {0x10, "17.0.0"}, {0x11, "18.0.0"},
+                                        {0x12, "19.0.0"}, {0x13, "20.0.0"}, {0x14, "21.0.0"}, {0x15, "22.0.0"}, {0x16, "23.0.0"}};
+        if (nxlinks.is_object() && nxlinks.contains("llaves_firmware") && nxlinks["llaves_firmware"].is_object())
+            for (const auto& [k, v] : nxlinks["llaves_firmware"].items())
+                if (v.is_string()) t[std::strtol(k.c_str(), nullptr, 16)] = v.get<std::string>();
+        return t;
+    }
+
+    // La generacion de llave mas alta con valor en un prod.keys (-1 si no hay).
+    int llaveMasAlta(const std::string& ruta)
+    {
+        std::ifstream f(ruta);
+        std::string linea;
+        int max = -1;
+        while (std::getline(f, linea)) {
+            const auto p = linea.find("master_key_");
+            if (p == std::string::npos || p != linea.find_first_not_of(" \t")) continue;
+            const std::string idx = linea.substr(p + 11, 2);
+            const auto igual = linea.find('=');
+            if (idx.size() != 2 || !std::isxdigit(static_cast<unsigned char>(idx[0])) || !std::isxdigit(static_cast<unsigned char>(idx[1])) || igual == std::string::npos)
+                continue;
+            std::string valor = linea.substr(igual + 1);
+            valor.erase(std::remove_if(valor.begin(), valor.end(), [](char c) { return std::isspace(static_cast<unsigned char>(c)); }), valor.end());
+            if (valor.size() != 32 || valor.find_first_not_of('0') == std::string::npos) continue;
+            max = std::max(max, (int)std::strtol(idx.c_str(), nullptr, 16));
+        }
+        return max;
     }
 }  // namespace
 
@@ -257,6 +319,56 @@ MainFrame::MainFrame() : TabFrame()
                 }
             datos.partidas = conPartida.size();
         }
+        // prod.keys: si estan y de que firmware son, comparado con el de la consola.
+        {
+            const char* rutas[] = {"/switch/prod.keys", "/prod.keys"};
+            std::string ruta;
+            for (const char* r : rutas)
+                if (util::existeEnSd(r)) {
+                    ruta = r;
+                    break;
+                }
+            if (ruta.empty()) {
+                datos.llavesEstado = 2;
+                datos.llavesTexto = "menus/inicio/llaves_no"_i18n;
+            }
+            else {
+                const auto tabla = tablaLlaves(nxlinks);
+                const int tengo = llaveMasAlta(ruta);
+                const auto consola = partesVersion(datos.firmware);
+                int necesita = -1;
+                for (const auto& [gen, fw] : tabla)
+                    if (partesVersion(fw) <= consola) necesita = std::max(necesita, gen);
+                const auto suya = tabla.find(tengo);
+                if (tengo < 0 || suya == tabla.end()) {
+                    datos.llavesEstado = 3;
+                    datos.llavesTexto = "menus/inicio/llaves_hay"_i18n;
+                }
+                else if (necesita > tengo) {
+                    datos.llavesEstado = 1;
+                    datos.llavesTexto = fmt::format("menus/inicio/llaves_viejas"_i18n, suya->second);
+                }
+                else {
+                    datos.llavesEstado = 0;
+                    datos.llavesTexto = fmt::format("menus/inicio/llaves_ok_hasta"_i18n, suya->second);
+                }
+            }
+        }
+        /* Aviso de firmware nuevo que Atmosphère no soporta todavia. Lo manda el
+           catalogo ("firmware_aviso": {"version": "23.5.0", "soportado": false}). */
+        if (nxlinks.is_object() && nxlinks.contains("firmware_aviso") && nxlinks["firmware_aviso"].is_object()) {
+            const auto& av = nxlinks["firmware_aviso"];
+            const std::string v = av.contains("version") && av["version"].is_string() ? av["version"].get<std::string>() : "";
+            const bool soportado = av.contains("soportado") && av["soportado"].is_boolean() && av["soportado"].get<bool>();
+            if (!v.empty() && !soportado) {
+                if (partesVersion(datos.firmware) >= partesVersion(v)) {
+                    datos.fwAvisoGrave = true;
+                    datos.fwAviso = fmt::format("menus/inicio/fw_aviso_en"_i18n, datos.firmware);
+                }
+                else
+                    datos.fwAviso = fmt::format("menus/inicio/fw_aviso_antes"_i18n, v);
+            }
+        }
         datos.hayNextendo = conNextendo;
         datos.nextendoFunciona = conNextendo && NextendoTab::working(nxlinks, nextendoActivo);
         for (const auto& c : checks) {
@@ -281,7 +393,9 @@ MainFrame::MainFrame() : TabFrame()
         const std::vector<protection::Check> copia = checks;
         const bool packNuevo = datos.packNuevo, appNueva = datos.appNueva;
         const std::string clavePack = packVersion::current();
-        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack](InicioTab::Destino d) {
+        const int llavesEstado = datos.llavesEstado;
+        const std::string firmwareConsola = datos.firmware;
+        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack, llavesEstado, firmwareConsola](InicioTab::Destino d) {
             switch (d) {
                 case InicioTab::Destino::Estado: {
                     // Rediseno: protecciones, Cliente OQB y apoyo (los datos de la consola ya estan en Inicio).
@@ -306,6 +420,30 @@ MainFrame::MainFrame() : TabFrame()
                 case InicioTab::Destino::Apps: this->irA(this->itemApps); return;
                 case InicioTab::Destino::Partidas: this->irA(this->itemBacan); return;
                 case InicioTab::Destino::Nextendo: this->irA(this->itemNextendo); return;
+                case InicioTab::Destino::Llaves: {
+                    /* Explica, y solo reinicia en Lockpick_RCM Pro si se elige. */
+                    const std::string payload = "/bootloader/payloads/Lockpick_RCM_Pro.bin";
+                    std::string texto;
+                    if (llavesEstado == 2) texto = "menus/inicio/llaves_explica_no"_i18n;
+                    else if (llavesEstado == 1) texto = fmt::format("menus/inicio/llaves_explica_viejas"_i18n, firmwareConsola);
+                    else texto = fmt::format("menus/inicio/llaves_explica_ok"_i18n, "/switch/prod.keys");
+                    if (!util::existeEnSd(payload)) {
+                        brls::Dialog* d = new brls::Dialog(texto + "\n\n" + "menus/inicio/llaves_sin_payload"_i18n);
+                        d->addButton("menus/common/ok"_i18n, [d](brls::View*) { d->close(); });
+                        d->setCancelable(true);
+                        d->open();
+                        return;
+                    }
+                    brls::Dialog* d = new brls::Dialog(texto + "\n\n" + "menus/inicio/llaves_pasos"_i18n);
+                    d->addButton("menus/inicio/llaves_ahora_no"_i18n, [d](brls::View*) { d->close(); });
+                    d->addButton("menus/inicio/llaves_reiniciar"_i18n, [d, payload](brls::View*) {
+                        d->close();
+                        util::rebootToPayload(payload);
+                    });
+                    d->setCancelable(true);
+                    d->open();
+                    return;
+                }
             }
         };
         this->addTab("menus/inicio/menu"_i18n, new InicioTab(datos, ir));

@@ -12,7 +12,7 @@
 class InicioTab : public brls::View
 {
 public:
-    enum class Destino { Packs, App, Apps, Trucos, Partidas, Nextendo, Estado };
+    enum class Destino { Packs, App, Apps, Trucos, Partidas, Nextendo, Estado, Llaves };
 
     struct Datos {
         std::string ams, firmware, pack, packFecha, arranque, libre;
@@ -29,6 +29,12 @@ public:
         bool hayNextendo = false, nextendoFunciona = false;
         int avisos = 0;                  // protecciones con algo para mirar
         bool proteccionFalla = false;    // alguna protección no esta activa
+        // prod.keys: 0 al dia, 1 viejas, 2 no hay, 3 hay (sin saber de que firmware)
+        int llavesEstado = 2;
+        std::string llavesTexto;
+        // Aviso de firmware que Atmosphère todavia no soporta ("" = sin aviso)
+        std::string fwAviso;
+        bool fwAvisoGrave = false;       // la consola ya esta en ese firmware
     };
 
     InicioTab(Datos datos, std::function<void(Destino)> ir);
