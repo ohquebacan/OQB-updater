@@ -750,6 +750,22 @@ namespace util {
         aplicarTrucosOqb(false, true);
     }
 
+    // Un archivo de la base (cheats.zip), o "" si no esta.
+    std::string archivoDeLaBase(const std::string& ruta)
+    {
+        std::string out;
+        if (unzFile z = unzOpen(CHEATS_FILENAME)) {
+            if (unzLocateFile(z, ruta.c_str(), 2) == UNZ_OK && unzOpenCurrentFile(z) == UNZ_OK) {
+                char buf[4096];
+                int n;
+                while ((n = unzReadCurrentFile(z, buf, sizeof(buf))) > 0 && out.size() < (4u << 20)) out.append(buf, n);
+                unzCloseCurrentFile(z);
+            }
+            unzClose(z);
+        }
+        return out;
+    }
+
     std::string versionTrucosOqb()
     {
         std::ifstream f(TRUCOS_OQB);
@@ -811,7 +827,11 @@ namespace util {
                 const std::string actual = std::filesystem::exists(ruta, ec) ? readFile(ruta) : std::string();
                 if (actual == nuevo) continue;
                 const bool nuestro = puestos.contains(ruta) && puestos[ruta].is_string() && puestos[ruta].get<std::string>() == hashDe(actual);
-                if (!actual.empty() && !forzar && !nuestro && !forzados.count(tid)) continue;
+                /* Sin forzar se pisa: lo que pusimos nosotros, o el archivo tal cual
+                   vino de la base (asi se arregla tambien a quien ya la tenia). */
+                if (!actual.empty() && !forzar && !nuestro && !forzados.count(tid) &&
+                    actual != archivoDeLaBase("contents/" + tid + "/cheats/" + bid + ".txt"))
+                    continue;
                 std::filesystem::create_directories(contents + tid + "/cheats", ec);
                 const std::string tmp = ruta + ".tmp";
                 {
