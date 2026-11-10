@@ -157,8 +157,10 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
            suave (el fondo y el borde suben y bajan cada ~1,6 s). */
         const float t = std::chrono::duration<float>(std::chrono::steady_clock::now().time_since_epoch()).count();
         const float pulso = 0.5f + 0.5f * std::sin(t * 3.9f);  // 0..1
-        const NVGcolor c = this->a(this->datos.fwAvisoGrave ? oqb::rojoTexto() : oqb::doradoTexto());
-        const NVGcolor base = this->datos.fwAvisoGrave ? nvgRGBA(226, 75, 74, 255) : nvgRGBA(230, 185, 92, 255);
+        /* Rojizo (coral) para que no se confunda con el amarillo de "actualizacion
+           pendiente"; rojo pleno si la consola ya esta en ese firmware. */
+        const NVGcolor c = this->a(this->datos.fwAvisoGrave ? oqb::rojoTexto() : (oqb::oscuro() ? nvgRGB(255, 150, 120) : nvgRGB(170, 55, 30)));
+        const NVGcolor base = this->datos.fwAvisoGrave ? nvgRGBA(226, 75, 74, 255) : nvgRGBA(235, 100, 70, 255);
         const float alfaFondo = (oqb::oscuro() ? 0.16f : 0.22f) + 0.14f * pulso;
         nvgFontSize(vg, 16.0f);
         nvgTextLineHeight(vg, 1.3f);
