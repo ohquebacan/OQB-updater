@@ -760,13 +760,15 @@
         "llaves_titulo": "Llaves de la consola (prod.keys)",
         "llaves_explica_no": "No hay prod.keys en la SD. Algunas apps las necesitan.",
         "llaves_explica_viejas": "Tus prod.keys son de un firmware anterior al de tu consola ({}).",
-        "llaves_explica_ok": "Tus prod.keys están al día (/switch/prod.keys).",
-        "llaves_pasos": "1. La consola se reinicia en Lockpick_RCM Pro.\n2. Elige la partición con el firmware más nuevo: SysNAND o emuMMC. Ahora estás en {} con {}.\n3. Al terminar, vuelve a hekate y entra a Atmosphère.",
+        "llaves_explica_ok": "Tus prod.keys están al día.",
+        "llaves_pasos": "1. La consola se reinicia en Lockpick_RCM Pro.\n2. Elige la partición con el firmware más nuevo (SysNAND o emuMMC).\n3. Al terminar, vuelve a hekate y entra a Atmosphère.",
         "llaves_reiniciar": "Reiniciar y sacar llaves",
         "llaves_ahora_no": "Ahora no",
         "llaves_sin_payload": "No está Lockpick_RCM Pro en /bootloader/payloads. Instala o actualiza el pack para tenerlo.",
         "fw_aviso_antes": "Salió el firmware {}. Atmosphère todavía no lo soporta: no actualices la consola por ahora.",
-        "fw_aviso_en": "Tu consola tiene el firmware {}, que Atmosphère todavía no soporta. Lo más probable es que no arranque hasta que salga una versión nueva."
+        "fw_aviso_en": "Tu consola tiene el firmware {}, que Atmosphère todavía no soporta. Lo más probable es que no arranque hasta que salga una versión nueva.",
+        "llaves_pasos_mariko": "1. La consola se reinicia en hekate.\n2. Entra a Payloads y elige Lockpick_RCM_Pro.\n3. Elige la partición con el firmware más nuevo (SysNAND o emuMMC).\n4. Al terminar, vuelve a hekate y entra a Atmosphère.",
+        "llaves_reiniciar_hekate": "Reiniciar en hekate"
     },
     "estado": {
         "titulo": "ESTADO",

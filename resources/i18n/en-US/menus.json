@@ -739,13 +739,15 @@
         "llaves_titulo": "Console keys (prod.keys)",
         "llaves_explica_no": "There is no prod.keys on the SD. Some apps need them.",
         "llaves_explica_viejas": "Your prod.keys come from an older firmware than your console ({}).",
-        "llaves_explica_ok": "Your prod.keys are up to date (/switch/prod.keys).",
-        "llaves_pasos": "1. The console reboots into Lockpick_RCM Pro.\n2. Pick the partition with the newest firmware: SysNAND or emuMMC. You're now on {} with {}.\n3. When it finishes, go back to hekate and boot Atmosphère.",
+        "llaves_explica_ok": "Your prod.keys are up to date.",
+        "llaves_pasos": "1. The console reboots into Lockpick_RCM Pro.\n2. Pick the partition with the newest firmware (SysNAND or emuMMC).\n3. When it finishes, go back to hekate and boot Atmosphère.",
         "llaves_reiniciar": "Reboot and dump keys",
         "llaves_ahora_no": "Not now",
         "llaves_sin_payload": "Lockpick_RCM Pro is not in /bootloader/payloads. Install or update the pack to get it.",
         "fw_aviso_antes": "Firmware {} is out. Atmosphère doesn't support it yet: don't update the console for now.",
-        "fw_aviso_en": "Your console is on firmware {}, which Atmosphère doesn't support yet. It most likely won't boot until a new version comes out."
+        "fw_aviso_en": "Your console is on firmware {}, which Atmosphère doesn't support yet. It most likely won't boot until a new version comes out.",
+        "llaves_pasos_mariko": "1. The console reboots into hekate.\n2. Open Payloads and pick Lockpick_RCM_Pro.\n3. Pick the partition with the newest firmware (SysNAND or emuMMC).\n4. When it finishes, go back to hekate and boot Atmosphère.",
+        "llaves_reiniciar_hekate": "Reboot into hekate"
     },
     "estado": {
         "titulo": "STATUS",

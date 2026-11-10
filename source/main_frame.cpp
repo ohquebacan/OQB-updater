@@ -395,8 +395,8 @@ MainFrame::MainFrame() : TabFrame()
         const std::string clavePack = packVersion::current();
         const int llavesEstado = datos.llavesEstado;
         const std::string firmwareConsola = datos.firmware;
-        const std::string arranqueActual = datos.arranque;
-        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack, llavesEstado, firmwareConsola, arranqueActual](InicioTab::Destino d) {
+        const bool esErista = util::isErista();
+        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack, llavesEstado, firmwareConsola, esErista](InicioTab::Destino d) {
             switch (d) {
                 case InicioTab::Destino::Estado: {
                     // Rediseno: protecciones, Cliente OQB y apoyo (los datos de la consola ya estan en Inicio).
@@ -435,11 +435,14 @@ MainFrame::MainFrame() : TabFrame()
                         d->open();
                         return;
                     }
-                    brls::Dialog* d = new brls::Dialog(texto + "\n\n" + fmt::format("menus/inicio/llaves_pasos"_i18n, arranqueActual.empty() ? "?" : arranqueActual, firmwareConsola));
+                    /* En Mariko (con chip) no se puede reiniciar directo a un payload:
+                       la consola vuelve a hekate y Lockpick se elige en Payloads. */
+                    brls::Dialog* d = new brls::Dialog(texto + "\n\n" + (esErista ? "menus/inicio/llaves_pasos"_i18n : "menus/inicio/llaves_pasos_mariko"_i18n));
                     d->addButton("menus/inicio/llaves_ahora_no"_i18n, [d](brls::View*) { d->close(); });
-                    d->addButton("menus/inicio/llaves_reiniciar"_i18n, [d, payload](brls::View*) {
+                    d->addButton(esErista ? "menus/inicio/llaves_reiniciar"_i18n : "menus/inicio/llaves_reiniciar_hekate"_i18n, [d, payload, esErista](brls::View*) {
                         d->close();
-                        util::rebootToPayload(payload);
+                        if (esErista) util::rebootToPayload(payload);
+                        else util::shutDown(true);
                     });
                     d->setCancelable(true);
                     d->open();
