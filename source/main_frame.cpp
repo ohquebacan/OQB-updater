@@ -30,6 +30,7 @@
 #include "bacan_shop_tab.hpp"
 #include "download.hpp"
 #include "fs.hpp"
+#include "progress_event.hpp"
 #include <filesystem>
 #include "extract.hpp"
 #include "language_tab.hpp"
@@ -445,6 +446,10 @@ MainFrame::MainFrame() : TabFrame()
                         /* Dos archivos: warmboot_mariko/wb_XX.bin y
                            bootloader/sys/l4t/sc7exit_b01.bin (el anterior queda como .bak). */
                         const std::string zip = std::string(CONFIG_PATH) + "warmboot.zip";
+                        /* La senal de "cancelar" de una operacion anterior (p. ej. la
+                           actualizacion de la app) seguia puesta y cortaba esta
+                           descarga al primer byte. Las demas la limpian al empezar. */
+                        ProgressEvent::instance().reset();
                         const long rc = download::downloadFile(wbUrl, zip, OFF);
                         if (rc != 200 || !util::existeEnSd(zip)) {
                             util::showDialogBoxInfo("menus/inicio/wb_error"_i18n);
@@ -453,7 +458,13 @@ MainFrame::MainFrame() : TabFrame()
                         const std::string sc7 = "/bootloader/sys/l4t/sc7exit_b01.bin";
                         std::error_code ec;
                         if (util::existeEnSd(sc7)) std::filesystem::copy_file(sc7, sc7 + ".bak", std::filesystem::copy_options::overwrite_existing, ec);
+                        ProgressEvent::instance().reset();
                         extract::extract(zip, ROOT_PATH);
+                        // Comprobado: los dos archivos tienen que haber quedado en la SD.
+                        if (!std::filesystem::exists("/bootloader/sys/l4t/sc7exit_b01.bin", ec) || !std::filesystem::exists("/warmboot_mariko", ec)) {
+                            util::showDialogBoxInfo("menus/inicio/wb_error"_i18n);
+                            return;
+                        }
                         std::filesystem::remove(zip, ec);
                         util::showDialogBoxInfo(fmt::format("menus/inicio/wb_ok"_i18n, wbVersion));
                     });
