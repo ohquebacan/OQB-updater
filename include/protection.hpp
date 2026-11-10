@@ -31,6 +31,10 @@ namespace protection {
         /* Fallo porque se esta usando Nextendo, que apaga el bloqueo a
            proposito. Sigue siendo una falla; solo cambia como se explica. */
         bool byNextendo = false;
+        /* Esa falla es de la OTRA NAND, no de la que se arranco: p. ej. en
+           sysNAND, el emummc.txt y el PRODINFO de emuNAND que dejo Prelude.
+           La NAND actual sigue protegida. */
+        bool otherNand = false;
     };
 
     /* Lo que solo se sabe con la consola encendida: como resuelve el DNS de
@@ -97,6 +101,8 @@ namespace protection {
     /* true si Nextendo esta activo arrancando en sysNAND. Hay quien lo usa
        asi a proposito, asi que es aviso y no corta nada; solo se explica. */
     bool nextendoOnSysnand(const std::vector<Check>& checks);
+    // Nextendo esta activo solo en la otra NAND: lo unico que falla es de alla.
+    bool nextendoOnlyOtherNand(const std::vector<Check>& checks);
 
     // true si hay fallas y todas son por Nextendo.
     bool failedOnlyByNextendo(const std::vector<Check>& checks);

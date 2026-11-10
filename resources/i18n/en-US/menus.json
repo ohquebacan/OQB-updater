@@ -772,6 +772,8 @@
         "diag_ultimo": "Last: {} ({}) on {}. Press A for details.",
         "diag_limpio": "No errors",
         "diag_uno": "1 error",
-        "diag_varios": "{} errors"
+        "diag_varios": "{} errors",
+        "prot_otra_nand": "Protected on this NAND",
+        "prot_otra_nand_sub": "Nextendo is only active on the other NAND. This one still blocks Nintendo."
     }
 }

@@ -395,21 +395,34 @@ namespace protection {
                 here = active == HostsResult::RedirectsNextendo;
             }
 
-            /* 4a. Nextendo en sysNAND. Prelude (4.0.5) escribe sysmmc.txt y
-                   emummc.txt a la vez, asi que activarlo desde emuNAND tambien
-                   manda la sysNAND a Nextendo, se quiera o no. Y solo destapa el
-                   PRODINFO de emuNAND (deja blank_prodinfo_sysmmc=1), asi que en
-                   sysNAND lo mas probable es que no funcione. Hay quien lo usa
-                   asi a proposito, asi que no se corta nada: solo se avisa. */
+            /* Si en este arranque Nextendo NO esta activo, lo que falla por
+               Nextendo es de la otra NAND (Prelude solo escribe la del arranque
+               en que se activo). Se marca para no decir "apagadas" de esta. */
+            if (!here && rt.nand != Runtime::Nand::Unknown) {
+                const char* otra = sysnand ? "emu" : "sys";
+                for (auto& c : checks) {
+                    std::string n = c.name;
+                    std::transform(n.begin(), n.end(), n.begin(), [](unsigned char ch) { return std::tolower(ch); });
+                    if (c.byNextendo && n.find(otra) != std::string::npos) c.otherNand = true;
+                }
+            }
+
+            /* 4a. Nextendo en sysNAND. Desde Prelude 4.0.12 (revisado en el
+                   codigo de 4.0.21) el modo Nextendo solo escribe los hosts de la
+                   NAND con la que se arranco (sysmmc.txt, emummc.txt o
+                   emummc_XXXX.txt): la otra NAND no se toca. Y solo cambia
+                   blank_prodinfo_emummc; la sysNAND queda con su PRODINFO. Si esta
+                   activo aqui es porque se activo arrancando en sysNAND. Hay quien
+                   lo usa asi a proposito, asi que no se corta nada: solo se avisa. */
             if (here && sysnand) {
                 checks.push_back({NEXTENDO_SYSNAND_CHECK, Status::Warning,
                                   "Estás usando Nextendo en la consola original (sysNAND). Te recomendamos no "
                                   "usarlo aquí: la sysNAND es la que se conecta a Nintendo, y usar Nextendo en ella "
                                   "puede aumentar el riesgo de baneo cuando vuelva a conectarse. Úsalo arrancando "
-                                  "en emuNAND, que está para esto. Ojo: Prelude activa Nextendo en las dos a la "
-                                  "vez, aunque lo hayas activado desde emuNAND. Para dejar la sysNAND limpia, "
-                                  "vuelve a Nintendo en Prelude antes de arrancarla (lo apaga en las dos) y vuelve "
-                                  "a activarlo cuando entres a emuNAND. Si lo usas en sysNAND a propósito, "
+                                  "en emuNAND, que está para esto. Prelude solo lo activa en la NAND con la que "
+                                  "arrancaste, así que la otra no se toca. Para dejar la sysNAND limpia, abre "
+                                  "Prelude estando en sysNAND, elige el modo Nintendo y apaga la consola del todo; "
+                                  "luego actívalo arrancando en emuNAND. Si lo usas en sysNAND a propósito, "
                                   "puedes seguir"});
             }
 
@@ -532,6 +545,17 @@ namespace protection {
         return std::any_of(checks.begin(), checks.end(), [](const Check& c) {
             return c.name == NEXTENDO_CHECK && c.status == Status::Warning;
         });
+    }
+
+    bool nextendoOnlyOtherNand(const std::vector<Check>& checks)
+    {
+        bool alguna = false;
+        for (const auto& c : checks) {
+            if (c.status != Status::Fail) continue;
+            if (!c.otherNand) return false;
+            alguna = true;
+        }
+        return alguna;
     }
 
     bool nextendoOnSysnand(const std::vector<Check>& checks)

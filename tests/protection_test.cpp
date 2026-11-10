@@ -368,6 +368,13 @@ int main()
             std::cout << "FALLA  Nextendo solo en la otra NAND no deberia avisar en este arranque\n";
             ++failures;
         }
+        // Y el resumen de Estado no dice "apagadas": lo unico que falla es de emuNAND.
+        if (protection::nextendoOnlyOtherNand(blocked) && protection::nextendoOnlyOtherNand(untested))
+            std::cout << "ok     en sysNAND, con Nextendo solo en emuNAND, la NAND actual sale protegida\n";
+        else {
+            std::cout << "FALLA  Nextendo solo en la otra NAND no deberia avisar en este arranque\n";
+            ++failures;
+        }
 
         // Y al reves: arrancando en emuNAND, ahi si esta activo y no es sysNAND.
         rt.nand = Rt::Nand::Emu;

@@ -793,6 +793,8 @@
         "diag_ultimo": "Último: {} ({}) el {}. Presiona A para ver el detalle.",
         "diag_limpio": "Sin errores",
         "diag_uno": "1 error",
-        "diag_varios": "{} errores"
+        "diag_varios": "{} errores",
+        "prot_otra_nand": "Protegida en esta NAND",
+        "prot_otra_nand_sub": "Nextendo está activo solo en la otra NAND. Esta sigue bloqueando a Nintendo."
     }
 }
