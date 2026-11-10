@@ -12,6 +12,7 @@
 #include <thread>
 
 #include "about_tab.hpp"
+#include "dialogo_centrado.hpp"
 #include "current_cfw.hpp"
 #include "iconos_oqb.hpp"
 #include "inicio_tab.hpp"
@@ -437,7 +438,7 @@ MainFrame::MainFrame() : TabFrame()
                     }
                     /* En Mariko (con chip) no se puede reiniciar directo a un payload:
                        la consola vuelve a hekate y Lockpick se elige en Payloads. */
-                    brls::Dialog* d = new brls::Dialog(texto + "\n\n" + (esErista ? "menus/inicio/llaves_pasos"_i18n : "menus/inicio/llaves_pasos_mariko"_i18n));
+                    brls::Dialog* d = new DialogoCentrado(texto + "\n\n" + (esErista ? "menus/inicio/llaves_pasos"_i18n : "menus/inicio/llaves_pasos_mariko"_i18n), 460);
                     d->addButton("menus/inicio/llaves_ahora_no"_i18n, [d](brls::View*) { d->close(); });
                     d->addButton(esErista ? "menus/inicio/llaves_reiniciar"_i18n : "menus/inicio/llaves_reiniciar_hekate"_i18n, [d, payload, esErista](brls::View*) {
                         d->close();
