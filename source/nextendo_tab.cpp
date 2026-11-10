@@ -1,3 +1,4 @@
+#include <set>
 #include "nextendo_tab.hpp"
 #include "list_download_tab.hpp"
 #include "hora.hpp"
@@ -648,8 +649,18 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
     {
         const nlohmann::ordered_json juegos = datos.contains("juegos") ? datos["juegos"] : nlohmann::ordered_json::object();
         int instalados = 0, mal = 0;
+        /* Primero que juegos hay en la consola (una sola consulta). Pedir el
+           control de cada juego del catalogo, este o no instalado, tardaba unos
+           3,5 s, y la ventana se rearma tras cada instalacion. */
+        std::set<u64> enLaConsola;
+        {
+            std::vector<NsApplicationRecord> registros(64000);
+            s32 cuantos = 0;
+            if (R_SUCCEEDED(nsListApplicationRecord(registros.data(), registros.size(), 0, &cuantos)))
+                for (s32 i = 0; i < cuantos; ++i) enLaConsola.insert(registros[i].application_id);
+        }
         for (auto it = juegos.begin(); it != juegos.end(); ++it) {
-            if (!it.value().is_object() || versionInstalada(it.key()).empty())
+            if (!it.value().is_object() || !enLaConsola.count(std::strtoull(it.key().c_str(), nullptr, 16)) || versionInstalada(it.key()).empty())
                 continue;
             ++instalados;
             bool ok = false;
