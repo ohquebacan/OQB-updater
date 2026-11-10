@@ -608,7 +608,7 @@
         "ports": "Ports and emulators with their games",
         "cat_port": "Port",
         "explica": "A clean install installs {} and leaves your SD like freshly formatted, with only what the pack brings.\n\n1. The pack is downloaded and your SD is checked. Nothing is deleted yet.\n2. You see what will be removed and what stays, and choose whether to keep apps that aren't in the pack, mods and themes.\n3. You confirm by holding A for three seconds. Only then is anything deleted (all logged in limpieza.log) and the pack installed.\n\nYour games, saves, emuNAND, hekate backups and anything in preserve.txt are never touched.",
-        "explica_normal": "The normal install updates {} quickly, without touching your apps, games or saves.\n\nIt's the right choice to update. If the console has problems or you want the SD like new, use the clean install.\n\nMods turned on in SimpleModManager need to be turned on again."
+        "explica_normal": "The normal install updates {} quickly and easily.\n\nIf you want to clean up leftover files from other packs, use the clean install."
     },
     "trucos": {
         "titulo": "Cheats",

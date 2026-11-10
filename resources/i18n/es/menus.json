@@ -629,7 +629,7 @@
         "ports": "Ports y emuladores con sus juegos",
         "cat_port": "Port",
         "explica": "La instalación limpia instala {} y deja tu SD como recién formateada, solo con lo del pack.\n\n1. Se baja el pack y se revisa tu SD. Todavía no se borra nada.\n2. Ves la lista de lo que se quita y lo que se queda, y eliges si conservar las apps que no son del pack, los mods y los temas.\n3. Se confirma manteniendo A tres segundos. Recién ahí se borra (todo queda anotado en limpieza.log) y se instala el pack.\n\nNunca se tocan tus juegos, partidas, emuNAND, los respaldos de hekate ni lo que esté en preserve.txt.",
-        "explica_normal": "La instalación normal actualiza {} rápido, sin tocar tus apps, juegos ni partidas.\n\nEs la indicada para actualizar. Si la consola da problemas o quieres dejar la SD como nueva, usa la instalación limpia.\n\nLos mods activados en SimpleModManager hay que volver a activarlos."
+        "explica_normal": "La instalación normal actualiza {} de forma rápida y fácil.\n\nSi buscas limpiar los archivos basura de otros packs, usa la instalación limpia."
     },
     "trucos": {
         "titulo": "Trucos",
