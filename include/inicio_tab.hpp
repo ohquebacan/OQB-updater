@@ -12,7 +12,7 @@
 class InicioTab : public brls::View
 {
 public:
-    enum class Destino { Packs, App, Apps, Trucos, Partidas, Nextendo, Estado, Llaves };
+    enum class Destino { Packs, App, Apps, Trucos, Partidas, Nextendo, Estado, Llaves, Warmboot };
 
     struct Datos {
         std::string ams, firmware, pack, packFecha, arranque, libre;
@@ -35,6 +35,7 @@ public:
         // Aviso de firmware que Atmosphère todavia no soporta ("" = sin aviso)
         std::string fwAviso;
         bool fwAvisoGrave = false;       // la consola ya esta en ese firmware
+        bool fwAvisoWarmboot = false;    // Mariko y el catalogo trae el warmboot: la franja se elige y A lo instala
     };
 
     InicioTab(Datos datos, std::function<void(Destino)> ir);

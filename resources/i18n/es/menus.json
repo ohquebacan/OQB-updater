@@ -769,7 +769,12 @@
         "fw_aviso_antes": "Salió el firmware {}. Atmosphère todavía no lo soporta: no actualices la consola por ahora.",
         "fw_aviso_en": "Tu consola tiene el firmware {}, que Atmosphère todavía no soporta. Lo más probable es que no arranque hasta que salga una versión nueva.",
         "llaves_pasos_mariko": "1. La consola se reinicia en hekate.\n2. Entra a Payloads y elige Lockpick_RCM_Pro.\n3. Elige la partición con el firmware más nuevo (SysNAND o emuMMC).\n4. Al terminar, vuelve a hekate y entra a Atmosphère.",
-        "llaves_reiniciar_hekate": "Reiniciar en hekate"
+        "llaves_reiniciar_hekate": "Reiniciar en hekate",
+        "fw_aviso_warmboot": "Si actualizaste a {} en stock, pulsa A aquí e instala su warmboot, para que la consola no falle ni se quede con la pantalla apagada al salir del modo suspensión.",
+        "wb_explica": "Esto instala el warmboot de {} para consolas Mariko (dos archivos). Solo hace falta si actualizaste la consola a {} en stock.\n\nSin él, la consola puede fallar o quedarse con la pantalla apagada al salir del modo suspensión.",
+        "wb_instalar": "Instalar",
+        "wb_ok": "Warmboot de {} instalado. Ya puedes usar el modo suspensión.",
+        "wb_error": "No se pudo descargar el warmboot. Revisa la conexión e inténtalo de nuevo."
     },
     "estado": {
         "titulo": "ESTADO",

@@ -37,16 +37,18 @@ InicioTab::InicioTab(Datos d, std::function<void(Destino)> irA) : datos(std::mov
 {
     // Arriba, dos tarjetas: el pack de la SD y esta app, cada una con su estado.
     // Fila 0: la ficha de prod.keys (la unica de los datos de arriba que se elige).
-    this->tarjetas.push_back({Destino::Llaves, 0, 0});
-    this->tarjetas.push_back({Destino::Packs, 1, 0});
-    this->tarjetas.push_back({Destino::App, 1, 1});
+    // Fila 0: la franja del firmware nuevo, si se puede instalar el warmboot desde aqui.
+    if (this->datos.fwAvisoWarmboot) this->tarjetas.push_back({Destino::Warmboot, 0, 0});
+    this->tarjetas.push_back({Destino::Llaves, 1, 0});
+    this->tarjetas.push_back({Destino::Packs, 2, 0});
+    this->elegida = (int)this->tarjetas.size() - 1;  // se empieza en el pack, como antes
+    this->tarjetas.push_back({Destino::App, 2, 1});
     int col = 0;
-    this->tarjetas.push_back({Destino::Apps, 2, col++});
-    if (this->datos.hayTrucos) this->tarjetas.push_back({Destino::Trucos, 2, col++});
-    if (this->datos.partidas >= 0) this->tarjetas.push_back({Destino::Partidas, 2, col++});
-    if (this->datos.hayNextendo) this->tarjetas.push_back({Destino::Nextendo, 2, col++});
-    this->tarjetas.push_back({Destino::Estado, 3, 0});
-    this->elegida = 1;  // se empieza en el pack, como antes
+    this->tarjetas.push_back({Destino::Apps, 3, col++});
+    if (this->datos.hayTrucos) this->tarjetas.push_back({Destino::Trucos, 3, col++});
+    if (this->datos.partidas >= 0) this->tarjetas.push_back({Destino::Partidas, 3, col++});
+    if (this->datos.hayNextendo) this->tarjetas.push_back({Destino::Nextendo, 3, col++});
+    this->tarjetas.push_back({Destino::Estado, 4, 0});
 
     this->registerAction("", brls::Key::DUP, [this] { return this->mover(-1, 0); }, true);
     this->registerAction("", brls::Key::DDOWN, [this] { return this->mover(1, 0); }, true);
@@ -85,7 +87,7 @@ bool InicioTab::mover(int dFila, int dCol)
         return false;  // borde: a la izquierda vuelve al menu
     }
     // Arriba/abajo: la fila siguiente que exista, en la columna mas cercana.
-    for (int fila = actual.fila + dFila; fila >= 0 && fila <= 3; fila += dFila) {
+    for (int fila = actual.fila + dFila; fila >= 0 && fila <= 4; fila += dFila) {
         int mejor = -1, distancia = 1000;
         for (int i = 0; i < (int)this->tarjetas.size(); ++i) {
             if (this->tarjetas[i].fila != fila) continue;
@@ -166,6 +168,8 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         nvgFillColor(vg, c);
         nvgBeginPath(vg);
         nvgTextBox(vg, px + 40.0f, py + 3.0f, ancho - 56.0f, this->datos.fwAviso.c_str(), nullptr);
+        for (int i = 0; i < (int)this->tarjetas.size(); ++i)
+            if (this->tarjetas[i].destino == Destino::Warmboot) marcoFoco(i, px, py - 8.0f, ancho, bh, 10.0f);
         py += bh + 8.0f;
     }
 
@@ -231,7 +235,7 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         const float gap = 14.0f, bh = 92.0f, tw = (ancho - gap) / 2.0f;
         for (int i = 0; i < (int)this->tarjetas.size(); ++i) {
             const Tarjeta& t = this->tarjetas[i];
-            if (t.fila != 1) continue;
+            if (t.fila != 2) continue;
             const float tx = px + t.col * (tw + gap);
             const bool esPack = t.destino == Destino::Packs;
             const bool nuevo = esPack ? this->datos.packNuevo : this->datos.appNueva;
@@ -283,13 +287,13 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
     {
         int columnas = 0;
         for (const auto& t : this->tarjetas)
-            if (t.fila == 2) ++columnas;
+            if (t.fila == 3) ++columnas;
         // Con el aviso de firmware arriba, los accesos un poco mas bajos para que entre todo.
         const float gap = 14.0f, th = this->datos.fwAviso.empty() ? 166.0f : 146.0f;
         const float tw = columnas ? (ancho - gap * (columnas - 1)) / columnas : ancho;
         for (int i = 0; i < (int)this->tarjetas.size(); ++i) {
             const Tarjeta& t = this->tarjetas[i];
-            if (t.fila != 2) continue;
+            if (t.fila != 3) continue;
             const float tx = px + t.col * (tw + gap);
             std::string num, titulo, sub;
             iconos::Icono icono = iconos::Icono::Apps;

@@ -748,7 +748,12 @@
         "fw_aviso_antes": "Firmware {} is out. Atmosphère doesn't support it yet: don't update the console for now.",
         "fw_aviso_en": "Your console is on firmware {}, which Atmosphère doesn't support yet. It most likely won't boot until a new version comes out.",
         "llaves_pasos_mariko": "1. The console reboots into hekate.\n2. Open Payloads and pick Lockpick_RCM_Pro.\n3. Pick the partition with the newest firmware (SysNAND or emuMMC).\n4. When it finishes, go back to hekate and boot Atmosphère.",
-        "llaves_reiniciar_hekate": "Reboot into hekate"
+        "llaves_reiniciar_hekate": "Reboot into hekate",
+        "fw_aviso_warmboot": "If you updated to {} on stock, press A here and install its warmboot, so the console doesn't fail or stay with a black screen when waking from sleep.",
+        "wb_explica": "This installs the {} warmboot for Mariko consoles (two files). You only need it if you updated the console to {} on stock.\n\nWithout it, the console may fail or stay with a black screen when waking from sleep.",
+        "wb_instalar": "Install",
+        "wb_ok": "{} warmboot installed. You can use sleep mode now.",
+        "wb_error": "Couldn't download the warmboot. Check the connection and try again."
     },
     "estado": {
         "titulo": "STATUS",

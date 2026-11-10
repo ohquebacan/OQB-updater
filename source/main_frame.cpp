@@ -30,6 +30,8 @@
 #include "bacan_shop_tab.hpp"
 #include "download.hpp"
 #include "fs.hpp"
+#include <filesystem>
+#include "extract.hpp"
 #include "language_tab.hpp"
 #include "list_download_tab.hpp"
 #include "nextendo_tab.hpp"
@@ -368,6 +370,13 @@ MainFrame::MainFrame() : TabFrame()
                 }
                 else
                     datos.fwAviso = fmt::format("menus/inicio/fw_aviso_antes"_i18n, v);
+                /* En Mariko, quien ya actualizo en stock necesita el warmboot de esa
+                   version para salir del reposo: la franja lo ofrece y A lo instala. */
+                const std::string wbUrl = av.contains("warmboot_url") && av["warmboot_url"].is_string() ? av["warmboot_url"].get<std::string>() : "";
+                if (!util::isErista() && !wbUrl.empty()) {
+                    datos.fwAvisoWarmboot = true;
+                    datos.fwAviso += "\n" + fmt::format("menus/inicio/fw_aviso_warmboot"_i18n, v);
+                }
             }
         }
         datos.hayNextendo = conNextendo;
@@ -397,7 +406,13 @@ MainFrame::MainFrame() : TabFrame()
         const int llavesEstado = datos.llavesEstado;
         const std::string firmwareConsola = datos.firmware;
         const bool esErista = util::isErista();
-        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack, llavesEstado, firmwareConsola, esErista](InicioTab::Destino d) {
+        std::string wbVersion, wbUrl;
+        if (nxlinks.is_object() && nxlinks.contains("firmware_aviso") && nxlinks["firmware_aviso"].is_object()) {
+            const auto& av = nxlinks["firmware_aviso"];
+            if (av.contains("version") && av["version"].is_string()) wbVersion = av["version"].get<std::string>();
+            if (av.contains("warmboot_url") && av["warmboot_url"].is_string()) wbUrl = av["warmboot_url"].get<std::string>();
+        }
+        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack, llavesEstado, firmwareConsola, esErista, wbVersion, wbUrl](InicioTab::Destino d) {
             switch (d) {
                 case InicioTab::Destino::Estado: {
                     // Rediseno: protecciones, Cliente OQB y apoyo (los datos de la consola ya estan en Inicio).
@@ -422,6 +437,30 @@ MainFrame::MainFrame() : TabFrame()
                 case InicioTab::Destino::Apps: this->irA(this->itemApps); return;
                 case InicioTab::Destino::Partidas: this->irA(this->itemBacan); return;
                 case InicioTab::Destino::Nextendo: this->irA(this->itemNextendo); return;
+                case InicioTab::Destino::Warmboot: {
+                    brls::Dialog* d = new DialogoCentrado(fmt::format("menus/inicio/wb_explica"_i18n, wbVersion, wbVersion), 330);
+                    d->addButton("menus/inicio/llaves_ahora_no"_i18n, [d](brls::View*) { d->close(); });
+                    d->addButton("menus/inicio/wb_instalar"_i18n, [d, wbVersion, wbUrl](brls::View*) {
+                        d->close();
+                        /* Dos archivos: warmboot_mariko/wb_XX.bin y
+                           bootloader/sys/l4t/sc7exit_b01.bin (el anterior queda como .bak). */
+                        const std::string zip = std::string(CONFIG_PATH) + "warmboot.zip";
+                        const long rc = download::downloadFile(wbUrl, zip, OFF);
+                        if (rc != 200 || !util::existeEnSd(zip)) {
+                            util::showDialogBoxInfo("menus/inicio/wb_error"_i18n);
+                            return;
+                        }
+                        const std::string sc7 = "/bootloader/sys/l4t/sc7exit_b01.bin";
+                        std::error_code ec;
+                        if (util::existeEnSd(sc7)) std::filesystem::copy_file(sc7, sc7 + ".bak", std::filesystem::copy_options::overwrite_existing, ec);
+                        extract::extract(zip, ROOT_PATH);
+                        std::filesystem::remove(zip, ec);
+                        util::showDialogBoxInfo(fmt::format("menus/inicio/wb_ok"_i18n, wbVersion));
+                    });
+                    d->setCancelable(true);
+                    d->open();
+                    return;
+                }
                 case InicioTab::Destino::Llaves: {
                     /* Explica, y solo reinicia en Lockpick_RCM Pro si se elige. */
                     const std::string payload = "/bootloader/payloads/Lockpick_RCM_Pro.bin";
