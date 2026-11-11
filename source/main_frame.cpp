@@ -405,9 +405,14 @@ MainFrame::MainFrame() : TabFrame()
            sigue bloqueando. No se cuenta como «por revisar»; la linea lo dice. */
         const bool otraNand = protection::nextendoOnlyOtherNand(checks);
         if (otraNand) datos.nextendoOtraNand = protection::nextendoOtherNandName(checks);
+        /* Nextendo activo en ESTA NAND, a proposito: lo que cambio es por Nextendo
+           y se dice asi («Nextendo activado · N ajustes cambiados»), no como
+           «cosas para revisar». Lo que falla por otra cosa sigue contandose. */
+        const bool porNextendo = !otraNand && protection::failedOnlyByNextendo(checks);
         for (const auto& c : checks) {
             if (c.status == protection::Status::Fail && !c.byNextendo) datos.proteccionFalla = true;
             else if (otraNand && c.otherNand) continue;
+            else if (porNextendo && c.status == protection::Status::Fail && c.byNextendo) ++datos.nextendoCambios;
             else if (c.status != protection::Status::Ok) ++datos.avisos;
         }
     }

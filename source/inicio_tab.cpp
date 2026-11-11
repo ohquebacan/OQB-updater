@@ -378,7 +378,10 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
     for (int i = 0; i < (int)this->tarjetas.size(); ++i) {
         if (this->tarjetas[i].destino != Destino::Estado) continue;
         const float bh = 54.0f;
-        const NVGcolor c = this->a(this->datos.proteccionFalla ? oqb::rojoTexto() : (this->datos.avisos ? oqb::doradoTexto() : oqb::verdeTexto()));
+        const NVGcolor violeta = oqb::oscuro() ? nvgRGB(187, 168, 255) : nvgRGB(75, 50, 168);   // el tono de Nextendo en Estado
+        const NVGcolor c = this->a(this->datos.proteccionFalla ? oqb::rojoTexto()
+                                   : this->datos.avisos ? oqb::doradoTexto()
+                                   : this->datos.nextendoCambios ? violeta : oqb::verdeTexto());
         nvgBeginPath(vg);
         nvgRoundedRect(vg, px, py, ancho, bh, 14.0f);
         nvgFillColor(vg, tarjeta);
@@ -388,6 +391,7 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         const std::string estaNand = this->datos.nextendoOtraNand == "emuNAND" ? "SysNAND" : "EmuNAND";
         const std::string linea = this->datos.proteccionFalla ? "menus/inicio/proteccion_falla"_i18n
                                   : this->datos.avisos         ? fmt::format("menus/inicio/proteccion_avisos"_i18n, this->datos.avisos)
+                                  : this->datos.nextendoCambios ? fmt::format("menus/inicio/proteccion_nextendo"_i18n, this->datos.nextendoCambios)
                                   : !this->datos.nextendoOtraNand.empty() ? fmt::format("menus/inicio/proteccion_otra_nand"_i18n, estaNand, this->datos.nextendoOtraNand)
                                                                : "menus/inicio/proteccion_ok"_i18n;
         nvgFontSize(vg, 17.0f);
