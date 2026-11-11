@@ -271,6 +271,23 @@ MainFrame::MainFrame() : TabFrame()
         if (!clave.empty()) {
             std::string nombre = clave.substr(0, clave.rfind(".zip"));
             std::replace(nombre.begin(), nombre.end(), '-', ' ');
+            /* El nombre que se muestra sale del catalogo (la etiqueta del pack en
+               "cfws"), no del nombre del zip: el zip conserva su nombre para que la
+               app reconozca la actualizacion ("OQB-HATS-PACK-23.0.zip" sigue
+               siendo el pack de 23.5). Se corta en " · " para la tarjeta. */
+            if (nxlinks.is_object() && nxlinks.contains("cfws") && nxlinks["cfws"].is_object()) {
+                const std::string fin = "/" + clave;
+                for (const auto& [cfw, packs] : nxlinks["cfws"].items()) {
+                    if (!packs.is_object()) continue;
+                    for (const auto& [etiqueta, url] : packs.items()) {
+                        if (!url.is_string()) continue;
+                        const std::string u = url.get<std::string>();
+                        if (u.size() >= fin.size() && u.compare(u.size() - fin.size(), fin.size(), fin) == 0) {
+                            nombre = etiqueta.substr(0, etiqueta.find(" \u00b7 "));
+                        }
+                    }
+                }
+            }
             datos.pack = nombre;
             const std::string tengo = packVersion::installed(clave);
             const std::string publicada = packVersion::published(packsGuardado, clave).date;
