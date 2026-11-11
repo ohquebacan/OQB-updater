@@ -401,8 +401,13 @@ MainFrame::MainFrame() : TabFrame()
         }
         datos.hayNextendo = conNextendo;
         datos.nextendoFunciona = conNextendo && NextendoTab::working(nxlinks, nextendoActivo);
+        /* Nextendo activo solo en la otra NAND: lo que «falla» es de aquella, esta
+           sigue bloqueando. No se cuenta como «por revisar»; la linea lo dice. */
+        const bool otraNand = protection::nextendoOnlyOtherNand(checks);
+        if (otraNand) datos.nextendoOtraNand = protection::nextendoOtherNandName(checks);
         for (const auto& c : checks) {
             if (c.status == protection::Status::Fail && !c.byNextendo) datos.proteccionFalla = true;
+            else if (otraNand && c.otherNand) continue;
             else if (c.status != protection::Status::Ok) ++datos.avisos;
         }
     }

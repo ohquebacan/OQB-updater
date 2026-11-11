@@ -558,6 +558,18 @@ namespace protection {
         return alguna;
     }
 
+    std::string nextendoOtherNandName(const std::vector<Check>& checks)
+    {
+        for (const auto& c : checks) {
+            if (!c.otherNand) continue;
+            std::string n = c.name;
+            std::transform(n.begin(), n.end(), n.begin(), [](unsigned char ch) { return std::tolower(ch); });
+            if (n.find("emu") != std::string::npos) return "emuNAND";
+            if (n.find("sys") != std::string::npos) return "sysNAND";
+        }
+        return "";
+    }
+
     bool nextendoOnSysnand(const std::vector<Check>& checks)
     {
         return std::any_of(checks.begin(), checks.end(), [](const Check& c) {

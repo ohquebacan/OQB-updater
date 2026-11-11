@@ -376,6 +376,14 @@ int main()
             ++failures;
         }
 
+        // Inicio y Estado nombran la NAND donde esta Nextendo.
+        if (protection::nextendoOtherNandName(blocked) == "emuNAND")
+            std::cout << "ok     la otra NAND con Nextendo se nombra emuNAND\n";
+        else {
+            std::cout << "FALLA  la otra NAND deberia ser emuNAND, salio '" << protection::nextendoOtherNandName(blocked) << "'\n";
+            ++failures;
+        }
+
         // Y al reves: arrancando en emuNAND, ahi si esta activo y no es sysNAND.
         rt.nand = Rt::Nand::Emu;
         const auto emu = protection::run(sd, rt);

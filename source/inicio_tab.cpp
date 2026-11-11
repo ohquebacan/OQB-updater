@@ -385,8 +385,10 @@ void InicioTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         nvgFill(vg);
         marcoFoco(i, px, py, ancho, bh, 14.0f);
         iconos::dibujar(vg, iconos::Icono::Escudo, px + 30.0f, py + bh / 2, 22.0f, c);
+        const std::string estaNand = this->datos.nextendoOtraNand == "emuNAND" ? "SysNAND" : "EmuNAND";
         const std::string linea = this->datos.proteccionFalla ? "menus/inicio/proteccion_falla"_i18n
                                   : this->datos.avisos         ? fmt::format("menus/inicio/proteccion_avisos"_i18n, this->datos.avisos)
+                                  : !this->datos.nextendoOtraNand.empty() ? fmt::format("menus/inicio/proteccion_otra_nand"_i18n, estaNand, this->datos.nextendoOtraNand)
                                                                : "menus/inicio/proteccion_ok"_i18n;
         nvgFontSize(vg, 17.0f);
         nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);

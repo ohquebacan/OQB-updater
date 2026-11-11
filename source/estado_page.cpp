@@ -251,7 +251,7 @@ void EstadoView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
         const std::string subNextendo = protection::nextendoOnSysnand(this->checks) ? "menus/estado/prot_nextendo_sysnand_sub"_i18n
                                         : protection::nextendoIncomplete(this->checks) ? "menus/estado/prot_nextendo_incomplete_sub"_i18n
                                                                                        : "menus/estado/prot_nextendo_sub"_i18n;
-        nvgText(vg, px + 100, py + 58, cortar(vg, otraNand ? "menus/estado/prot_otra_nand_sub"_i18n : nextendo ? subNextendo : falla ? "menus/estado/prot_falla_sub"_i18n : "menus/estado/prot_ok_sub"_i18n, ancho - 330).c_str(), nullptr);
+        nvgText(vg, px + 100, py + 58, cortar(vg, otraNand ? fmt::format("menus/estado/prot_otra_nand_sub"_i18n, protection::nextendoOtherNandName(this->checks).empty() ? std::string("otra NAND") : protection::nextendoOtherNandName(this->checks)) : nextendo ? subNextendo : falla ? "menus/estado/prot_falla_sub"_i18n : "menus/estado/prot_ok_sub"_i18n, ancho - 330).c_str(), nullptr);
         pildora(vg, px + ancho - 26, py + 44, fmt::format("menus/estado/bien"_i18n, bien, this->checks.size()), this->a(tono), this->a(conAlfa(tono, 0.16f)));
 
         const float cw = (ancho - 52 - 24) / 2;

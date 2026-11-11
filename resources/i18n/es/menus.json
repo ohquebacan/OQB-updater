@@ -708,6 +708,7 @@
         "nextendo_on": "Activo y funcionando",
         "nextendo_off": "Desactivado",
         "proteccion_ok": "Protección y estado: todo bien",
+        "proteccion_otra_nand": "{} protegida · Nextendo activo en {}",
         "proteccion_avisos": "Protección: {} cosas para revisar",
         "proteccion_falla": "Probablemente una protección no está activa",
         "ver_estado": "Ver estado ›",
@@ -795,6 +796,6 @@
         "diag_uno": "1 error",
         "diag_varios": "{} errores",
         "prot_otra_nand": "Protegida en esta NAND",
-        "prot_otra_nand_sub": "Nextendo está activo solo en la otra NAND. Esta sigue bloqueando a Nintendo."
+        "prot_otra_nand_sub": "Nextendo está activo en la {}. Esta sigue bloqueando a Nintendo."
     }
 }

@@ -103,6 +103,8 @@ namespace protection {
     bool nextendoOnSysnand(const std::vector<Check>& checks);
     // Nextendo esta activo solo en la otra NAND: lo unico que falla es de alla.
     bool nextendoOnlyOtherNand(const std::vector<Check>& checks);
+    /** Con nextendoOnlyOtherNand: "emuNAND" o "sysNAND", la NAND donde esta Nextendo (sale del nombre de lo marcado). */
+    std::string nextendoOtherNandName(const std::vector<Check>& checks);
 
     // true si hay fallas y todas son por Nextendo.
     bool failedOnlyByNextendo(const std::vector<Check>& checks);

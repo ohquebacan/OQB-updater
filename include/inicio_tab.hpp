@@ -27,6 +27,7 @@ public:
         int trucosOtra = 0;
         int partidas = -1;               // -1: el catalogo no trae partidas
         bool hayNextendo = false, nextendoFunciona = false;
+        std::string nextendoOtraNand;   // "emuNAND"/"sysNAND" si Nextendo esta activo solo en la otra NAND
         int avisos = 0;                  // protecciones con algo para mirar
         bool proteccionFalla = false;    // alguna protección no esta activa
         // prod.keys: 0 al dia, 1 viejas, 2 no hay, 3 hay (sin saber de que firmware)
