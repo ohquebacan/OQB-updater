@@ -18,6 +18,7 @@
 #include "forwarder.hpp"
 #include "fs.hpp"
 #include "pack_list_item.hpp"
+#include "nsp_installer.hpp"
 #include "progress_event.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
@@ -272,13 +273,29 @@ void ListDownloadTab::createList(contentType type)
                                 appUpdates::recordInstalled(url, fecha);
                         }));
                     }
+                    else if (nspInstaller::isNspUrl(url)) {
+                        const std::string dest = "/config/aio-switch-updater/download.nsp";
+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest]() {
+                            download::downloadFile(url, dest, OFF);
+                        }));
+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/instalando_nsp"_i18n, [url, dest, fecha]() {
+                            if (R_SUCCEEDED(nspInstaller::installAndDelete(dest)))
+                                appUpdates::recordInstalled(url, fecha);
+                        }));
+                    }
                     else {
                         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() { util::downloadArchive(url, contentType::apps); }));
                         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [nroPath, url, fecha]() {
-                            // Se anota antes de extraer, mientras el zip sigue en disco.
-                            *nroPath = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, extract::detectWrapperDir(CUSTOM_FILENAME));
+                            const std::string wrapper = extract::detectWrapperDir(CUSTOM_FILENAME);
+                            *nroPath = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, wrapper);
+                            const auto nsps = nspInstaller::findInArchive(CUSTOM_FILENAME, wrapper);
                             util::extractArchive(contentType::apps);
-                            appUpdates::recordInstalled(url, fecha);
+                            Result rc = 0;
+                            for (const auto& nsp : nsps) {
+                                rc = nspInstaller::installAndDelete(nsp);
+                                if (R_FAILED(rc)) break;
+                            }
+                            if (R_SUCCEEDED(rc)) appUpdates::recordInstalled(url, fecha);
                         }));
                     }
 

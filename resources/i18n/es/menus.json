@@ -76,6 +76,7 @@
     },
     "common": {
         "downloading": "Descargando…",
+        "instalando_nsp": "Instalando en la SD…",
         "extracting": "Extrayendo…",
         "all_done": "¡Finalizado!",
         "back": "Atrás",
@@ -251,6 +252,7 @@
         "tutorial_title": "Cómo usar Nextendo",
         "tutorial_text": "Escanea el código con tu teléfono para ver el video tutorial: cómo configurar Nextendo Network y jugar en línea sin una cuenta de Nintendo.",
         "launch_daybreak": "¿Quieres ejecutar Daybreak para instalar la actualización de firmware descargada?",
+        "daybreak_desde_album": "No se pudo abrir Daybreak desde aquí. El firmware quedó listo en /firmware: ábrelo desde el menú Homebrew y elige esa carpeta.",
         "quitando_tema": "Quitando el tema…"
     },
     "net": {

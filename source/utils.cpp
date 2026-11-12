@@ -25,6 +25,8 @@
 #include "reboot_payload.h"
 #include "unistd.h"
 
+extern "C" u32 __nx_applet_exit_mode;
+
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
@@ -665,6 +667,26 @@ namespace util {
         envSetNextLoad(path.c_str(), argv.c_str());
         romfsExit();
         brls::Application::quit();
+    }
+
+    bool launchNro(const std::string& path, const std::string& argv)
+    {
+        /* Quien abre el .nro siguiente es el cargador que abrio la app (el del
+           Album o el del forwarder del menu HOME), y solo si lo admite. */
+        if (!envHasNextLoad() || R_FAILED(envSetNextLoad(path.c_str(), argv.c_str())))
+            return false;
+        /* Desde el icono del menu HOME, main() hace que la app cierre directo al
+           menu HOME (desde la 3.1, por la autoactualizacion). Para saltar hay que
+           volver al cargador, como hacia antes y como hacen los otros forks. */
+        if (isForwarder())
+            __nx_applet_exit_mode = 0;
+        /* Las romfs (borealis y main) tienen abierto el propio .nro: se cierran
+           todas antes de salir, como en installPendingAppUpdate. */
+        int montajes = 0;
+        while (R_SUCCEEDED(romfsExit()) && montajes < 8)
+            montajes++;
+        brls::Application::quit();
+        return true;
     }
 
     bool isErista()

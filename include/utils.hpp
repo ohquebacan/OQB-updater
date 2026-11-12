@@ -71,6 +71,9 @@ namespace util {
     void quitarTemaActivo();
     bool installPendingAppUpdate();
     void restartApp();
+    /** Cierra la app y abre otro .nro (Daybreak, por ejemplo). Devuelve false,
+        sin cerrar nada, si el cargador que abrio la app no sabe hacerlo. */
+    bool launchNro(const std::string& path, const std::string& argv);
     bool isErista();
     void removeSysmodulesFlags(const std::string& directory);
     std::string lowerCase(const std::string& str);

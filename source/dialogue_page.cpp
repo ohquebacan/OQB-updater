@@ -132,9 +132,8 @@ void DialoguePage_fw::instantiateButtons()
     });
 
     this->button1->getClickEvent()->subscribe([this](View* view) {
-        envSetNextLoad(DAYBREAK_PATH, fmt::format("\"{}\" \"/firmware\"", DAYBREAK_PATH).c_str());
-        romfsExit();
-        brls::Application::quit();
+        if (!util::launchNro(DAYBREAK_PATH, fmt::format("\"{}\" \"/firmware\"", DAYBREAK_PATH)))
+            brls::Application::notify("menus/firmware/daybreak_desde_album"_i18n);
     });
 
     this->label = new brls::Label(brls::LabelStyle::DIALOG, fmt::format("{}\n\n{}", this->text, "menus/firmware/launch_daybreak"_i18n), true);

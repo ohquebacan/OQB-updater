@@ -9,6 +9,7 @@
 #include "extract.hpp"
 #include "fs.hpp"
 #include "list_download_tab.hpp"
+#include "nsp_installer.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -36,14 +37,30 @@ void instalarAppDelCatalogo(const nlohmann::ordered_json& nxlinks, const std::st
                 appUpdates::recordInstalled(url, fecha);
         }));
     }
+    else if (nspInstaller::isNspUrl(url)) {
+        const std::string destino = "/config/aio-switch-updater/download.nsp";
+        frame->addStage(new WorkerPage(frame, "menus/common/downloading"_i18n, [url, destino]() {
+            download::downloadFile(url, destino, OFF);
+        }));
+        frame->addStage(new WorkerPage(frame, "menus/common/instalando_nsp"_i18n, [url, destino, fecha]() {
+            if (R_SUCCEEDED(nspInstaller::installAndDelete(destino)))
+                appUpdates::recordInstalled(url, fecha);
+        }));
+    }
     else {
-        // Un zip (ARCropolis, SaltyNX...): el mismo camino que la lista de apps.
+        // Un zip puede traer homebrew, sysmodules y tambien uno o varios NSP.
         frame->addStage(new WorkerPage(frame, "menus/common/downloading"_i18n, [url]() { util::downloadArchive(url, contentType::apps); }));
         frame->addStage(new WorkerPage(frame, "menus/common/extracting"_i18n, [nroPath, url, fecha]() {
-            // Se anota antes de extraer, mientras el zip sigue en disco.
-            *nroPath = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, extract::detectWrapperDir(CUSTOM_FILENAME));
+            const std::string wrapper = extract::detectWrapperDir(CUSTOM_FILENAME);
+            *nroPath = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, wrapper);
+            const auto nsps = nspInstaller::findInArchive(CUSTOM_FILENAME, wrapper);
             util::extractArchive(contentType::apps);
-            appUpdates::recordInstalled(url, fecha);
+            Result rc = 0;
+            for (const auto& nsp : nsps) {
+                rc = nspInstaller::installAndDelete(nsp);
+                if (R_FAILED(rc)) break;
+            }
+            if (R_SUCCEEDED(rc)) appUpdates::recordInstalled(url, fecha);
         }));
     }
 
