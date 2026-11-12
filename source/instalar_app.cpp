@@ -68,3 +68,13 @@ void instalarAppDelCatalogo(const nlohmann::ordered_json& nxlinks, const std::st
     ListDownloadTab::addForwarderStages(frame, nroPath);
     brls::Application::pushView(frame);
 }
+
+void abrirOInstalar(const nlohmann::ordered_json& nxlinks, const std::string& nombre, const std::string& url, const std::string& argumentos)
+{
+    const bool alDia = appUpdates::isInstalled(nxlinks, url) && !appUpdates::hasUpdate(nxlinks, appUpdates::installed(), url);
+    const std::string ruta = alDia ? appUpdates::rutaParaAbrir(nxlinks, url) : "";
+    if (!ruta.empty())
+        util::abrirAppInstalada(ruta, nombre, argumentos);
+    else
+        instalarAppDelCatalogo(nxlinks, nombre, url);
+}

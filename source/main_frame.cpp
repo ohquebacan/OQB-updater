@@ -1,4 +1,5 @@
 #include "main_frame.hpp"
+#include "instalar_app.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -442,7 +443,8 @@ MainFrame::MainFrame() : TabFrame()
             if (av.contains("version") && av["version"].is_string()) wbVersion = av["version"].get<std::string>();
             if (av.contains("warmboot_url") && av["warmboot_url"].is_string()) wbUrl = av["warmboot_url"].get<std::string>();
         }
-        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack, llavesEstado, firmwareConsola, esErista, wbVersion, wbUrl](InicioTab::Destino d) {
+        const nlohmann::ordered_json links = nxlinks;
+        auto ir = [this, tag, donar, copia, conBacan, packNuevo, appNueva, clavePack, llavesEstado, firmwareConsola, esErista, wbVersion, wbUrl, links](InicioTab::Destino d) {
             switch (d) {
                 case InicioTab::Destino::Estado: {
                     // Rediseno: protecciones, Cliente OQB y apoyo (los datos de la consola ya estan en Inicio).
@@ -465,7 +467,19 @@ MainFrame::MainFrame() : TabFrame()
                     if (!tag.empty()) appUpdate::pushFlow(appNueva ? tag : std::string(AppVersion), appNueva);
                     return;
                 case InicioTab::Destino::Apps: this->irA(this->itemApps); return;
-                case InicioTab::Destino::Partidas: this->irA(this->itemBacan); return;
+                case InicioTab::Destino::Partidas: {
+                    /* Las partidas se ponen con JKSV BACAN: directo a ella si esta
+                       al dia; si falta o hay version nueva, se instala o actualiza. */
+                    std::string jksv;
+                    if (links.contains("apps") && links["apps"].is_object() && links["apps"].contains("JKSV BACAN") && links["apps"]["JKSV BACAN"].is_string())
+                        jksv = links["apps"]["JKSV BACAN"].get<std::string>();
+                    if (jksv.empty()) {
+                        this->irA(this->itemBacan);
+                        return;
+                    }
+                    abrirOInstalar(links, "JKSV BACAN", jksv);
+                    return;
+                }
                 case InicioTab::Destino::Nextendo: this->irA(this->itemNextendo); return;
                 case InicioTab::Destino::Warmboot: {
                     /* Con el flujo de siempre (pantallas de progreso), no desde los

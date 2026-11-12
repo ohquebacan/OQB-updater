@@ -702,11 +702,11 @@ namespace util {
         return true;
     }
 
-    bool abrirAppInstalada(const std::string& rutaSd, const std::string& nombre)
+    bool abrirAppInstalada(const std::string& rutaSd, const std::string& nombre, const std::string& argumentos)
     {
         if (!rutaSd.empty()) {
             const std::string completa = "sdmc:" + rutaSd;
-            if (launchNro(completa, "\"" + completa + "\"")) return true;
+            if (launchNro(completa, "\"" + completa + "\"" + (argumentos.empty() ? "" : " " + argumentos))) return true;
         }
         brls::Application::notify(fmt::format("menus/common/no_se_pudo_abrir"_i18n, nombre));
         return false;

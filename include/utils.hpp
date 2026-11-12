@@ -76,7 +76,7 @@ namespace util {
     bool launchNro(const std::string& path, const std::string& argv);
     /** Abre el .nro de esa ruta de la SD (de appUpdates::rutaParaAbrir). Si esta
         vacia o no se puede saltar, avisa y devuelve false. */
-    bool abrirAppInstalada(const std::string& rutaSd, const std::string& nombre);
+    bool abrirAppInstalada(const std::string& rutaSd, const std::string& nombre, const std::string& argumentos = "");
     bool isErista();
     void removeSysmodulesFlags(const std::string& directory);
     std::string lowerCase(const std::string& str);

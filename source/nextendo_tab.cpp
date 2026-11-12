@@ -260,11 +260,22 @@ namespace {
 
     /* Tus juegos compatibles instalados, con la version que tienes y la que
        pide Nextendo. */
-    void abrirTusJuegos(const nlohmann::ordered_json& datos)
+    void abrirTusJuegos(const nlohmann::ordered_json& datos, const nlohmann::ordered_json& nxlinks)
     {
         const nlohmann::ordered_json juegos = datos.contains("juegos") ? datos["juegos"] : nlohmann::ordered_json::object();
         brls::List* l = new brls::List();
         l->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nextendo/your_games_intro"_i18n, true));
+        /* Las versiones se ponen al dia en Bacán Shop: se abre directo en su
+           Biblioteca (Actualizaciones disponibles). Sin Bacán Shop o con version
+           nueva, primero se instala o actualiza. */
+        std::string bacan;
+        if (nxlinks.contains("apps") && nxlinks["apps"].is_object() && nxlinks["apps"].contains("Bacán Shop") && nxlinks["apps"]["Bacán Shop"].is_string())
+            bacan = nxlinks["apps"]["Bacán Shop"].get<std::string>();
+        if (!bacan.empty()) {
+            PackListItem* ir = new PackListItem("menus/nextendo/revisar_bacan"_i18n, "", "menus/nextendo/revisar_bacan_sub"_i18n);
+            ir->getClickEvent()->subscribe([nxlinks, bacan](brls::View* v) { abrirOInstalar(nxlinks, "Bacán Shop", bacan, "--actualizaciones"); });
+            l->addView(ir);
+        }
         int n = 0;
         for (auto it = juegos.begin(); it != juegos.end(); ++it) {
             if (!it.value().is_object())
@@ -685,7 +696,8 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
         else
             item->setWarningValue(mal == 1 ? "menus/nextendo/wrong_one"_i18n : fmt::format("menus/nextendo/wrong_many"_i18n, mal));
         const nlohmann::ordered_json copia = datos;
-        item->getClickEvent()->subscribe([copia](brls::View* view) { abrirTusJuegos(copia); });
+        const nlohmann::ordered_json links = this->nxlinks;
+        item->getClickEvent()->subscribe([copia, links](brls::View* view) { abrirTusJuegos(copia, links); });
         this->addView(item);
     }
 

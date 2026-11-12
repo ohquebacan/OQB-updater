@@ -299,6 +299,8 @@
         "support_text": "If you want to support the project, you can donate by scanning this code with your phone. It is optional and for any amount you like."
     },
     "nextendo": {
+        "revisar_bacan": "Update your games in Bacán Shop",
+        "revisar_bacan_sub": "Opens straight in its Library, where you see the available updates.",
         "prelude_install": "Press A to install it now.",
         "prelude_update": "Press A to update it now.",
         "prelude_reinstall": "Press A if you want to reinstall it.",

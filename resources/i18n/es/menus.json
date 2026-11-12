@@ -320,6 +320,8 @@
         "support_text": "Si quieres apoyar el proyecto, puedes hacer una donación escaneando este código con tu teléfono. Es voluntaria y por la cantidad que prefieras."
     },
     "nextendo": {
+        "revisar_bacan": "Poner al día tus juegos en Bacán Shop",
+        "revisar_bacan_sub": "Se abre directo en su Biblioteca, donde ves las actualizaciones disponibles.",
         "prelude_install": "Pulsa A para instalarlo ahora.",
         "prelude_update": "Pulsa A para actualizarlo ahora.",
         "prelude_reinstall": "Pulsa A si quieres volver a instalarlo.",
