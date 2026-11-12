@@ -297,9 +297,14 @@ namespace util {
                 }
                 std::vector<std::string> titles = extract::getInstalledTitlesNs();
                 titles = extract::excludeTitles(CHEATS_EXCLUDE, titles);
-                extract::extractCheats(CHEATS_FILENAME, titles, CurrentCfw::running_cfw, version);
+                /* Sin marcar el fin: si la barra se completaba aca, la pantalla
+                   pasaba a "listo" mientras los trucos de OQB seguian bajando y
+                   escribiendose, y al volver atras la pantalla esperaba a ese
+                   hilo (se congelaba) y la navegacion quedaba en gris. */
+                extract::extractCheats(CHEATS_FILENAME, titles, CurrentCfw::running_cfw, version, false, false);
                 // Encima, los propios de OQB (pisan los de la base que se acaban de poner).
                 if (!ProgressEvent::instance().getInterupt()) aplicarTrucosOqb(true, true);
+                ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
                 break;
             }
             case contentType::fw:

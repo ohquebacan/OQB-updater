@@ -1,6 +1,7 @@
 #pragma once
 
 #include <borealis.hpp>
+#include <atomic>
 #include <chrono>
 #include <deque>
 #include <string>
@@ -24,6 +25,8 @@ private:
     std::string text;
     int progressValue = 0;
     bool workStarted = false;
+    // La tarea termino de verdad (su funcion volvio), no solo la barra llena.
+    std::atomic<bool> workDone{false};
     bool draw_page = true;
     int nivelesAlVolver = 1;
     std::thread* workerThread;

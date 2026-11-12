@@ -480,7 +480,7 @@ namespace extract {
         return 0;
     }
 
-    void extractCheats(const std::string& archivePath, const std::vector<std::string>& titles, CFW cfw, const std::string& version, bool extractAll)
+    void extractCheats(const std::string& archivePath, const std::vector<std::string>& titles, CFW cfw, const std::string& version, bool extractAll, bool marcarFin)
     {
         if (!ensureAvailableStorage(archivePath)) return;
 
@@ -525,7 +525,10 @@ namespace extract {
         if (version != "offline" && version != "" && !ProgressEvent::instance().getInterupt()) {
             util::saveToFile(version, CHEATS_VERSION);
         }
-        ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+        /* La barra completa es lo que le dice a la pantalla que la etapa
+           termino. Quien sigue trabajando despues (los trucos propios de OQB)
+           la completa el mismo al final. */
+        if (marcarFin) ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
     }
 
     void extractAllCheats(const std::string& archivePath, CFW cfw, const std::string& version)

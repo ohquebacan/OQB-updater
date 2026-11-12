@@ -128,7 +128,12 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
             ProgressEvent::instance().reset();
             workerThread = new std::thread(&WorkerPage::doWork, this);
         }
-        else if (ProgressEvent::instance().finished()) {
+        /* Solo cuando la tarea volvio. Antes bastaba la barra llena, y hay
+           tareas que siguen despues de completarla (los trucos de OQB tras la
+           base, la instalacion de un NSP tras extraer): la pantalla pasaba a la
+           siguiente mientras el hilo seguia, y al volver atras se congelaba
+           esperandolo y la navegacion quedaba en gris. */
+        else if (this->workDone.load()) {
             appletEndBlockingHomeButton();
             appletSetMediaPlaybackState(false);
             /* Un error o un cancelar no siguen con ninguna etapa (en un pack la
@@ -208,6 +213,9 @@ void WorkerPage::doWork()
     actividad::limpiar();
     if (this->workerFunc)
         this->workerFunc();
+    // La barra puede no haberse completado (una falla que no la llena).
+    ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+    this->workDone = true;
 }
 
 brls::View* WorkerPage::getDefaultFocus()
