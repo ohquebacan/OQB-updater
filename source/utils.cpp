@@ -702,6 +702,16 @@ namespace util {
         return true;
     }
 
+    bool abrirAppInstalada(const std::string& rutaSd, const std::string& nombre)
+    {
+        if (!rutaSd.empty()) {
+            const std::string completa = "sdmc:" + rutaSd;
+            if (launchNro(completa, "\"" + completa + "\"")) return true;
+        }
+        brls::Application::notify(fmt::format("menus/common/no_se_pudo_abrir"_i18n, nombre));
+        return false;
+    }
+
     bool isErista()
     {
         SetSysProductModel model;

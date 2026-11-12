@@ -295,6 +295,26 @@ namespace appUpdates {
         return false;
     }
 
+    std::string rutaParaAbrir(const nlohmann::ordered_json& nxlinks, const std::string& url)
+    {
+        if (url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
+            const std::string path = util::resolveNroDestination(url.substr(url.rfind('/') + 1));
+            return util::existeEnSd(path) ? path : "";
+        }
+        const nlohmann::ordered_json* app = entry(nxlinks, url);
+        if (!app)
+            return "";
+        const auto nros = app->find("nros");
+        if (nros != app->end() && nros->is_array()) {
+            for (const auto& n : *nros) {
+                const std::string ruta = n.is_object() ? text(n, "ruta") : "";
+                if (ruta.rfind("/switch/", 0) == 0 && util::existeEnSd(ruta))
+                    return ruta;
+            }
+        }
+        return "";
+    }
+
     nlohmann::ordered_json installed()
     {
         // Armando una ventana (LecturaSwitch activa) se lee una sola vez:

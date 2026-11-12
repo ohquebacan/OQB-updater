@@ -74,6 +74,9 @@ namespace util {
     /** Cierra la app y abre otro .nro (Daybreak, por ejemplo). Devuelve false,
         sin cerrar nada, si el cargador que abrio la app no sabe hacerlo. */
     bool launchNro(const std::string& path, const std::string& argv);
+    /** Abre el .nro de esa ruta de la SD (de appUpdates::rutaParaAbrir). Si esta
+        vacia o no se puede saltar, avisa y devuelve false. */
+    bool abrirAppInstalada(const std::string& rutaSd, const std::string& nombre);
     bool isErista();
     void removeSysmodulesFlags(const std::string& directory);
     std::string lowerCase(const std::string& str);

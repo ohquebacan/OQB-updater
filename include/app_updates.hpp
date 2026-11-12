@@ -39,6 +39,8 @@ namespace appUpdates {
     // Si la app esta en la SD: su .nro, el de un zip ("nros") o un archivo
     // propio de un zip sin .nro ("marcas"). Sin datos del catalogo, solo .nro.
     bool isInstalled(const nlohmann::ordered_json& nxlinks, const std::string& url);
+    // El .nro de esa app que se puede abrir (en /switch), o vacio si no hay (sysmodules, plugins).
+    std::string rutaParaAbrir(const nlohmann::ordered_json& nxlinks, const std::string& url);
 
     // La version interna (NACP) del .nro instalado de esa app, o vacia.
     std::string installedVersion(const std::string& url);

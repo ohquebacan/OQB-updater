@@ -641,6 +641,15 @@ void NextendoTab::addChecklist(const nlohmann::ordered_json& datos)
             item->setPositiveValue("menus/nextendo/active"_i18n);
         else
             item->setWarningValue("menus/nextendo/inactive"_i18n);
+        /* El modo se cambia en Prelude: con A se abre directo (cierra esta app). */
+        const std::string nombre = text(datos, "prelude");
+        if (this->nxlinks.contains("apps") && this->nxlinks["apps"].is_object() && this->nxlinks["apps"].contains(nombre) &&
+            this->nxlinks["apps"][nombre].is_string()) {
+            const std::string url = this->nxlinks["apps"][nombre].get<std::string>();
+            const std::string ruta = appUpdates::rutaParaAbrir(this->nxlinks, url);
+            if (!ruta.empty())
+                item->getClickEvent()->subscribe([ruta](brls::View* view) { util::abrirAppInstalada(ruta, "Prelude"); });
+        }
         this->addView(item);
     }
 

@@ -298,10 +298,15 @@ namespace {
         if (conJksv) {
             item->setPositiveValue("JKSV BACAN");
             // Se restauran desde JKSV BACAN: al elegirla, como hacerlo.
-            item->getClickEvent()->subscribe([](brls::View* view) {
+            const std::string ruta = appUpdates::rutaParaAbrir(nxlinks, jksv);
+            item->getClickEvent()->subscribe([ruta](brls::View* view) {
                 /* En una ventana con su titulo y letra de lectura: en un dialogo de
                    borealis, con su letra grande, el texto no entraba. */
                 brls::List* l = new brls::List();
+                // Lo primero: abrirla directo (cierra esta app y abre JKSV BACAN).
+                brls::ListItem* abrir = new brls::ListItem("menus/bacan/abrir_jksv"_i18n);
+                abrir->getClickEvent()->subscribe([ruta](brls::View* v) { util::abrirAppInstalada(ruta, "JKSV BACAN"); });
+                l->addView(abrir);
                 brls::Label* texto = new brls::Label(brls::LabelStyle::REGULAR, "menus/bacan/partidas_como"_i18n, true);
                 texto->setFontSize(brls::Application::getStyle()->Label.descriptionFontSize + 2);
                 l->addView(texto);
@@ -366,17 +371,28 @@ namespace {
                 item->iconoBytes = appUpdates::iconoInstalado(nxlinks, direccion);
                 if (item->iconoBytes.empty()) item->iconoRuta = "romfs:/iconos/generico.png";
             }
-            if (appUpdates::isInstalled(nxlinks, direccion)) {
-                if (appUpdates::hasUpdate(nxlinks, instaladas, direccion))
-                    item->setWarningValue("menus/apps/new_version"_i18n);
-                else
-                    item->setValue("menus/apps/installed"_i18n, true, false);
-            }
-            else {
-                item->setValue("menus/bacan/instalar_valor"_i18n, false, false);
-            }
+            /* Sin la app: A la instala. Con version nueva: A la actualiza. Al dia:
+               A la abre, si tiene un .nro que abrir (los sysmodules y plugins no:
+               ahi A la reinstala, como antes). */
             const nlohmann::ordered_json links = nxlinks;
-            item->getClickEvent()->subscribe([links, nombre, direccion](brls::View* view) { instalarAppDelCatalogo(links, nombre, direccion); });
+            const bool instalada = appUpdates::isInstalled(nxlinks, direccion);
+            const bool nueva = instalada && appUpdates::hasUpdate(nxlinks, instaladas, direccion);
+            const std::string ruta = instalada && !nueva ? appUpdates::rutaParaAbrir(nxlinks, direccion) : "";
+            if (!instalada)
+                item->setValue("menus/bacan/instalar_valor"_i18n, false, false);
+            else if (nueva)
+                item->setWarningValue("menus/apps/new_version"_i18n);
+            else
+                item->setValue(ruta.empty() ? "menus/apps/installed"_i18n : "menus/bacan/abrir_valor"_i18n, true, false);
+            // Se mira al tocar: tras instalarla desde aqui mismo, A ya la abre.
+            item->getClickEvent()->subscribe([links, nombre, direccion](brls::View* view) {
+                const bool ya = appUpdates::isInstalled(links, direccion) && !appUpdates::hasUpdate(links, appUpdates::installed(), direccion);
+                const std::string abrir = ya ? appUpdates::rutaParaAbrir(links, direccion) : "";
+                if (!abrir.empty())
+                    util::abrirAppInstalada(abrir, nombre);
+                else
+                    instalarAppDelCatalogo(links, nombre, direccion);
+            });
             lista->sugeridas.emplace_back(item, direccion);
             if (!conTitulo) {
                 lista->addView(new HeaderOqb("menus/bacan/mejora"_i18n));
@@ -460,7 +476,7 @@ void BacanShopTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned h
                 item->setWarningValue("menus/apps/new_version"_i18n);
             else {
                 item->clearValue();
-                item->setValue("menus/apps/installed"_i18n, true, false);
+                item->setValue(appUpdates::rutaParaAbrir(this->links, u).empty() ? "menus/apps/installed"_i18n : "menus/bacan/abrir_valor"_i18n, true, false);
             }
         }
     }
@@ -507,6 +523,15 @@ BacanShopTab::BacanShopTab(const nlohmann::ordered_json& nxlinks, const std::vec
         Ficha* fichaCon = new Ficha(estado, nueva ? dorado : verde, true, "menus/bacan/descripcion"_i18n);
         this->ficha = fichaCon;
         this->addView(fichaCon);
+    }
+
+    {
+        /* Instalada: el boton de la ficha es abrirla (cierra esta app y abre la
+           tienda). Reinstalar o actualizar va en la fila de abajo. */
+        PackListItem* abrir = new PackListItem("menus/bacan/abrir"_i18n, "", "menus/bacan/abrir_sub"_i18n);
+        const std::string ruta = appUpdates::rutaParaAbrir(nxlinks, direccion);
+        abrir->getClickEvent()->subscribe([ruta](brls::View* view) { util::abrirAppInstalada(ruta, NOMBRE); });
+        this->addView(abrir);
     }
 
     {

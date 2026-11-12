@@ -75,6 +75,7 @@
         "delete_all": "Borrar todos los trucos"
     },
     "common": {
+        "no_se_pudo_abrir": "No se pudo abrir {} desde aquí: ábrela desde el menú Homebrew.",
         "downloading": "Descargando…",
         "instalando_nsp": "Instalando en la SD…",
         "extracting": "Extrayendo…",
@@ -351,7 +352,7 @@
         "what_is": "¿Qué es Nextendo?",
         "how_to_start": "Cómo empezar",
         "check_mode": "Modo Nextendo",
-        "check_mode_sub": "Se activa desde Prelude.",
+        "check_mode_sub": "Se activa desde Prelude: A para abrirla.",
         "active": "Activo",
         "inactive": "No activo",
         "intro": "Todo lo que necesitas para jugar en línea con Nextendo Network. Revisa el checklist y, si algo no funciona, busca el código de error o lo que estabas haciendo cuando falló.",
@@ -530,6 +531,10 @@
         "acceso_listo": "Acceso directo listo en el menú HOME"
     },
     "bacan": {
+        "abrir": "Abrir Bacán Shop",
+        "abrir_sub": "Se cierra esta app y se abre la tienda.",
+        "abrir_valor": "Abrir",
+        "abrir_jksv": "Abrir JKSV BACAN",
         "descripcion": "La tienda de OQB: busca un juego, descárgalo e instálalo desde la consola, sin computadora.",
         "no_instalada": "Sin instalar",
         "al_dia": "v{} · Al día",

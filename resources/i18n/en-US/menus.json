@@ -75,6 +75,7 @@
         "get_gfx": "Download individual graphics enhancing cheat codes"
     },
     "common": {
+        "no_se_pudo_abrir": "Could not open {} from here: open it from the Homebrew Menu.",
         "downloading": "Downloading…",
         "instalando_nsp": "Installing to the SD…",
         "extracting": "Extracting…",
@@ -330,7 +331,7 @@
         "what_is": "What is Nextendo?",
         "how_to_start": "How to start",
         "check_mode": "Nextendo mode",
-        "check_mode_sub": "Turn it on from Prelude.",
+        "check_mode_sub": "Turned on from Prelude: A to open it.",
         "active": "On",
         "inactive": "Off",
         "intro": "What you need to play online with Nextendo Network: go through the checklist and, if something fails, look up the error code or the stage where it failed.",
@@ -509,6 +510,10 @@
         "acceso_listo": "Shortcut ready on the HOME menu"
     },
     "bacan": {
+        "abrir": "Open Bacán Shop",
+        "abrir_sub": "This app closes and the store opens.",
+        "abrir_valor": "Open",
+        "abrir_jksv": "Open JKSV BACAN",
         "descripcion": "The OQB store: find a game, download it and install it from the console, no computer needed.",
         "no_instalada": "Not installed",
         "al_dia": "v{} · Up to date",
