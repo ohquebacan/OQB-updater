@@ -6,7 +6,10 @@
 #include <minizip/unzip.h>
 
 #include <algorithm>
+#include <memory>
+#include <mutex>
 #include <filesystem>
+#include <functional>
 #include <fstream>
 #include <iomanip>
 #include <iterator>
@@ -391,41 +394,113 @@ namespace extract {
         return switchMatch.empty() ? firstMatch : switchMatch;
     }
 
-    std::vector<std::string> getInstalledTitlesNs()
-    {
-        std::vector<std::string> titles;
+    namespace {
+        std::mutex instaladosMutex;
+        std::string firmaGuardada;
+        std::vector<std::string> guardados;
 
-        NsApplicationRecord* records = new NsApplicationRecord[MaxTitleCount]();
-        NsApplicationControlData* controlData = NULL;
+        std::string archivoInstalados() { return std::string(CONFIG_PATH) + "juegos_instalados.txt"; }
 
-        s32 recordCount = 0;
-        u64 controlSize = 0;
-
-        if (R_SUCCEEDED(nsListApplicationRecord(records, MaxTitleCount, 0, &recordCount))) {
-            for (s32 i = 0; i < recordCount; i++) {
-                controlSize = 0;
-                free(controlData);
-                controlData = (NsApplicationControlData*)malloc(sizeof(NsApplicationControlData));
-                if (controlData == NULL) {
-                    break;
-                }
-                else {
-                    memset(controlData, 0, sizeof(NsApplicationControlData));
-                }
-
-                if (R_FAILED(nsGetApplicationControlData(NsApplicationControlSource_Storage, records[i].application_id, controlData, sizeof(NsApplicationControlData), &controlSize))) continue;
-
-                if (controlSize < sizeof(controlData->nacp)) {
-                    continue;
-                }
-
-                titles.push_back(util::formatApplicationId(records[i].application_id));
-            }
-            free(controlData);
+        // Firma de los registros del sistema (listarlos es inmediato): cambia al instalar, borrar o actualizar.
+        std::string firmaRegistros(std::vector<NsApplicationRecord>& records, s32& recordCount)
+        {
+            records.assign(MaxTitleCount, NsApplicationRecord{});
+            recordCount = 0;
+            if (R_FAILED(nsListApplicationRecord(records.data(), MaxTitleCount, 0, &recordCount))) return "";
+            /* Solo que juegos hay, ordenados: el sistema entrega los registros por
+               ultimo uso (y les cambia la fecha), asi que abrir cualquier juego
+               hacia parecer otra lista y se volvia a leer todo en cada apertura. */
+            std::vector<u64> ids;
+            ids.reserve(recordCount);
+            for (s32 i = 0; i < recordCount; i++) ids.push_back(records[i].application_id);
+            std::sort(ids.begin(), ids.end());
+            std::string firma = "v2";
+            for (const u64 id : ids) firma += fmt::format(";{:016X}", id);
+            return firma;
         }
-        delete[] records;
-        std::sort(titles.begin(), titles.end());
-        return titles;
+
+        // Con el mutex tomado: la lista en memoria o en la SD si la firma coincide.
+        bool cargarInstalados(const std::string& firma)
+        {
+            if (firma.empty()) return false;
+            if (firma == firmaGuardada) return true;
+            std::ifstream f(archivoInstalados());
+            std::string linea;
+            if (!f || !std::getline(f, linea) || linea != firma) return false;
+            std::vector<std::string> leidos;
+            while (std::getline(f, linea))
+                if (!linea.empty()) leidos.push_back(linea);
+            firmaGuardada = firma;
+            guardados = std::move(leidos);
+            return true;
+        }
+
+        // Con el mutex tomado.
+        void guardarInstalados(const std::string& firma, std::vector<std::string> titles)
+        {
+            std::sort(titles.begin(), titles.end());
+            firmaGuardada = firma;
+            guardados = titles;
+            if (firma.empty()) return;
+            const std::string archivo = archivoInstalados();
+            const std::string tmp = archivo + ".tmp";
+            std::ofstream f(tmp, std::ios::trunc);
+            f << firma << "\n";
+            for (const auto& t : titles) f << t << "\n";
+            f.close();
+            if (f) {
+                std::error_code ec;
+                std::filesystem::remove(archivo, ec);
+                std::filesystem::rename(tmp, archivo, ec);
+            }
+        }
+    }  // namespace
+
+    bool installedTitlesKnown()
+    {
+        std::vector<NsApplicationRecord> records;
+        s32 recordCount = 0;
+        const std::string firma = firmaRegistros(records, recordCount);
+        std::lock_guard<std::mutex> lock(instaladosMutex);
+        return cargarInstalados(firma);
+    }
+
+    void rememberInstalledTitles(const std::vector<std::string>& titles)
+    {
+        std::vector<NsApplicationRecord> records;
+        s32 recordCount = 0;
+        const std::string firma = firmaRegistros(records, recordCount);
+        std::lock_guard<std::mutex> lock(instaladosMutex);
+        guardarInstalados(firma, titles);
+    }
+
+    std::vector<std::string> getInstalledTitlesNs(const std::function<void(int, int)>& avance)
+    {
+        /* Con la cache del sistema vacia (tras instalar firmware, por ejemplo)
+           leer los datos de control de cada juego tarda ~75 s con 190 juegos, y
+           los trucos piden la lista varias veces. Se recuerda (en memoria y en
+           la SD) mientras no cambien los registros del sistema. */
+        std::vector<NsApplicationRecord> records;
+        s32 recordCount = 0;
+        const std::string firma = firmaRegistros(records, recordCount);
+        std::lock_guard<std::mutex> lock(instaladosMutex);
+        if (cargarInstalados(firma)) {
+            if (avance) avance(recordCount, recordCount);
+            return guardados;
+        }
+        std::vector<std::string> titles;
+        auto controlData = std::make_unique<NsApplicationControlData>();
+        for (s32 i = 0; i < recordCount; i++) {
+            if (avance) avance(i, recordCount);
+            u64 controlSize = 0;
+            const u64 id = records[i].application_id;
+            const Result rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, id, controlData.get(), sizeof(NsApplicationControlData), &controlSize);
+            if (R_FAILED(rc) || controlSize < sizeof(controlData->nacp)) continue;
+            titles.push_back(util::formatApplicationId(id));
+        }
+        if (avance) avance(recordCount, recordCount);
+        guardarInstalados(firma, titles);
+        return guardados;
     }
 
     std::vector<std::string> excludeTitles(const std::string& path, const std::vector<std::string>& listedTitles)

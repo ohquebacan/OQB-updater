@@ -42,6 +42,7 @@ namespace {
 
     struct Juego {
         u64 tid = 0;
+        bool conControl = false;      // el sistema dio sus datos: esta instalado (no se guarda en la cache)
         std::string nombre, visible;  // visible: la version que muestra el menu HOME
         u32 version = 0;
         std::string bid;              // build de la version instalada, si la base lo conoce
@@ -324,56 +325,20 @@ namespace {
     private:
         std::thread hilo;
 
-        void correr(bool forzar)
+        /* Nombre, icono y version de cada juego: lo lento (una consulta por
+           juego). Avanza el contador. */
+        std::vector<Juego> leerJuegos(const std::vector<NsApplicationRecord>& registros, s32 cuantos)
         {
             std::vector<Juego> out;
-            util::revisarBaseTrucos();
-            const std::string baseSd = sinEspacios(util::readFile(CHEATS_VERSION));
-            this->baseBajada = !baseSd.empty();
-
-            constexpr s32 MAXIMO = 64000;
-            std::vector<NsApplicationRecord> registros(MAXIMO);
-            s32 cuantos = 0;
-            if (R_FAILED(nsListApplicationRecord(registros.data(), MAXIMO, 0, &cuantos))) cuantos = 0;
-            this->total = cuantos;
-
-            /* La firma: la base que hay en la SD y que juegos hay. Con eso se muestra
-               la revision guardada al instante; las versiones (una consulta por
-               juego, lo lento) se comprueban despues, por detras, y si alguna
-               cambio se avisa para volver a revisar. */
-            // "n2": nombres ya descomprimidos (libnx#714); la cache vieja tenia "?".
-            /* Los trucos propios de OQB: se piden una vez al dia y se ponen en los
-               juegos que los tienen (sin pisar lo que el usuario haya editado). */
-            util::aplicarTrucosOqb(true, false);
-            // "n3": ademas marca los trucos copiados de otra version.
-            std::string firma = "n3 base " + marcaBase() + " oqb " + util::versionTrucosOqb();
-            for (s32 i = 0; i < cuantos; ++i) firma += fmt::format(";{:016X}", registros[i].application_id);
-            if (!forzar && leerCache(firma, out)) {
-                this->hechos = cuantos;
-                this->juegos = std::move(out);
-                this->listo = true;
-                for (const auto& g : this->juegos) {
-                    if (this->cancelar) return;
-                    if (versionDe(g.tid) != g.version) {
-                        this->cambio = true;
-                        return;
-                    }
-                }
-                return;
-            }
-            /* Cambio la lista de juegos (o la base): los recien instalados reciben
-               sus trucos de la base que ya esta en la SD, sin descargar. */
-            util::completarTrucos();
-            const std::string base = versionesDeLaBase();
             auto control = std::make_unique<NsApplicationControlData>();
             for (s32 i = 0; i < cuantos && !this->cancelar; ++i) {
                 Juego j;
                 j.tid = registros[i].application_id;
                 const std::string tid = util::formatApplicationId(j.tid);
-
                 u64 tam = 0;
                 if (R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, j.tid, control.get(), sizeof(NsApplicationControlData), &tam)) &&
                     tam >= sizeof(control->nacp)) {
+                    j.conControl = true;
                     util::descomprimirNombres(&control->nacp);
                     NacpLanguageEntry* idioma = nullptr;
                     if (R_SUCCEEDED(nacpGetLanguageEntry(&control->nacp, &idioma)) && idioma)
@@ -395,7 +360,87 @@ namespace {
                 }
                 if (j.nombre.empty()) j.nombre = tid;
                 j.version = versionDe(j.tid);
+                out.push_back(std::move(j));
+                this->hechos = i + 1;
+            }
+            return out;
+        }
 
+        void correr(bool forzar)
+        {
+            std::vector<Juego> out;
+            util::trazaTrucos("lectura: empieza");
+            util::revisarBaseTrucos();
+            const std::string baseSd = sinEspacios(util::readFile(CHEATS_VERSION));
+            this->baseBajada = !baseSd.empty();
+
+            constexpr s32 MAXIMO = 64000;
+            std::vector<NsApplicationRecord> registros(MAXIMO);
+            s32 cuantos = 0;
+            if (R_FAILED(nsListApplicationRecord(registros.data(), MAXIMO, 0, &cuantos))) cuantos = 0;
+            this->total = cuantos;
+            util::trazaTrucos(fmt::format("lectura: {} juegos", cuantos));
+            /* Lo de cada juego (nombre, icono, version) se lee una sola vez. Si la
+               lista de juegos instalados ya se conoce (guardada en la SD con la
+               firma de los registros), no hace falta leer nada para mostrar la
+               revision guardada. Si no, se lee aqui, con el contador avanzando, y
+               de esa misma lectura salen la lista de instalados y la revision.
+               Antes (desde la 4.0) los trucos de OQB y completar hacian su propia
+               pasada primero, sin mover el contador. */
+            std::vector<Juego> leidos;
+            if (!extract::installedTitlesKnown()) {
+                util::trazaTrucos("lectura: leer cada juego (una pasada)");
+                leidos = leerJuegos(registros, cuantos);
+                if (this->cancelar) return;
+                std::vector<std::string> instalados;
+                for (const auto& j : leidos)
+                    if (j.conControl) instalados.push_back(util::formatApplicationId(j.tid));
+                extract::rememberInstalledTitles(instalados);
+            }
+
+            /* La firma: la base que hay en la SD y que juegos hay. Con eso se muestra
+               la revision guardada al instante; las versiones (una consulta por
+               juego, lo lento) se comprueban despues, por detras, y si alguna
+               cambio se avisa para volver a revisar. */
+            // "n2": nombres ya descomprimidos (libnx#714); la cache vieja tenia "?".
+            /* Los trucos propios de OQB: se piden una vez al dia y se ponen en los
+               juegos que los tienen (sin pisar lo que el usuario haya editado). */
+            util::trazaTrucos("lectura: trucos OQB");
+            util::aplicarTrucosOqb(true, false);
+            util::trazaTrucos("lectura: firma");
+            // "n3": ademas marca los trucos copiados de otra version.
+            std::string firma = "n3 base " + marcaBase() + " oqb " + util::versionTrucosOqb();
+            {
+                // Ordenados: el sistema los da por ultimo uso y eso no es un cambio de juegos.
+                std::vector<u64> ids;
+                for (s32 i = 0; i < cuantos; ++i) ids.push_back(registros[i].application_id);
+                std::sort(ids.begin(), ids.end());
+                for (const u64 id : ids) firma += fmt::format(";{:016X}", id);
+            }
+            if (!forzar && leerCache(firma, out)) {
+                this->hechos = cuantos;
+                this->juegos = std::move(out);
+                this->listo = true;
+                for (const auto& g : this->juegos) {
+                    if (this->cancelar) return;
+                    if (versionDe(g.tid) != g.version) {
+                        this->cambio = true;
+                        return;
+                    }
+                }
+                return;
+            }
+            /* Cambio la lista de juegos (o la base): los recien instalados reciben
+               sus trucos de la base que ya esta en la SD, sin descargar. */
+            util::trazaTrucos("lectura: completar trucos");
+            util::completarTrucos();
+            util::trazaTrucos("lectura: versiones de la base");
+            const std::string base = versionesDeLaBase();
+            util::trazaTrucos("lectura: leer cada juego");
+            if (leidos.empty()) leidos = leerJuegos(registros, cuantos);
+            for (auto& j : leidos) {
+                if (this->cancelar) break;
+                const std::string tid = util::formatApplicationId(j.tid);
                 // Builds con trucos: los archivos de la base en la SD.
                 const std::string carpeta = util::getContentsPath() + tid + "/cheats/";
                 const std::set<std::string> conTrucos = buildsConTrucos(carpeta);
@@ -432,7 +477,6 @@ namespace {
                     j.estado = j.bid.empty() ? VERSION_DESCONOCIDA : OTRA_VERSION;
 
                 out.push_back(std::move(j));
-                this->hechos = i + 1;
             }
             std::sort(out.begin(), out.end(), [](const Juego& a, const Juego& b) {
                 const int pa = a.estado == CON_TRUCOS ? 0 : (a.estado == SIN_TRUCOS ? 2 : 1);

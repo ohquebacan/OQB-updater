@@ -86,6 +86,7 @@ namespace util {
        juego, pero cheats_version.dat queda: la app daba la base por bajada y cada
        juego "sin trucos". Si no queda ningun truco en la SD se borra la marca,
        para que la base se vuelva a ofrecer. */
+    void trazaTrucos(const std::string& paso);
     void revisarBaseTrucos();
     /* Desde el firmware 21, las actualizaciones de los juegos traen los nombres
        comprimidos (zlib, para que entren 32 idiomas en el lugar de 16): el byte

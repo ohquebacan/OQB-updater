@@ -295,15 +295,23 @@ namespace util {
                     ProgressEvent::instance().setStatusCode(STATUS_EMPTY_CHEATS);
                     break;
                 }
-                std::vector<std::string> titles = extract::getInstalledTitlesNs();
+                trazaTrucos("base: leer juegos instalados");
+                // La barra avanza mientras se leen los juegos (puede tardar si el sistema no los tiene en cache).
+                std::vector<std::string> titles = extract::getInstalledTitlesNs([](int hechos, int total) {
+                    ProgressEvent::instance().setTotalSteps(total + 1);
+                    ProgressEvent::instance().setStep(hechos);
+                });
                 titles = extract::excludeTitles(CHEATS_EXCLUDE, titles);
+                trazaTrucos(fmt::format("base: extraer para {} juegos", titles.size()));
                 /* Sin marcar el fin: si la barra se completaba aca, la pantalla
                    pasaba a "listo" mientras los trucos de OQB seguian bajando y
                    escribiendose, y al volver atras la pantalla esperaba a ese
                    hilo (se congelaba) y la navegacion quedaba en gris. */
                 extract::extractCheats(CHEATS_FILENAME, titles, CurrentCfw::running_cfw, version, false, false);
                 // Encima, los propios de OQB (pisan los de la base que se acaban de poner).
+                trazaTrucos("base: extraida; trucos OQB");
                 if (!ProgressEvent::instance().getInterupt()) aplicarTrucosOqb(true, true);
+                trazaTrucos("base: lista");
                 ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
                 break;
             }
@@ -751,6 +759,22 @@ namespace util {
         return true;
     }
 
+    /* Traza de los trucos con la hora, linea por linea: si algo se traba,
+       en la SD queda el ultimo paso que empezo. */
+    void trazaTrucos(const std::string& paso)
+    {
+        static std::mutex m;
+        static const auto inicio = std::chrono::steady_clock::now();
+        static bool primera = true;  // un registro por cada vez que se abre la app
+        std::lock_guard<std::mutex> lock(m);
+        if (FILE* f = std::fopen((std::string(CONFIG_PATH) + "trucos.log").c_str(), primera ? "w" : "a")) {
+            primera = false;
+            const double t = std::chrono::duration<double>(std::chrono::steady_clock::now() - inicio).count();
+            std::fprintf(f, "%8.2fs %s\n", t, paso.c_str());
+            std::fclose(f);
+        }
+    }
+
     void revisarBaseTrucos()
     {
         std::error_code ec;
@@ -803,6 +827,10 @@ namespace util {
 
     void aplicarTrucosOqb(bool bajar, bool forzar, const std::vector<std::string>& forzarJuegos)
     {
+        /* De a uno: la revision de trucos y bajar la base lo llaman, y podian
+           correr a la vez sobre los mismos archivos (12-nov-2026). */
+        static std::mutex unoPorVez;
+        std::lock_guard<std::mutex> turno(unoPorVez);
         std::error_code ec;
         if (bajar) {
             bool viejo = true;
@@ -811,6 +839,7 @@ namespace util {
                 viejo = ec || std::filesystem::file_time_type::clock::now() - t > std::chrono::hours(24);
             }
             std::string texto;
+            trazaTrucos(viejo ? "oqb: bajar trucos-oqb.json" : "oqb: trucos-oqb.json de hoy, sin bajar");
             if (viejo && download::textoCorto(TRUCOS_OQB_URL, texto, 20, 4u << 20) == 200) {
                 const nlohmann::json j = nlohmann::json::parse(texto, nullptr, false);
                 if (j.is_object() && j.contains("juegos") && j["juegos"].is_object()) {
@@ -838,6 +867,7 @@ namespace util {
                 if (!puestos.is_object()) puestos = nlohmann::json::object();
             }
         }
+        trazaTrucos("oqb: aplicar");
         const auto hashDe = [](const std::string& s) { return std::to_string(std::hash<std::string>{}(s)); };
         const std::string contents = getContentsPath();
         std::set<std::string> forzados;
@@ -853,6 +883,7 @@ namespace util {
                 const std::string ruta = contents + tid + "/cheats/" + bid + ".txt";
                 const std::string actual = std::filesystem::exists(ruta, ec) ? readFile(ruta) : std::string();
                 if (actual == nuevo) continue;
+                trazaTrucos("oqb: " + ruta);
                 const bool nuestro = puestos.contains(ruta) && puestos[ruta].is_string() && puestos[ruta].get<std::string>() == hashDe(actual);
                 /* Sin forzar se pisa: lo que pusimos nosotros, o el archivo tal cual
                    vino de la base (asi se arregla tambien a quien ya la tenia). */
@@ -875,6 +906,7 @@ namespace util {
             std::ofstream p(TRUCOS_OQB_PUESTOS, std::ios::trunc);
             p << puestos.dump();
         }
+        trazaTrucos("oqb: listo");
     }
 
     void completarTrucos()
@@ -887,6 +919,7 @@ namespace util {
         std::vector<std::string> faltan;
         for (const auto& t : extract::excludeTitles(CHEATS_EXCLUDE, extract::getInstalledTitlesNs()))
             if (!std::filesystem::is_directory(contents + t + "/cheats", ec)) faltan.push_back(t);
+        trazaTrucos(fmt::format("completar: {} juegos sin trucos", faltan.size()));
         if (!faltan.empty()) extract::extractCheats(CHEATS_FILENAME, faltan, CurrentCfw::running_cfw, version);
         // Los propios de OQB: los recien extraidos se pisan; lo demas, solo si lo pusimos nosotros.
         aplicarTrucosOqb(true, false, faltan);
