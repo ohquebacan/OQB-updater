@@ -38,6 +38,7 @@ namespace {
         u32 numero = 0;
         std::string bid;
         bool conTrucos = false;
+        std::string visible;  // "1.1.0" si la cabecera del archivo de trucos lo dice
     };
 
     struct Juego {
@@ -233,7 +234,7 @@ namespace {
         auto& lista = j["juegos"] = nlohmann::json::array();
         for (const auto& g : juegos) {
             nlohmann::json v = nlohmann::json::array();
-            for (const auto& ver : g.versiones) v.push_back({ver.numero, ver.bid, ver.conTrucos});
+            for (const auto& ver : g.versiones) v.push_back({ver.numero, ver.bid, ver.conTrucos, ver.visible});
             lista.push_back({{"tid", g.tid}, {"nombre", g.nombre}, {"visible", g.visible}, {"version", g.version}, {"bid", g.bid}, {"trucos", g.trucos}, {"copiaDe", g.copiaDe},
                              {"ultima", g.ultima}, {"hayUltima", g.hayUltima}, {"estado", (int)g.estado}, {"versiones", v}});
         }
@@ -266,10 +267,35 @@ namespace {
             x.estado = static_cast<Estado>(g.value("estado", (int)SIN_TRUCOS));
             if (g.contains("versiones") && g["versiones"].is_array())
                 for (const auto& v : g["versiones"])
-                    if (v.is_array() && v.size() == 3) x.versiones.push_back({v[0].get<u32>(), v[1].get<std::string>(), v[2].get<bool>()});
+                    if (v.is_array() && v.size() >= 3)
+                        x.versiones.push_back({v[0].get<u32>(), v[1].get<std::string>(), v[2].get<bool>(), v.size() > 3 && v[3].is_string() ? v[3].get<std::string>() : ""});
             juegos.push_back(std::move(x));
         }
         return true;
+    }
+
+    /* La version visible ("1.1.0") que dice la cabecera de un archivo de trucos,
+       como "[Pokemon Brilliant Diamond (US) v1.1.0(v65536) TID=... BID=...]".
+       Solo se cree si esa linea nombra esta misma build: los trucos copiados de
+       otra version traen la cabecera de aquella. La mayoria no trae cabecera. */
+    std::string versionDeCabecera(const std::string& ruta, const std::string& bid)
+    {
+        std::ifstream f(ruta);
+        std::string linea;
+        for (int n = 0; n < 4 && std::getline(f, linea); ++n) {
+            if (util::upperCase(linea).find(bid) == std::string::npos) continue;
+            for (size_t i = 0; i + 3 < linea.size(); ++i) {
+                if ((linea[i] != 'v' && linea[i] != 'V') || (i > 0 && std::isalnum(static_cast<unsigned char>(linea[i - 1])))) continue;
+                size_t k = i + 1, puntos = 0;
+                while (k < linea.size() && (std::isdigit(static_cast<unsigned char>(linea[k])) || (linea[k] == '.' && k + 1 < linea.size() && std::isdigit(static_cast<unsigned char>(linea[k + 1]))))) {
+                    if (linea[k] == '.') ++puntos;
+                    ++k;
+                }
+                if (puntos >= 1 && std::isdigit(static_cast<unsigned char>(linea[i + 1]))) return linea.substr(i + 1, k - i - 1);
+            }
+            return "";
+        }
+        return "";
     }
 
     // Los archivos de trucos de un juego (opendir: lo mismo que usa la limpieza del pack).
@@ -408,8 +434,8 @@ namespace {
             util::trazaTrucos("lectura: trucos OQB");
             util::aplicarTrucosOqb(true, false);
             util::trazaTrucos("lectura: firma");
-            // "n3": ademas marca los trucos copiados de otra version.
-            std::string firma = "n3 base " + marcaBase() + " oqb " + util::versionTrucosOqb();
+            // "n3": ademas marca los trucos copiados de otra version. "n4": version visible de la cabecera.
+            std::string firma = "n4 base " + marcaBase() + " oqb " + util::versionTrucosOqb();
             {
                 // Ordenados: el sistema los da por ultimo uso y eso no es un cambio de juegos.
                 std::vector<u64> ids;
@@ -460,6 +486,7 @@ namespace {
                         ver.numero = static_cast<u32>(std::strtoul(k.c_str(), nullptr, 10));
                         ver.bid = util::upperCase(v.get<std::string>());
                         ver.conTrucos = conTrucos.count(ver.bid) > 0;
+                        if (ver.conTrucos) ver.visible = versionDeCabecera(carpeta + ver.bid + ".txt", ver.bid);
                         if (ver.numero == j.version) j.bid = ver.bid;
                         j.versiones.push_back(ver);
                     }
@@ -489,13 +516,34 @@ namespace {
         }
     };
 
-    // "v1.3.0" para la instalada; para las demas, el numero de actualizacion.
-    std::string nombreVersion(const Juego& j, u32 numero)
+    /* El numero de actualizacion es lo unico que la base sabe de todas las
+       versiones, asi que va siempre, en la instalada tambien: con "v1.3.0" en
+       una y "Actualizacion 8" en otra no habia forma de compararlas. */
+    std::string numeroVersion(u32 numero)
     {
-        if (numero == j.version && !j.visible.empty())
-            return (std::isdigit(static_cast<unsigned char>(j.visible[0])) ? "v" : "") + j.visible;
         if (numero == 0) return "menus/trucos/juego_base"_i18n;
         return fmt::format("menus/trucos/actualizacion"_i18n, numero / 0x10000);
+    }
+
+    // La version del menu HOME: la de la instalada, o la de la cabecera de sus trucos.
+    std::string visibleDe(const Juego& j, u32 numero)
+    {
+        std::string vis = numero == j.version ? j.visible : "";
+        if (vis.empty())
+            for (const auto& v : j.versiones)
+                if (v.numero == numero && !v.visible.empty()) {
+                    vis = v.visible;
+                    break;
+                }
+        if (vis.empty()) return "";
+        return (std::isdigit(static_cast<unsigned char>(vis[0])) ? "v" : "") + vis;
+    }
+
+    // "v1.3.0 · Actualización 9", o solo "Actualización 8" si no se sabe la visible.
+    std::string nombreVersion(const Juego& j, u32 numero)
+    {
+        const std::string vis = visibleDe(j, numero);
+        return vis.empty() ? numeroVersion(numero) : vis + " · " + numeroVersion(numero);
     }
 
     std::string conTrucosLista(const Juego& j)
@@ -903,7 +951,11 @@ namespace {
                 nvgFontSize(vg, 15.0f);
                 nvgFillColor(vg, tenue);
                 nvgBeginPath(vg);
-                nvgText(vg, der + lado + 16.0f, dy + 40.0f, (nombreVersion(*j, j->version) + " · " + util::formatApplicationId(j->tid)).c_str(), nullptr);
+                nvgText(vg, der + lado + 16.0f, dy + 38.0f, cortar(vg, nombreVersion(*j, j->version) + " · " + util::formatApplicationId(j->tid), anchoDer - lado - 16.0f).c_str(), nullptr);
+                nvgFontSize(vg, 13.0f);
+                nvgBeginPath(vg);
+                nvgText(vg, der + lado + 16.0f, dy + 58.0f,
+                        (j->bid.empty() ? "menus/trucos/build_id_desconocido"_i18n : fmt::format("menus/trucos/build_id"_i18n, j->bid)).c_str(), nullptr);
                 dy += lado + 18.0f;
             }
 
@@ -973,7 +1025,7 @@ namespace {
                 nvgBeginPath(vg);
                 nvgText(vg, der, dy, "menus/trucos/versiones"_i18n.c_str(), nullptr);
                 dy += 26.0f;
-                const float alto = 38.0f;
+                const float alto = 50.0f;
                 const int caben2 = std::max(1, (int)((y + height - 12.0f - dy) / alto));
                 for (int k = 0; k < (int)j->versiones.size() && k < caben2; ++k) {
                     const Version& v = j->versiones[k];
@@ -991,7 +1043,14 @@ namespace {
                     nvgFillColor(vg, texto);
                     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
                     nvgBeginPath(vg);
-                    nvgText(vg, der, vy + alto / 2, nombreVersion(*j, v.numero).c_str(), nullptr);
+                    const std::string nombre = nombreVersion(*j, v.numero);
+                    const float finNombre = der + nvgTextBounds(vg, 0, 0, nombre.c_str(), nullptr, nullptr) + 16.0f;
+                    nvgText(vg, der, vy + 16.0f, nombre.c_str(), nullptr);
+                    // El build ID: lo que de verdad ata el truco a la version.
+                    nvgFontSize(vg, 13.0f);
+                    nvgFillColor(vg, tenue);
+                    nvgBeginPath(vg);
+                    nvgText(vg, der, vy + 36.0f, fmt::format("menus/trucos/build_id"_i18n, v.bid).c_str(), nullptr);
                     std::string nota;
                     if (v.numero == j->version) nota = "menus/trucos/la_tuya"_i18n;
                     else if (j->hayUltima && v.numero == j->ultima) nota = "menus/trucos/la_ultima"_i18n;
@@ -999,7 +1058,7 @@ namespace {
                         nvgFontSize(vg, 15.0f);
                         nvgFillColor(vg, tenue);
                         nvgBeginPath(vg);
-                        nvgText(vg, der + anchoDer * 0.38f, vy + alto / 2, nota.c_str(), nullptr);
+                        nvgText(vg, std::max(der + anchoDer * 0.5f, finNombre), vy + 16.0f, nota.c_str(), nullptr);
                     }
                     const std::string p = v.conTrucos ? "menus/trucos/pill_ok"_i18n : "menus/trucos/pill_sin"_i18n;
                     nvgFontSize(vg, 14.0f);

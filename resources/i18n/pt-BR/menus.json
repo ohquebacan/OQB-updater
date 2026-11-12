@@ -396,6 +396,8 @@
     "d_sin_sub": "A base não tem trapaças para este jogo em nenhuma versão. Uma base futura pode adicionar.",
     "versiones": "Versões que a base conhece",
     "la_tuya": "A sua",
+    "build_id": "Build ID {}",
+    "build_id_desconocido": "Build ID: a base ainda não conhece a sua versão",
     "la_ultima": "A mais nova",
     "y_mas": "e mais {}",
     "volver": "Voltar às trapaças",

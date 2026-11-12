@@ -661,6 +661,8 @@
         "d_sin_sub": "The database has no cheats for this game in any version. A future database may add them.",
         "versiones": "Versions the database knows",
         "la_tuya": "Yours",
+        "build_id": "Build ID {}",
+        "build_id_desconocido": "Build ID: the database doesn't know your version yet",
         "la_ultima": "Newest",
         "y_mas": "and {} more",
         "volver": "Back to Cheats",

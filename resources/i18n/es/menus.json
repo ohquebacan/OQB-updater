@@ -682,6 +682,8 @@
         "d_sin_sub": "La base no trae trucos para este juego en ninguna versión. Puede que los agregue en una base futura.",
         "versiones": "Versiones que conoce la base",
         "la_tuya": "La que tienes",
+        "build_id": "Build ID {}",
+        "build_id_desconocido": "Build ID: la base todavía no conoce tu versión",
         "la_ultima": "La más nueva",
         "y_mas": "y {} más",
         "volver": "Volver a Trucos",

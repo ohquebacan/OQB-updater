@@ -402,6 +402,8 @@
     "d_sin_sub": "La base n'a aucun code pour ce jeu, quelle que soit la version. Une prochaine base pourrait en ajouter.",
     "versiones": "Versions connues de la base",
     "la_tuya": "La vôtre",
+    "build_id": "Build ID {}",
+    "build_id_desconocido": "Build ID : la base ne connaît pas encore votre version",
     "la_ultima": "La plus récente",
     "y_mas": "et {} de plus",
     "volver": "Retour aux codes",
