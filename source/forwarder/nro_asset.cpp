@@ -1,3 +1,8 @@
+#include "download.hpp"
+#include <cctype>
+#include <algorithm>
+#include <map>
+#include <mutex>
 // Lee el asset section de un NRO (icono JPEG + NACP) para armar el forwarder.
 #include <switch.h>
 
@@ -107,6 +112,42 @@ std::string nameFromNro(const std::string& nro_path)
     }
 
     return nameFromPath(nro_path);
+}
+
+namespace {
+    std::mutex iconosMutex;
+    std::map<std::string, std::string> iconosPropios;  // nombre del .nro en minusculas -> URL
+
+    std::string minusculas(std::string t)
+    {
+        std::transform(t.begin(), t.end(), t.begin(), [](unsigned char c) { return std::tolower(c); });
+        return t;
+    }
+}  // namespace
+
+void recordarIconosPropios(const std::map<std::string, std::string>& porNro)
+{
+    std::lock_guard<std::mutex> lock(iconosMutex);
+    iconosPropios.clear();
+    for (const auto& [nro, url] : porNro) iconosPropios[minusculas(nro)] = url;
+}
+
+void aplicarIconoPropio(Config& config)
+{
+    std::string url;
+    {
+        std::lock_guard<std::mutex> lock(iconosMutex);
+        const std::string nro = minusculas(config.nro_path.substr(config.nro_path.rfind('/') + 1));
+        const auto it = iconosPropios.find(nro);
+        if (it == iconosPropios.end()) return;
+        url = it->second;
+    }
+    std::string jpeg;
+    // Un JPEG de 256x256 pesa unas decenas de KB; el menu HOME no acepta mas de 128 KB.
+    if (download::textoCorto(url, jpeg, 20, 0x20000) != 200 || jpeg.size() < 4 ||
+        static_cast<u8>(jpeg[0]) != 0xFF || static_cast<u8>(jpeg[1]) != 0xD8)
+        return;
+    config.icon.assign(jpeg.begin(), jpeg.end());
 }
 
 Result configFromNro(const std::string& nro_path, Config& out)

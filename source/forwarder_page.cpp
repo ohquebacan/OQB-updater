@@ -73,6 +73,7 @@ namespace {
             fwd::Config config;
             Result rc = fwd::configFromNro(nroPath, config);
             if (R_SUCCEEDED(rc)) {
+                fwd::aplicarIconoPropio(config);
                 actividad::paso(actividad::texto("acceso_directo", config.name));
                 rc = fwd::install(config, [](int step, int total) {
                     ProgressEvent::instance().setTotalSteps(total);

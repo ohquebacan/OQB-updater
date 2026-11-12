@@ -1,4 +1,5 @@
 #include "main_frame.hpp"
+#include "forwarder.hpp"
 #include "instalar_app.hpp"
 
 #include <algorithm>
@@ -242,6 +243,14 @@ MainFrame::MainFrame() : TabFrame()
     nlohmann::ordered_json nxlinks;
     if (conectado)
         nxlinks = nxlinksGuardado;
+    /* Iconos propios para los accesos directos del menu HOME (el de Prelude se ve
+       muy basico): nombre del .nro -> JPEG de 256x256, desde el catalogo. */
+    if (nxlinks.is_object() && nxlinks.contains("iconos_acceso_directo") && nxlinks["iconos_acceso_directo"].is_object()) {
+        std::map<std::string, std::string> iconos;
+        for (const auto& [nro, url] : nxlinks["iconos_acceso_directo"].items())
+            if (url.is_string()) iconos[nro] = url.get<std::string>();
+        fwd::recordarIconosPropios(iconos);
+    }
     if (nxlinks.is_object() && nxlinks.contains("enlaces") && nxlinks["enlaces"].is_object()) {
         const auto& enlaces = nxlinks["enlaces"];
         if (enlaces.contains("donar") && enlaces["donar"].is_string() && !enlaces["donar"].get<std::string>().empty())

@@ -12,6 +12,7 @@
 #include <switch.h>
 
 #include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -35,6 +36,13 @@ struct Config
 // Rellena `out` leyendo el asset section del NRO (icono + NACP).
 // Si el NRO no trae assets, cae al nombre del archivo y al icono de esta app.
 Result configFromNro(const std::string& nro_path, Config& out);
+
+// Iconos propios para el acceso directo, del catalogo ("iconos_acceso_directo":
+// nombre del .nro -> URL de un JPEG de 256x256). Se anotan al leer el catalogo.
+void recordarIconosPropios(const std::map<std::string, std::string>& porNro);
+// Si el .nro de `config` tiene icono propio, lo baja y reemplaza el suyo. Si
+// falla la descarga, queda el del .nro.
+void aplicarIconoPropio(Config& config);
 
 // Sólo el nombre que declara el NRO, sin leer el icono. Para listar muchos
 // NROs sin cargar cientos de KB de imágenes que no se van a usar.
