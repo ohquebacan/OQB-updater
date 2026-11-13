@@ -7,7 +7,7 @@
 // `lado`, con trazo del color dado.
 namespace iconos {
 
-    enum class Icono { Inicio, Packs, Apps, Shop, Nextendo, Herramientas, Trucos, Partidas, Escudo, Descarga };
+    enum class Icono { Inicio, Packs, Apps, Shop, Nextendo, Herramientas, Trucos, Partidas, Escudo, Descarga, Usb };
 
     inline void dibujar(NVGcontext* vg, Icono icono, float cx, float cy, float lado, NVGcolor color)
     {
@@ -67,6 +67,12 @@ namespace iconos {
                 nvgMoveTo(vg, X(12), Y(3)); nvgLineTo(vg, X(12), Y(15));
                 nvgMoveTo(vg, X(7), Y(10)); nvgLineTo(vg, X(12), Y(15)); nvgLineTo(vg, X(17), Y(10));
                 nvgMoveTo(vg, X(4), Y(20)); nvgLineTo(vg, X(20), Y(20));
+                break;
+            case Icono::Usb:
+                // La U de NEXUS: un conector USB visto de frente, con sus dos contactos.
+                nvgMoveTo(vg, X(5), Y(4)); nvgLineTo(vg, X(5), Y(20)); nvgLineTo(vg, X(19), Y(20)); nvgLineTo(vg, X(19), Y(4));
+                nvgRect(vg, X(9), Y(9), 2.0f * s, 4.0f * s);
+                nvgRect(vg, X(13), Y(9), 2.0f * s, 4.0f * s);
                 break;
         }
         nvgStroke(vg);

@@ -40,6 +40,7 @@
 #include "language_tab.hpp"
 #include "list_download_tab.hpp"
 #include "nextendo_tab.hpp"
+#include "nexus_tab.hpp"
 #include "protection.hpp"
 #include "tools_tab.hpp"
 #include "utils.hpp"
@@ -613,6 +614,17 @@ MainFrame::MainFrame() : TabFrame()
         if (!NextendoTab::seen() || this->nextendoFunciona)
             this->nextendoItem = this->itemNextendo;
     }
+    /* Nexus Bacán: juegos en un disco USB. Solo si el catalogo la trae. */
+    NexusTab::aplicarPrueba(nxlinks);
+    if (NexusTab::available(nxlinks)) {
+        PaginaOqb::Opciones op;
+        op.forma = PaginaOqb::Forma::Secciones;
+        auto reinstalar = [this](const std::string& clave) { return this->tabPacks && this->tabPacks->instalarPorClave(clave); };
+        this->addTab("Nexus Bacán", new PaginaOqb("NEXUS BACÁN", "menus/nexus/subtitulo"_i18n, new NexusTab(nxlinks, packsGuardado, reinstalar), op));
+        this->itemNexus = entrada(iconos::Icono::Usb);
+        this->nexusAviso = NexusTab::necesitaAtencion(nxlinks, packsGuardado);
+        arranque::marca("ventana: pestaña nexus");
+    }
     this->catalogo = nxlinks;
     this->genInstalaciones = appUpdates::generacionInstalaciones();
     (void)vistaPacks;
@@ -747,6 +759,25 @@ void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         nvgBeginPath(vg);
         nvgCircle(vg, cx, cy, 5.0f);
         nvgFillColor(vg, this->a(nvgRGB(160, 132, 255)));
+        nvgFill(vg);
+    }
+
+    /* Nexus Bacán: violeta y latiendo si hay version nueva o el pack normal la
+       quito al actualizarse. */
+    if (this->itemNexus && this->nexusAviso) {
+        static const auto inicioX = std::chrono::steady_clock::now();
+        const float t = std::chrono::duration<float>(std::chrono::steady_clock::now() - inicioX).count();
+        const float respiro = 0.5f + 0.5f * std::sin(t * 1.8f);
+        brls::View* item = this->itemNexus;
+        const float cy = item->getY() + item->getHeight() / 2.0f;
+        const float cx = item->getX() + item->getWidth() - style->Sidebar.Item.padding - 16.0f;
+        nvgBeginPath(vg);
+        nvgCircle(vg, cx, cy, 9.0f + 3.0f * respiro);
+        nvgFillColor(vg, this->a(nvgRGBA(192, 168, 238, (unsigned char)(30 + 40 * respiro))));
+        nvgFill(vg);
+        nvgBeginPath(vg);
+        nvgCircle(vg, cx, cy, 5.0f);
+        nvgFillColor(vg, this->a(nvgRGB(192, 168, 238)));
         nvgFill(vg);
     }
 

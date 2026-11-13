@@ -54,6 +54,9 @@ private:
     brls::View* itemTrucos = nullptr;
     brls::View* itemBacan = nullptr;
     brls::View* itemNextendo = nullptr;
+    // Nexus Bacán: la entrada del menu y si lleva el punto (version nueva o quitado por el pack).
+    brls::View* itemNexus = nullptr;
+    bool nexusAviso = false;
     void irA(brls::View* item);
 
 public:

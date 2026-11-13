@@ -64,7 +64,11 @@ bool prefijoDeRuta(const std::string& prefijo, const std::string& ruta)
 constexpr const char* SIEMPRE[] = {"/config/aio-switch-updater", "/config/sphaira", "/config/MissionControl", "/switch/Bacan-Shop",
                                    "/atmosphere/automatic_backups", "/atmosphere/crash_reports", "/atmosphere/fatal_reports",
                                    "/atmosphere/fatal_errors", "/atmosphere/erpt_reports", "/atmosphere/logs", "/atmosphere/flags",
-                                   "/atmosphere/bluetooth_devices.db"};
+                                   "/atmosphere/bluetooth_devices.db",
+                                   /* Nexus Bacán: dónde está cada juego movido al USB y sus marcas del
+                                      HOME. Sin esto, actualizar el pack normal dejaba esos juegos sin
+                                      ruta aunque siguieran en el disco. */
+                                   "/atmosphere/usb_content", "/atmosphere/usb_badges"};
 // Carpetas de otros CFW/packs que a veces quedan en la raíz de la SD.
 constexpr const char* RAIZ_AJENA[] = {"ReiNX", "sxos", "sept"};
 
