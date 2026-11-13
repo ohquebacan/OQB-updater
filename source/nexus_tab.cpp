@@ -421,6 +421,13 @@ namespace {
             fs::writeJsonToFile(reg, REGISTRO);
             std::filesystem::remove(CUSTOM_FILENAME);
             if (existe(NRO) && !fwd::exists(NRO)) *sinAcceso = NRO;
+            /* Si ya tenía acceso, se rehace: el ícono y el nombre se copian al
+               crearlo, así que con una versión nueva de la app el acceso viejo
+               seguía mostrando el ícono anterior. */
+            else if (existe(NRO) && fwd::exists(NRO)) {
+                const Result r = crearAcceso();
+                if (R_FAILED(r)) { nlohmann::ordered_json reg2 = registro(); reg2["acceso_error"] = fwd::resultToString(r); fs::writeJsonToFile(reg2, REGISTRO); }
+            }
             ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
         }));
         // Si ya tiene acceso directo, la pregunta se saltea sola.
@@ -815,9 +822,13 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
         });
         this->addView(abrir);
 
-        if (existe(NRO) && !fwd::exists(NRO)) {
-            PackListItem* acceso = new PackListItem("menus/nexus/acceso"_i18n, "", "menus/nexus/acceso_sub"_i18n);
-            acceso->setWarningValue("menus/nexus/falta"_i18n);
+        if (existe(NRO)) {
+            /* Sin acceso: crearlo. Con acceso: rehacerlo con el ícono y el nombre actuales. */
+            const bool tiene = fwd::exists(NRO);
+            PackListItem* acceso = new PackListItem(tiene ? "menus/nexus/acceso_rehacer"_i18n : "menus/nexus/acceso"_i18n, "",
+                                                    tiene ? "menus/nexus/acceso_rehacer_sub"_i18n : "menus/nexus/acceso_sub"_i18n);
+            if (tiene) acceso->setPositiveValue("menus/nexus/instalado"_i18n);
+            else acceso->setWarningValue("menus/nexus/falta"_i18n);
             acceso->getClickEvent()->subscribe([](brls::View*) {
                 brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
                 frame->setTitle("menus/nexus/acceso"_i18n);

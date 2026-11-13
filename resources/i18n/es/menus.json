@@ -886,6 +886,8 @@
         "pack_oc_explica": "Con el pack de overclock, los juegos del USB todavía no abren: su arranque carga piezas propias que chocan con Nexus Bacán. Lo estamos revisando.\n\nPor ahora, instala el pack normal y después Nexus Bacán. Tus juegos y partidas no se tocan.",
         "pack_oc_instalar": "Instalar el pack normal",
         "pack_oc_manual": "Instala el pack normal desde Packs y firmwares y después vuelve aquí.",
-        "pack_oc_titulo": "Pack de overclock"
+        "pack_oc_titulo": "Pack de overclock",
+        "acceso_rehacer": "Actualizar el acceso directo",
+        "acceso_rehacer_sub": "Lo vuelve a crear con el ícono y el nombre actuales de Nexus Bacán."
     }
 }

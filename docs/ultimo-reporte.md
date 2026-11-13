@@ -191,3 +191,55 @@ Las entradas del catálogo están listas en `~/oqb-usb/pack-nexus/catalogo-nexus
   - OQB Updater 99b0081a;
   - el zip y `nexus_bacan_prueba.json` para ver la sección en OQB Updater.
 - La SD de la 23.0.1 todavía tiene Nexus 0be5eb35: le falta 4f8024b, que es solo el seguro 05.... Ahí la llave de prueba ya lo permitía.
+
+## 13-nov (12) — publicado
+- **Nexus 3a63f4e:**
+  - Ícono E como predeterminado (`assets/usb-loader-icon.jpg`).
+  - «Ports del USB»: busca los .nro en `/homebrew/port-*/sdmc/switch/*/` y `/switch/*/` del USB y crea con `CreateHomebrewForwarder` el acceso de los que esta consola no tiene. Está como fila en Juegos del USB y en Tu USB.
+  - Los ports aparecen «Listo para viajar» en Llevar el USB a otra consola.
+  - El Listo de mover un port lo explica.
+  - NRO 37781f01.
+- **Pack:** release `nexus-1.0` en ohquebacan/OQB-HATS-PACK con OQB-NEXUS-BACAN.zip (md5 9184402c, comprobado al bajarlo).
+- **Catálogo 8f7bca9:** `nexus_bacan` (23.0.1, 23.5.0) en nx-links.json y OQB-NEXUS-BACAN.zip (2026-11-13) en pack-versions.json.
+- **OQB Updater 4.2** publicado (tag sobre 266477c, notas vacías). El menú dice «Nexus USB» y adentro NEXUS BACÁN. El «run failed» que vio Emilio es la ejecución que cancelé (b3c9985) para salir con el nombre nuevo; la de 266477c salió bien.
+- **OQB Updater PC/Mac 5ccf277** (main, privado): protección de usb_content/usb_badges. Sin versión nueva.
+- **Atmosphère:** la rama oqb-1122-usb se respaldó en ohquebacan/Atmosphere-OQB (privado).
+- **Pendiente:**
+  - decidir si el código de Nexus Bacán (Nexus, Atmosphère y overlay) se publica en un repo público (GPL);
+  - borrar `nexus_bacan_prueba.json` de las dos SD;
+  - el aviso como franja en Tus juegos;
+  - compatibilidad con el pack OC;
+  - permisos de la eShop entre consolas.
+
+## 13-nov (13) — varias consolas con el diseño de la maqueta (Nexus bfc8269)
+- **PantallaVariasConsolas** (nexus_confirmar): dibujo de consola → USB → otra consola y tres tarjetas (Viaja / No viaja / A veces no). Se abre desde Ayuda › Un USB, varias consolas y desde Y «Llevar a otra consola», con X «Revisar la preparación».
+- **PantallaListo** con dos botones. Al agregar juegos: «N elementos agregados», con Reiniciar ahora (spsmShutdown) y Después / Ver detalles.
+- **ReviewMenu:**
+  - ícono del juego en cada fila (title::GetAsync);
+  - panel derecho con el nombre y la explicación del juego elegido (`resumen`);
+  - etiqueta arriba a la derecha («3 se pueden agregar», «Listo para viajar», «Todo en orden»).
+- **Llevar el USB a otra consola:**
+  - primera fila: el interruptor «Preparar solos…» SÍ/NO, que A cambia ahí mismo;
+  - etiquetas SE PUEDE PREPARAR / LISTO PARA VIAJAR / SOLO AQUÍ / INCOMPLETO;
+  - panel «N DE M PUEDEN VIAJAR»;
+  - los ports con «LISTO PARA VIAJAR».
+- **Aviso al abrir:** si solo hay juegos para agregar, ya no sale ventana. Inicio muestra la franja «Este USB trae N juegos…» con Y Agregar, y Tus juegos una etiqueta arriba a la derecha.
+- NRO b01cdb96, copiado a la SD de la 23.0.1. De esa SD se borraron `nexus_bacan_prueba.json` y `probar-ports-usb`.
+- El release nexus-1.0 todavía tiene el NRO anterior. Republicar después de que Emilio lo pruebe.
+
+## 13-nov (14) — preparar automático y sin botones repetidos (Nexus 4b5c3ca)
+- Lo que se veía en la consola: Cómo funciona con los botones dos veces (en pantalla y en la barra), y Llevar con una fila por pieza más las filas «Qué hace la preparación» y el interruptor.
+- **Botones:** los que ya están dibujados (Listo, Cómo funciona, Confirmar mover, el botón X del panel, Y en la franja de Inicio) ya no salen en la barra de abajo.
+- **«Preparar» ya no es un paso:**
+  - al mover al USB se guarda siempre el permiso (PrepararAlMover = true, sin interruptor);
+  - «Llevar el USB a otra consola» planifica y guarda solo los permisos que falten (MayWrite) y muestra un juego por fila (juego + actualización + DLC juntos) con ícono;
+  - estados LISTO PARA VIAJAR / SOLO AQUÍ / INCOMPLETO, el panel «N DE M PUEDEN VIAJAR» y la etiqueta «Todo listo para viajar»;
+  - los ports van al final como listos.
+- Desde Juegos del USB, Y abre Cómo funciona con X «Ver qué puede viajar».
+- NRO ec48aa9c, copiado a la SD de la 23.0.1, a `sd-23.5` y al zip local (sin publicar; el release nexus-1.0 sigue con 37781f01).
+- **Falta:**
+  - ver estas pantallas en la consola;
+  - republicar nexus-1.0 con este NRO después de la prueba;
+  - en Juegos del USB, «marcar/desmarcar» por juego de la maqueta (hoy se agregan todos los listos);
+  - decidir el repo público GPL;
+  - copiar a la SD de la 23.5 y quitarle `nexus_bacan_prueba.json`.

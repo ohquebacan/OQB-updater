@@ -865,6 +865,8 @@
         "pack_oc_explica": "With the overclock pack, USB games don't open yet: its boot loads its own pieces that clash with Nexus Bacán. We're looking into it.\n\nFor now, install the regular pack and then Nexus Bacán. Your games and saves are not touched.",
         "pack_oc_instalar": "Install the regular pack",
         "pack_oc_manual": "Install the regular pack from Packs and firmware, then come back here.",
-        "pack_oc_titulo": "Overclock pack"
+        "pack_oc_titulo": "Overclock pack",
+        "acceso_rehacer": "Update the HOME shortcut",
+        "acceso_rehacer_sub": "Recreates it with Nexus Bacán's current icon and name."
     }
 }
