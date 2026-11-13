@@ -888,6 +888,7 @@
         "pack_oc_manual": "Instala el pack normal desde Packs y firmwares y después vuelve aquí.",
         "pack_oc_titulo": "Pack de overclock",
         "acceso_rehacer": "Actualizar el acceso directo",
-        "acceso_rehacer_sub": "Lo vuelve a crear con el ícono y el nombre actuales de Nexus Bacán."
+        "acceso_rehacer_sub": "Lo vuelve a crear con el ícono y el nombre actuales de Nexus Bacán.",
+        "reinstalar_sub": "Vuelve a bajar e instalar la versión publicada. Tus juegos del USB no se tocan."
     }
 }

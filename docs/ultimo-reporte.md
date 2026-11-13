@@ -243,3 +243,6 @@ Las entradas del catálogo están listas en `~/oqb-usb/pack-nexus/catalogo-nexus
   - en Juegos del USB, «marcar/desmarcar» por juego de la maqueta (hoy se agregan todos los listos);
   - decidir el repo público GPL;
   - copiar a la SD de la 23.5 y quitarle `nexus_bacan_prueba.json`.
+- 13-nov: OQB Updater 4.2.1 publicado (rehacer acceso del HOME; se rehace al instalar/actualizar Nexus). Copiado a la SD de la 23.0.1, que ya tenía Nexus ec48aa9c.
+- 13-nov: release nexus-1.0 reemplazado con el zip 7693e311 (Nexus ec48aa9c con el rediseño, package3 22e7a143). Comprobado al bajarlo. pack-versions sin cambios (misma fecha).
+- 13-nov: catálogo 423f84c, OQB-NEXUS-BACAN.zip fecha 2026-11-13.2 para que salga «Actualizar» (la SD de la 23.5 tenía 2026-11-13 de una instalación anterior). OJO: la SD de la 23.5 todavía tiene nexus_bacan_prueba.json con zip_local, que instalaría el zip local viejo.

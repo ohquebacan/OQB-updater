@@ -867,6 +867,7 @@
         "pack_oc_manual": "Install the regular pack from Packs and firmware, then come back here.",
         "pack_oc_titulo": "Overclock pack",
         "acceso_rehacer": "Update the HOME shortcut",
-        "acceso_rehacer_sub": "Recreates it with Nexus Bacán's current icon and name."
+        "acceso_rehacer_sub": "Recreates it with Nexus Bacán's current icon and name.",
+        "reinstalar_sub": "Downloads and installs the published version again. Your USB games are not touched."
     }
 }

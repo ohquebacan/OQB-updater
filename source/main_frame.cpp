@@ -615,7 +615,6 @@ MainFrame::MainFrame() : TabFrame()
             this->nextendoItem = this->itemNextendo;
     }
     /* Nexus Bacán: juegos en un disco USB. Solo si el catalogo la trae. */
-    NexusTab::aplicarPrueba(nxlinks);
     if (NexusTab::available(nxlinks)) {
         PaginaOqb::Opciones op;
         op.forma = PaginaOqb::Forma::Secciones;

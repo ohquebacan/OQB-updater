@@ -351,10 +351,21 @@ namespace {
         Result rc = fwd::configFromNro(NRO, config);
         if (R_FAILED(rc)) return rc;
         fwd::aplicarIconoPropio(config);
-        return fwd::install(config, [](int step, int total) {
+        rc = fwd::install(config, [](int step, int total) {
             ProgressEvent::instance().setTotalSteps(total);
             ProgressEvent::instance().setStep(step);
         });
+        /* El HOME guarda el ícono de cada título en caché: al rehacer el acceso
+           con el mismo ID seguía mostrando el anterior. Se le pide que vuelva a
+           leerlos todos (InvalidateAllApplicationControlCache, ns:am cmd 405). */
+        if (R_SUCCEEDED(rc)) {
+            Service am{};
+            if (R_SUCCEEDED(nsGetApplicationManagerInterface(&am))) {
+                (void)serviceDispatch(&am, 405);
+                serviceClose(&am);
+            }
+        }
+        return rc;
     }
 
     void instalar(const std::string& url, const std::string& fecha, bool erista, const std::string& zipLocal = "")
@@ -724,7 +735,7 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
 {
     const nlohmann::ordered_json& datos = this->nxlinks["nexus_bacan"];
     const std::string url = texto(datos, "url");
-    const std::string zipLocal = texto(datos, "zip_local");
+    const std::string zipLocal;  // el modo de prueba con zip local ya no se usa: siempre lo publicado
     const std::string publicada = packVersion::published(packVersions, claveDe(url)).date;
     const bool erista = util::isErista();
     const nlohmann::ordered_json reg = registro();
@@ -813,6 +824,12 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
         }
 
         this->addView(new HeaderOqb("menus/nexus/herramientas"_i18n));
+        // Siempre se puede volver a instalar la versión publicada (si algo quedó a medias o viejo).
+        if (publicada.empty() || texto(reg, "version") == publicada) {
+            brls::ListItem* re = new brls::ListItem("menus/nexus/reinstalar"_i18n, "", "menus/nexus/reinstalar_sub"_i18n);
+            re->getClickEvent()->subscribe([url, publicada, erista](brls::View*) { instalar(url, publicada, erista); });
+            this->addView(re);
+        }
         PackListItem* abrir = new PackListItem("menus/nexus/abrir"_i18n, "", "menus/nexus/abrir_sub"_i18n);
         if (existe(NRO)) abrir->setPositiveValue("menus/nexus/instalada"_i18n);
         else abrir->setWarningValue("menus/nexus/falta"_i18n);
