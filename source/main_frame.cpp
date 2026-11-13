@@ -620,7 +620,7 @@ MainFrame::MainFrame() : TabFrame()
         PaginaOqb::Opciones op;
         op.forma = PaginaOqb::Forma::Secciones;
         auto reinstalar = [this](const std::string& clave) { return this->tabPacks && this->tabPacks->instalarPorClave(clave); };
-        this->addTab("Nexus Bacán", new PaginaOqb("NEXUS BACÁN", "menus/nexus/subtitulo"_i18n, new NexusTab(nxlinks, packsGuardado, reinstalar), op));
+        this->addTab("Nexus USB", new PaginaOqb("NEXUS BACÁN", "menus/nexus/subtitulo"_i18n, new NexusTab(nxlinks, packsGuardado, reinstalar), op));
         this->itemNexus = entrada(iconos::Icono::Usb);
         this->nexusAviso = NexusTab::necesitaAtencion(nxlinks, packsGuardado);
         arranque::marca("ventana: pestaña nexus");
