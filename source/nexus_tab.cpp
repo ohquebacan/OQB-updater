@@ -556,6 +556,84 @@ namespace {
     }
 
     // Un .txt con todo lo que sirve para soporte (sin claves, tickets ni partidas).
+    /* Para los casos de «tras el reposo no abre nada» o «se queda en el logo»:
+       la SD (tamaño real, espacio, CID para ver el fabricante), lo que corre al
+       arrancar, y los errores que Atmosphère guardó. Nada de esto lleva claves. */
+    void diagnosticoSd(std::ofstream& f)
+    {
+        f << "\n== SD\n";
+        if (FsFileSystem* sd = fsdevGetDeviceFileSystem("sdmc")) {
+            s64 libre = 0, total = 0;
+            fsFsGetFreeSpace(sd, "/", &libre);
+            fsFsGetTotalSpace(sd, "/", &total);
+            f << "Espacio: " << fmt::format("{:.1f} GB libres de {:.1f} GB", libre / 1e9, total / 1e9) << "\n";
+        }
+        FsDeviceOperator op;
+        if (R_SUCCEEDED(fsOpenDeviceOperator(&op))) {
+            bool puesta = false;
+            s64 velocidad = -1, area = -1;
+            u8 cid[0x10] = {};
+            fsDeviceOperatorIsSdCardInserted(&op, &puesta);
+            fsDeviceOperatorGetSdCardSpeedMode(&op, &velocidad);
+            fsDeviceOperatorGetSdCardUserAreaSize(&op, &area);
+            const Result rc = fsDeviceOperatorGetSdCardCid(&op, cid, sizeof(cid), sizeof(cid));
+            fsDeviceOperatorClose(&op);
+            f << "Insertada: " << (puesta ? "si" : "no") << " · Modo de velocidad: " << velocidad << "\n";
+            f << "Tamano de la tarjeta (segun la tarjeta): " << (area >= 0 ? fmt::format("{:.1f} GB", area / 1e9) : "?") << "\n";
+            f << "CID: ";
+            if (R_SUCCEEDED(rc)) for (u8 b : cid) f << fmt::format("{:02X}", b);
+            else f << fmt::format("no se pudo leer (0x{:X})", rc);
+            f << "\n";
+        }
+    }
+
+    // Módulos de /atmosphere/contents: los que traen exefs.nsp corren solos y
+    // son los que pueden chocar con Nexus. El resto son mods de juegos.
+    void diagnosticoModulos(std::ofstream& f)
+    {
+        f << "\n== Modulos en /atmosphere/contents\n";
+        std::error_code ec;
+        size_t otros = 0;
+        std::vector<std::string> lineas;
+        for (const auto& d : std::filesystem::directory_iterator("/atmosphere/contents", ec)) {
+            if (!d.is_directory(ec)) continue;
+            const auto p = d.path();
+            if (!existe((p / "exefs.nsp").string())) { ++otros; continue; }
+            std::string nombre;
+            try {
+                std::ifstream tj((p / "toolbox.json").string());
+                if (tj) nombre = texto(nlohmann::ordered_json::parse(tj), "name");
+            } catch (...) {}
+            lineas.push_back(p.filename().string() + (existe((p / "flags/boot2.flag").string()) ? "  arranca solo" : "  sin boot2") +
+                             (nombre.empty() ? "" : "  " + nombre));
+        }
+        std::sort(lineas.begin(), lineas.end());
+        for (const auto& l : lineas) f << "  " << l << "\n";
+        f << "Otras carpetas (mods de juegos): " << otros << "\n";
+        f << "Archivos en /atmosphere:\n";
+        for (const auto& d : std::filesystem::directory_iterator("/atmosphere", ec))
+            if (d.is_regular_file(ec)) f << "  " << d.path().filename().string() << "  " << d.file_size(ec) << "\n";
+    }
+
+    // Los últimos errores que guardó Atmosphère (los nombres llevan la fecha) y el texto del más reciente.
+    void diagnosticoErrores(std::ofstream& f)
+    {
+        for (const char* carpeta : {"/atmosphere/crash_reports", "/atmosphere/fatal_reports"}) {
+            std::error_code ec;
+            std::vector<std::string> nombres;
+            for (const auto& d : std::filesystem::directory_iterator(carpeta, ec))
+                if (d.is_regular_file(ec)) nombres.push_back(d.path().filename().string());
+            std::sort(nombres.begin(), nombres.end());
+            f << "\n== " << carpeta << " (" << nombres.size() << ", ultimos 10)\n";
+            for (size_t i = nombres.size() > 10 ? nombres.size() - 10 : 0; i < nombres.size(); ++i) f << "  " << nombres[i] << "\n";
+            if (!nombres.empty() && nombres.back().size() > 4 && nombres.back().substr(nombres.back().size() - 4) == ".log") {
+                std::string t = leerTodo(std::string(carpeta) + "/" + nombres.back());
+                if (t.size() > 3000) t = t.substr(0, 3000) + "\n[...]";
+                f << "-- " << nombres.back() << "\n" << t << "\n";
+            }
+        }
+    }
+
     std::string diagnostico()
     {
         fs::createTree(SOPORTE);
@@ -582,6 +660,10 @@ namespace {
         const auto juegos = juegosEnUsb();
         f << "Juegos en el USB (" << juegos.size() << "):\n";
         for (u64 id : juegos) f << "  " << fmt::format("{:016X}", id) << "  " << nombreJuego(id) << "\n";
+        diagnosticoSd(f);
+        diagnosticoModulos(f);
+        f << "\n== " << HEKATE_IPL_PATH << "\n" << leerTodo(HEKATE_IPL_PATH, 16 * 1024);
+        diagnosticoErrores(f);
         f << "\n== system_settings.ini (lineas del USB)\n";
         {
             std::ifstream ini(INI);

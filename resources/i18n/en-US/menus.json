@@ -840,7 +840,7 @@
         "guia_sub": "Which drive works, moving a game and what to do if something fails.",
         "guia_texto": "1.  Prepare the drive\nexFAT. A hard drive needs its own power supply. Format it from the PC with OQB Updater PC/Mac.\n\n2.  Move a game\nOpen Nexus Bacán › Your games › SD filter › X Move to USB. It is copied, checked and only then deleted from the SD.\n\n3.  Play as usual\nThe game stays in the HOME menu with the USB mark. Without the USB it won't open: plug it in.\n\n4.  Before unplugging\nSafely eject (here or in the overlay). To use it again: Reconnect, or unplug it and plug it back in.\n\n5.  If something fails\nIt is probably the cable or the dock port; try another. If it continues, use Diagnostics for support.\n\nYour saves don't go to the USB: they stay on the console.",
         "diagnostico": "Diagnostics for support",
-        "diagnostico_sub": "Bundles the USB logs into one file. No keys, tickets, saves or games.",
+        "diagnostico_sub": "Bundles the USB logs, SD card state, installed modules and recent errors into one file. No keys, tickets, saves or games.",
         "diagnostico_ok": "Saved to:\n{}\n\nSend it through the support chat or copy it to the PC. If a USB game won't open, create it right after the failure, without restarting.",
         "diagnostico_error": "The file could not be saved. The SD is probably full or write-protected.",
         "caja_usb": "USB",
