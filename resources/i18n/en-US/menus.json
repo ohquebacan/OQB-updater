@@ -790,7 +790,7 @@
         "prot_otra_nand_sub": "Nextendo is active on the {}. This one still blocks Nintendo."
     },
     "nexus": {
-        "subtitulo": "Your games on a USB drive",
+        "subtitulo": "Your games on a USB drive or flash drive",
         "que_es": "What it is",
         "presentacion": "Move games from the SD card to a USB drive and play them from the HOME menu as usual. You free up space without deleting anything: games are copied, checked, and only then removed from the SD. Your saves stay on the console. If you unplug the USB, those games wait until you plug it back in.",
         "quitado_por_pack": "Nexus Bacán was installed, but installing or updating a pack restored the pack's Atmosphère and turned the USB off. Your games are still on the USB: reinstall it and they will open again.",
@@ -871,7 +871,7 @@
         "reinstalar_sub": "Downloads and installs the published version again. Your USB games are not touched.",
         "pack_oc_ok_sub": "Overclock pack: the Nexus Bacán version with Horizon-OC 2.6.0 is installed, so overclocking keeps working and USB games open.",
         "pack_oc_reinstalar_sub": "Nexus Bacán is installed without the overclock pieces, so USB games probably won't open. Reinstall it to get the Horizon-OC version.",
-        "presentacion_titulo": "Move games from the SD to a USB drive and play them on your Switch as usual.",
+        "presentacion_titulo": "Move games from the SD to a USB drive or flash drive and play them on your Switch as usual.",
         "presentacion_texto": "They are copied, checked and only then removed from the SD. You get space back and your saves stay safe on the console.",
         "respaldo_nota": "{} · your pack is backed up",
         "respaldo_nota_sin": "Your pack is backed up",

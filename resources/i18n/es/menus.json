@@ -811,7 +811,7 @@
         "prot_otra_nand_sub": "Nextendo está activo en la {}. Esta sigue bloqueando a Nintendo."
     },
     "nexus": {
-        "subtitulo": "Tus juegos en un disco USB",
+        "subtitulo": "Tus juegos en un disco o memoria USB",
         "que_es": "Qué es",
         "presentacion": "Mueve juegos de la SD a un disco USB y juégalos desde el menú HOME como siempre. Liberas espacio sin borrar nada: se copian, se comprueban y recién ahí se quitan de la SD. Tus partidas se quedan en la consola. Si sacas el USB, esos juegos esperan hasta que lo vuelvas a conectar.",
         "quitado_por_pack": "Nexus Bacán estaba instalado, pero al instalar o actualizar un pack se volvió a poner el Atmosphère del pack y el USB quedó apagado. Tus juegos siguen en el USB: reinstálalo y vuelven a abrir.",
@@ -892,7 +892,7 @@
         "reinstalar_sub": "Vuelve a bajar e instalar la versión publicada. Tus juegos del USB no se tocan.",
         "pack_oc_ok_sub": "Pack de overclock: se instala la versión de Nexus Bacán con Horizon-OC 2.6.0, así que el overclock sigue funcionando y los juegos del USB abren.",
         "pack_oc_reinstalar_sub": "Nexus Bacán está puesto sin las piezas para el overclock, y así los juegos del USB probablemente no abren. Reinstálalo para poner la versión con Horizon-OC.",
-        "presentacion_titulo": "Pasa juegos de la SD a un disco USB y juégalos en tu Switch como siempre.",
+        "presentacion_titulo": "Pasa juegos de la SD a un disco o memoria USB y juégalos en tu Switch como siempre.",
         "presentacion_texto": "Se copian, se comprueban y recién ahí se quitan de la SD. Recuperas espacio y tus partidas siguen a salvo en la consola.",
         "respaldo_nota": "{} · tu pack queda respaldado",
         "respaldo_nota_sin": "Tu pack queda respaldado",
