@@ -10,8 +10,10 @@
 class HeaderOqb : public brls::Header
 {
 public:
-    explicit HeaderOqb(const std::string& texto) : brls::Header(texto), texto(texto) {}
+    // `columnas`: tarjetas por fila en esta seccion (0 = las de la pagina).
+    explicit HeaderOqb(const std::string& texto, int columnas = 0) : brls::Header(texto), texto(texto), columnas(columnas) {}
     std::string texto;
+    int columnas;
 };
 
 // Una vista propia que deja lugar a su derecha para un boton: PaginaOqb dibuja
@@ -84,6 +86,7 @@ private:
     };
     struct Seccion {
         std::string titulo, intro;
+        int columnas = 0;
         std::vector<int> entradas;
         std::vector<Elemento> orden;  // todo, en el orden de la lista original
     };

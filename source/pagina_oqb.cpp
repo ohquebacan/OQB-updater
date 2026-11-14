@@ -116,6 +116,7 @@ void PaginaOqb::leerOrigen()
             Seccion& ultima = this->secciones.back();
             if (!ultima.entradas.empty() || !ultima.intro.empty() || !ultima.titulo.empty()) this->secciones.push_back({});
             this->secciones.back().titulo = h->texto;
+            this->secciones.back().columnas = h->columnas;
         }
         else if (auto* l = dynamic_cast<brls::Label*>(v)) {
             auto& intro = this->secciones.back().intro;
@@ -292,8 +293,8 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
 
     if (this->op.forma == Forma::Secciones) {
         const float gap = 16.0f;
-        const int cols = this->op.columnas;
-        const float tw = (ancho - gap * (cols - 1)) / cols;
+        int cols = this->op.columnas;
+        float tw = (ancho - gap * (cols - 1)) / cols;
         auto altoTarjeta = [&](const Entrada& e) {
             nvgFontSize(vg, 19.0f);
             float h = 20.0f + lineas(vg, e.titulo, tw - 44.0f, 2) * 25.0f;
@@ -305,6 +306,9 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
             return std::max(h + 16.0f, dynamic_cast<ConIcono*>(e.item) ? 84.0f : 70.0f);
         };
         for (const Seccion& sec : this->secciones) {
+            // Cada seccion puede pedir sus propias columnas (Nexus: tres tarjetas chicas).
+            cols = sec.columnas > 0 ? sec.columnas : this->op.columnas;
+            tw = (ancho - gap * (cols - 1)) / cols;
             if (!sec.titulo.empty()) {
                 nvgFontSize(vg, 16.0f);
                 nvgFillColor(vg, this->a(oqb::verdeTexto()));
@@ -411,7 +415,8 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                     }
                     float ty = cy + 18.0f;
                     nvgFontSize(vg, 19.0f);
-                    nvgFillColor(vg, texto);
+                    const auto* pli = dynamic_cast<PackListItem*>(e.item);
+                    nvgFillColor(vg, pli && pli->esPeligro() ? this->a(oqb::rojoTexto()) : texto);
                     parrafo(vg, tx0, ty, e.titulo, twTexto, 25.0f, 2);
                     ty += lineas(vg, e.titulo, twTexto, 2) * 25.0f + 2.0f;
                     const std::string sub = e.item->getSubLabel(), valor = e.item->getValue();

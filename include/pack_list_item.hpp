@@ -35,6 +35,10 @@ public:
     void setInstalado(bool v) { this->instalado = v; }
     bool esInstalado() const { return this->instalado; }
 
+    // Una accion que deshace algo (Quitar Nexus Bacán): el titulo va en rojo.
+    void setPeligro(bool v) { this->peligro = v; }
+    bool esPeligro() const { return this->peligro; }
+
     // Sin valor y sin el marco de aviso (una app que se acaba de actualizar).
     void clearValue();
 
@@ -49,4 +53,5 @@ private:
     bool warning = false;
     bool positive = false;
     bool instalado = false;
+    bool peligro = false;
 };

@@ -742,100 +742,311 @@ namespace {
 
     /* Arriba de la seccion con Nexus instalado: el USB, los juegos que tiene y
        la SD, en tres cajas. Se vuelve a leer el estado cada pocos segundos. */
-    class Tablero : public brls::View
+    // --- Vistas propias del rediseno (maqueta 14-nov-2026) -------------------------
+    NVGcolor violeta() { return oqb::oscuro() ? nvgRGB(192, 168, 238) : nvgRGB(90, 60, 170); }
+
+    void textoArriba(NVGcontext* vg, float x, float y, float tam, NVGcolor c, const std::string& t)
     {
-        Estado e;
-        size_t juegos = 0;
-        std::string nombres;
-        s64 sdLibre = -1;
-        u64 leido = 0;
-        void releer()
-        {
-            this->e = leerEstado();
-            const auto ids = juegosEnUsb();
-            this->juegos = ids.size();
-            this->nombres.clear();
-            for (size_t i = 0; i < ids.size() && i < 3; ++i) this->nombres += (i ? ", " : "") + nombreJuego(ids[i]);
-            if (ids.size() > 3) this->nombres += "…";
-            fs::getFreeStorageSD(this->sdLibre);
-            this->leido = ahoraMs();
+        nvgFontSize(vg, tam);
+        nvgFillColor(vg, c);
+        nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+        nvgBeginPath(vg);
+        nvgText(vg, x, y, t.c_str(), nullptr);
+    }
+
+    // Un parrafo partido en lineas; devuelve cuantas uso.
+    int lineasDe(NVGcontext* vg, float x, float y, float ancho, float alto, int maximo, const std::string& t)
+    {
+        const char* p = t.c_str();
+        const char* fin = p + t.size();
+        NVGtextRow fila[1];
+        int i = 0;
+        for (; i < maximo && p < fin; ++i) {
+            if (nvgTextBreakLines(vg, p, fin, ancho, fila, 1) <= 0) break;
+            nvgBeginPath(vg);
+            nvgText(vg, x, y + i * alto, fila[0].start, fila[0].end);
+            p = fila[0].next;
         }
+        return i;
+    }
+
+    void caja(NVGcontext* vg, float x, float y, float w, float h, NVGcolor relleno, NVGcolor borde)
+    {
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, x, y, w, h, 14.0f);
+        nvgFillColor(vg, relleno);
+        nvgFill(vg);
+        nvgStrokeColor(vg, borde);
+        nvgStrokeWidth(vg, 1.0f);
+        nvgStroke(vg);
+    }
+
+    int fuenteUpheaval(NVGcontext* vg)
+    {
+        static int f = -2;
+        if (f == -2) {
+            f = nvgFindFont(vg, "upheaval");
+            if (f < 0) f = nvgCreateFont(vg, "upheaval", "romfs:/fonts/upheavtt.ttf");
+        }
+        return f;
+    }
+
+    /* Un aviso como franja, con su boton a la derecha: PaginaOqb dibuja ahi la
+       entrada que la sigue (Actualizar, Reactivar...). Dorado si algo falta,
+       violeta si es una novedad. */
+    class Franja : public brls::View, public ConBoton
+    {
+        std::string fuerte, resto;
+        bool dorado;
 
     public:
-        Tablero()
+        Franja(std::string fuerte, std::string resto, bool dorado) : fuerte(std::move(fuerte)), resto(std::move(resto)), dorado(dorado) { this->setHeight(86); }
+        void layout(NVGcontext*, brls::Style*, brls::FontStash*) override {}
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style*, brls::FrameContext* ctx) override
         {
-            this->setHeight(132);
-            this->releer();
+            NVGcolor c = this->dorado ? oqb::doradoTexto() : violeta();
+            NVGcolor fondo = c, borde = c;
+            fondo.a = 0.10f;
+            borde.a = 0.45f;
+            caja(vg, x, y, width, height, this->a(fondo), this->a(borde));
+            nvgFontFaceId(vg, ctx->fontStash->regular);
+            const float tw = width - 40.0f - this->reservaDerecha;
+            nvgFontSize(vg, 18.0f);
+            nvgFillColor(vg, this->a(ctx->theme->textColor));
+            const int n = lineasDe(vg, x + 20, y + 16, tw, 23.0f, 1, this->fuerte);
+            nvgFontSize(vg, 15.0f);
+            nvgFillColor(vg, this->a(ctx->theme->descriptionColor));
+            lineasDe(vg, x + 20, y + 16 + n * 24.0f, tw, 19.0f, 2, this->resto);
+        }
+    };
+
+    /* Sin Nexus: que hace, en dos lineas, con el boton Instalar a la derecha (la
+       entrada que la sigue) y debajo del boton cuanto pesa y que se respalda. */
+    class Presentacion : public brls::View, public ConBoton
+    {
+        std::string nota;
+
+    public:
+        explicit Presentacion(std::string nota) : nota(std::move(nota)) { this->setHeight(128); }
+        void layout(NVGcontext*, brls::Style*, brls::FontStash*) override {}
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style*, brls::FrameContext* ctx) override
+        {
+            caja(vg, x, y, width, height, this->a(oqb::velo(oqb::oscuro() ? 12 : 10)), this->a(ctx->theme->sidebarSeparatorColor));
+            nvgFontFaceId(vg, ctx->fontStash->regular);
+            const float tw = width - 48.0f - this->reservaDerecha;
+            nvgFontSize(vg, 20.0f);
+            nvgFillColor(vg, this->a(ctx->theme->textColor));
+            const int n = lineasDe(vg, x + 22, y + 20, tw, 26.0f, 2, "menus/nexus/presentacion_titulo"_i18n);
+            nvgFontSize(vg, 15.0f);
+            nvgFillColor(vg, this->a(ctx->theme->descriptionColor));
+            lineasDe(vg, x + 22, y + 26 + n * 26.0f, tw, 20.0f, 3, "menus/nexus/presentacion_texto"_i18n);
+            if (this->reservaDerecha > 0) {
+                // Debajo del boton (200 x 50, centrado en alto y a 26 del borde).
+                nvgFontSize(vg, 13.0f);
+                nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+                nvgBeginPath(vg);
+                nvgText(vg, x + width - 26.0f - 100.0f, y + (height + 50.0f) / 2 + 8.0f, this->nota.c_str(), nullptr);
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+            }
+        }
+    };
+
+    /* Arriba de todo con Nexus puesto: tu USB en grande (estado, espacio y que
+       juegos tiene) y al lado la SD. Abrir y Expulsar van justo debajo. */
+    class TarjetaUsb : public brls::View
+    {
+        Estado e;
+        std::vector<u64> ids;
+        std::string nombres;
+        s64 sdLibre = -1, sdTotal = -1;
+        u64 leido = 0;
+
+    public:
+        TarjetaUsb()
+        {
+            this->setHeight(176);
+            this->e = leerEstado();
+            this->ids = juegosEnUsb();
+            for (size_t i = 0; i < this->ids.size() && i < 3; ++i) this->nombres += (i ? ", " : "") + nombreJuego(this->ids[i]);
+            if (this->ids.size() > 3) this->nombres += "…";
+            if (FsFileSystem* sd = fsdevGetDeviceFileSystem("sdmc")) {
+                fsFsGetFreeSpace(sd, "/", &this->sdLibre);
+                fsFsGetTotalSpace(sd, "/", &this->sdTotal);
+            }
+            this->leido = ahoraMs();
         }
         void layout(NVGcontext*, brls::Style*, brls::FontStash*) override {}
-        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style*, brls::FrameContext* ctx) override
         {
             if (ahoraMs() - this->leido > 3000) {
                 this->e = leerEstado();
                 this->leido = ahoraMs();
             }
-            const float hueco = 16.0f, w = (width - 2 * hueco) / 3.0f;
-            struct Caja {
-                std::string k, v, m;
-                NVGcolor color;
-                float barra;
-            };
-            const bool hayUsb = this->e.conectado();
-            Caja cajas[3];
-            cajas[0].k = "menus/nexus/caja_usb"_i18n;
-            if (hayUsb) {
-                cajas[0].v = fmt::format("menus/nexus/conectado"_i18n, this->e.formato.empty() ? "?" : this->e.formato);
-                cajas[0].m = fmt::format("menus/nexus/libres_de"_i18n, gb(this->e.libre), gb(this->e.total));
-                cajas[0].color = oqb::oscuro() ? nvgRGB(192, 168, 238) : nvgRGB(90, 60, 170);
-                cajas[0].barra = this->e.total ? 1.0f - float(double(this->e.libre) / double(this->e.total)) : -1;
+            const NVGcolor texto = this->a(ctx->theme->textColor), tenue = this->a(ctx->theme->descriptionColor);
+            const NVGcolor fondo = this->a(oqb::velo(oqb::oscuro() ? 12 : 10)), borde = this->a(ctx->theme->sidebarSeparatorColor);
+            const int up = fuenteUpheaval(vg), regular = ctx->fontStash->regular;
+            const float hueco = 16.0f, wu = (width - hueco) * 0.62f, ws = width - hueco - wu;
+
+            // Tu USB.
+            caja(vg, x, y, wu, height, fondo, borde);
+            nvgFontFaceId(vg, regular);
+            const bool hay = this->e.conectado();
+            const std::string formato = this->e.formato.empty() ? "?" : this->e.formato;
+            std::string cab = hay ? fmt::format("menus/nexus/usb_conectado"_i18n, formato) : "menus/nexus/usb_titulo"_i18n;
+            std::transform(cab.begin(), cab.end(), cab.begin(), [](unsigned char c) { return c < 0x80 ? std::toupper(c) : c; });
+            textoArriba(vg, x + 22, y + 18, 13.0f, tenue, cab);
+            if (hay) {
+                nvgFontFaceId(vg, up >= 0 ? up : regular);
+                nvgFontSize(vg, 40.0f);
+                nvgFillColor(vg, texto);
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+                const std::string libre = gb(this->e.libre) + " GB";
+                nvgBeginPath(vg);
+                const float fin = nvgText(vg, x + 22, y + 40, libre.c_str(), nullptr);
+                nvgFontFaceId(vg, regular);
+                textoArriba(vg, fin + 10, y + 56, 15.0f, tenue, fmt::format("menus/nexus/usb_libres_de"_i18n, gb(this->e.total)));
+                const float bx = x + 22, by = y + 94, bw = wu - 44;
+                nvgBeginPath(vg);
+                nvgRoundedRect(vg, bx, by, bw, 10, 5);
+                nvgFillColor(vg, this->a(oqb::velo(24)));
+                nvgFill(vg);
+                const float uso = this->e.total ? 1.0f - float(double(this->e.libre) / double(this->e.total)) : 0.0f;
+                nvgBeginPath(vg);
+                nvgRoundedRect(vg, bx, by, std::max(10.0f, bw * std::clamp(uso, 0.0f, 1.0f)), 10, 5);
+                nvgFillColor(vg, this->a(violeta()));
+                nvgFill(vg);
+                std::string juegos = this->ids.empty() ? "menus/nexus/usb_sin_juegos"_i18n
+                                     : this->ids.size() == 1 ? fmt::format("menus/nexus/usb_un_juego"_i18n, this->nombres)
+                                                             : fmt::format("menus/nexus/usb_juegos"_i18n, this->ids.size(), this->nombres);
+                nvgFontSize(vg, 15.0f);
+                nvgFillColor(vg, tenue);
+                lineasDe(vg, x + 22, y + 120, wu - 44, 20.0f, 2, juegos);
             }
             else {
-                cajas[0].v = this->e.archivo ? "menus/nexus/sin_usb"_i18n : "menus/nexus/sin_servicio"_i18n;
-                cajas[0].m = this->e.archivo ? "menus/nexus/sin_usb_sub"_i18n : "menus/nexus/sin_servicio_sub"_i18n;
-                cajas[0].color = oqb::doradoTexto();
-                cajas[0].barra = -1;
+                nvgFontFaceId(vg, up >= 0 ? up : regular);
+                textoArriba(vg, x + 22, y + 40, 40.0f, this->a(oqb::doradoTexto()),
+                            this->e.archivo ? "menus/nexus/sin_usb"_i18n : "menus/nexus/sin_servicio"_i18n);
+                nvgFontFaceId(vg, regular);
+                const std::string sub = !this->e.archivo ? "menus/nexus/sin_servicio_sub"_i18n
+                                        : this->ids.empty() ? "menus/nexus/usb_conectalo_sin"_i18n
+                                                            : fmt::format("menus/nexus/usb_conectalo"_i18n, this->ids.size());
+                nvgFontSize(vg, 15.0f);
+                nvgFillColor(vg, tenue);
+                lineasDe(vg, x + 22, y + 96, wu - 44, 20.0f, 3, sub);
             }
-            cajas[1] = {"menus/nexus/caja_juegos"_i18n, std::to_string(this->juegos),
-                        this->juegos ? this->nombres : "menus/nexus/ninguno"_i18n, ctx->theme->textColor, -1};
-            cajas[2] = {"menus/nexus/caja_sd"_i18n, this->sdLibre >= 0 ? fmt::format("menus/nexus/gb_libres"_i18n, gb(this->sdLibre)) : "?",
-                        "menus/nexus/caja_sd_sub"_i18n, ctx->theme->textColor, -1};
-            for (int i = 0; i < 3; ++i) {
-                const float cx = x + i * (w + hueco);
+
+            // La SD.
+            const float sx = x + wu + hueco;
+            caja(vg, sx, y, ws, height, fondo, borde);
+            nvgFontFaceId(vg, regular);
+            textoArriba(vg, sx + 22, y + 18, 13.0f, tenue, "menus/nexus/sd_titulo"_i18n);
+            const bool llena = this->sdTotal > 0 && this->sdLibre >= 0 && double(this->sdLibre) / double(this->sdTotal) < 0.15;
+            nvgFontFaceId(vg, up >= 0 ? up : regular);
+            textoArriba(vg, sx + 22, y + 40, 40.0f, llena ? this->a(oqb::doradoTexto()) : texto,
+                        this->sdLibre >= 0 ? gb(this->sdLibre) + " GB" : "?");
+            nvgFontFaceId(vg, regular);
+            nvgFontSize(vg, 15.0f);
+            nvgFillColor(vg, tenue);
+            const std::string totalSd = this->sdTotal > 0 ? gb(this->sdTotal) : "?";
+            int n = lineasDe(vg, sx + 22, y + 90, ws - 44, 20.0f, 2,
+                             fmt::format(llena ? "menus/nexus/sd_casi_llena"_i18n : "menus/nexus/usb_libres_de"_i18n, totalSd));
+            if (llena) lineasDe(vg, sx + 22, y + 96 + n * 20.0f, ws - 44, 20.0f, 3, "menus/nexus/sd_sugerencia"_i18n);
+        }
+    };
+
+    // Lo instalado, en una fila de pildoras: verde si esta, dorado si falta.
+    class FilaEstado : public brls::View
+    {
+        std::vector<std::pair<std::string, bool>> items;
+
+    public:
+        explicit FilaEstado(std::vector<std::pair<std::string, bool>> items) : items(std::move(items)) { this->setHeight(40); }
+        void layout(NVGcontext*, brls::Style*, brls::FontStash*) override {}
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style*, brls::FrameContext* ctx) override
+        {
+            nvgFontFaceId(vg, ctx->fontStash->regular);
+            nvgFontSize(vg, 15.0f);
+            float px = x;
+            for (const auto& [t, ok] : this->items) {
+                const std::string s = std::string(ok ? "✓  " : "!  ") + t;
+                const float w = nvgTextBounds(vg, 0, 0, s.c_str(), nullptr, nullptr) + 30.0f;
+                if (px + w > x + width) break;
+                NVGcolor c = ok ? oqb::verdeTexto() : oqb::doradoTexto();
+                NVGcolor f = c;
+                f.a = 0.10f;
+                NVGcolor b = c;
+                b.a = ok ? 0.25f : 0.55f;
                 nvgBeginPath(vg);
-                nvgRoundedRect(vg, cx, y, w, height, 14.0f);
-                nvgFillColor(vg, this->a(oqb::velo(oqb::oscuro() ? 12 : 10)));
+                nvgRoundedRect(vg, px, y + 2, w, height - 4, (height - 4) / 2);
+                nvgFillColor(vg, this->a(f));
                 nvgFill(vg);
-                nvgStrokeColor(vg, this->a(ctx->theme->sidebarSeparatorColor));
+                nvgStrokeColor(vg, this->a(b));
                 nvgStrokeWidth(vg, 1.0f);
                 nvgStroke(vg);
+                nvgFillColor(vg, this->a(ok ? ctx->theme->textColor : c));
+                nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+                nvgBeginPath(vg);
+                nvgText(vg, px + w / 2, y + height / 2 + 1, s.c_str(), nullptr);
                 nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-                nvgFontFaceId(vg, ctx->fontStash->regular);
-                nvgFontSize(vg, 14.0f);
-                nvgFillColor(vg, this->a(ctx->theme->descriptionColor));
-                nvgBeginPath(vg);
-                nvgText(vg, cx + 18, y + 16, cajas[i].k.c_str(), nullptr);
-                nvgFontSize(vg, 21.0f);
-                nvgFillColor(vg, this->a(cajas[i].color));
-                nvgBeginPath(vg);
-                nvgText(vg, cx + 18, y + 40, cajas[i].v.c_str(), nullptr);
-                nvgFontSize(vg, 15.0f);
-                nvgTextLineHeight(vg, 1.25f);
-                nvgFillColor(vg, this->a(ctx->theme->descriptionColor));
-                nvgBeginPath(vg);
-                nvgTextBox(vg, cx + 18, y + 72, w - 36, cajas[i].m.c_str(), nullptr);
-                if (cajas[i].barra >= 0) {
-                    nvgBeginPath(vg);
-                    nvgRoundedRect(vg, cx + 18, y + height - 20, w - 36, 6, 3);
-                    nvgFillColor(vg, this->a(oqb::velo(24)));
-                    nvgFill(vg);
-                    nvgBeginPath(vg);
-                    nvgRoundedRect(vg, cx + 18, y + height - 20, (w - 36) * std::clamp(cajas[i].barra, 0.0f, 1.0f), 6, 3);
-                    nvgFillColor(vg, this->a(cajas[i].color));
-                    nvgFill(vg);
-                }
+                px += w + 10.0f;
             }
         }
     };
+
+    /* Quitar: antes de volver al pack, decir que juegos se quedan en el USB (sin
+       Nexus no abren) y ofrecer abrir Nexus para traerlos a la SD. */
+    u64 tamanoJuego(u64 id)
+    {
+        /* ApplicationOccupiedSize (switchbrew): 4 entradas de 0x20 bytes, cada una
+           { u8 storage; pad[7]; u64 app; u64 patch; u64 dlc }. Si algo no cuadra, 0. */
+        NsApplicationOccupiedSize o{};
+        if (R_FAILED(nsCalculateApplicationOccupiedSize(id, &o))) return 0;
+        u64 total = 0;
+        for (int i = 0; i < 4; ++i)
+            for (int k = 0; k < 3; ++k) {
+                u64 v;
+                std::memcpy(&v, o.unk_x0 + i * 0x20 + 8 + k * 8, 8);
+                if (v > (1ULL << 40)) return 0;
+                total += v;
+            }
+        return total;
+    }
+
+    void quitarNexus(bool erista, std::function<bool(const std::string&)> reinstalarPack)
+    {
+        const auto ids = juegosEnUsb();
+        if (ids.empty()) {
+            volverAlNormal(erista, reinstalarPack);
+            return;
+        }
+        std::string lista;
+        u64 total = 0;
+        for (size_t i = 0; i < ids.size() && i < 6; ++i) {
+            const u64 t = tamanoJuego(ids[i]);
+            total += t;
+            lista += "•  " + nombreJuego(ids[i]) + (t ? "  (" + gb(t) + " GB)" : "") + "\n";
+        }
+        if (ids.size() > 6) lista += "…\n";
+        s64 libre = -1;
+        fs::getFreeStorageSD(libre);
+        const std::string sd = libre >= 0 ? fmt::format(total && u64(libre) > total ? "menus/nexus/quitar_caben"_i18n : "menus/nexus/quitar_no_caben"_i18n, gb(libre)) : "";
+        brls::Dialog* d = new DialogoCentrado(fmt::format("menus/nexus/quitar_dialogo"_i18n, lista, sd), 520);
+        d->addButton("menus/nexus/quitar_traer"_i18n, [d](brls::View*) { d->close([] { util::abrirAppInstalada(NRO, "Nexus Bacán"); }); });
+        d->addButton("menus/nexus/quitar_igual"_i18n, [d, erista, reinstalarPack](brls::View*) { d->close([erista, reinstalarPack] { volverAlNormal(erista, reinstalarPack); }); });
+        d->addButton("menus/common/cancel"_i18n, [d](brls::View*) { d->close(); });
+        d->setCancelable(true);
+        d->open();
+    }
+
+    // El catalogo puede decir con que packs se probo Nexus ("packs": [...]); sin esa lista, cualquiera.
+    bool packProbado(const nlohmann::ordered_json& datos, const std::string& clave)
+    {
+        const auto lista = datos.find("packs");
+        if (lista == datos.end() || !lista->is_array()) return true;
+        for (const auto& p : *lista)
+            if (p.is_string() && p.get<std::string>() == clave) return true;
+        return false;
+    }
 
 }  // namespace
 
@@ -893,110 +1104,122 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
     // El zip publicado trae la version para el pack de overclock.
     const bool zipConOc = datos.is_object() && datos.value("oc", false);
 
+    const std::string clavePack = packVersion::current();
+    const bool overclock = packConOverclock();
+    const bool ocBloquea = overclock && !zipConOc;
+    const bool packOk = packProbado(datos, clavePack);
+    /* Lo que impide instalar, en el orden en que conviene decirlo. Vacio = se puede. */
+    auto bloqueo = [conAms, fwOk, ocBloquea, packOk, erista]() -> std::string {
+        if (!conAms) return "menus/nexus/sin_ams"_i18n;
+        if (!fwOk) return "menus/nexus/fw_no"_i18n;
+        if (ocBloquea) return "oc";
+        if (!packOk) return "menus/nexus/pack_no_probado"_i18n;
+        if (!erista && !existe(MARIKO_PAYLOAD_PATH)) return "menus/errors/mariko_payload_missing"_i18n;
+        return "";
+    };
+    auto intentar = [bloqueo, url, publicada, erista, zipLocal, reinstalarPack]() {
+        const std::string b = bloqueo();
+        if (b == "oc") ofrecerPackNormal(reinstalarPack);
+        else if (!b.empty()) aviso(b);
+        else instalar(url, publicada, erista, zipLocal);
+    };
+
     if (!activo) {
-        /* Sin el pack: que es, si la consola sirve y un solo boton. */
-        this->addView(new HeaderOqb("menus/nexus/que_es"_i18n));
-        const std::string presentacion = texto(datos, "presentacion");
-        this->addView(new brls::Label(brls::LabelStyle::REGULAR, presentacion.empty() ? "menus/nexus/presentacion"_i18n : presentacion, true));
+        /* Sin Nexus: que hace con el boton al lado; o, si un pack lo apago, la
+           franja para reactivarlo. Despues, si la consola sirve. */
+        if (hayRegistro && !usbEnIni) {
+            const size_t n = juegosEnUsb().size();
+            this->addView(new Franja("menus/nexus/franja_desactivado"_i18n,
+                                     n ? fmt::format("menus/nexus/franja_desactivado_resto"_i18n, n) : "menus/nexus/franja_desactivado_resto_sin"_i18n, true));
+            PackListItem* re = new PackListItem("menus/nexus/reactivar_boton"_i18n);
+            re->setWarningValue(" ");
+            re->getClickEvent()->subscribe([intentar](brls::View*) { intentar(); });
+            this->addView(re);
+        }
+        else {
+            const std::string tam = texto(datos, "tamano");
+            this->addView(new Presentacion(tam.empty() ? "menus/nexus/respaldo_nota_sin"_i18n : fmt::format("menus/nexus/respaldo_nota"_i18n, tam)));
+            PackListItem* inst = new PackListItem("menus/nexus/instalar"_i18n);
+            inst->setWarningValue(" ");
+            inst->getClickEvent()->subscribe([intentar](brls::View*) { intentar(); });
+            this->addView(inst);
+        }
 
-        if (hayRegistro && !usbEnIni)
-            this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/nexus/quitado_por_pack"_i18n, true));
-
-        this->addView(new HeaderOqb("menus/nexus/tu_consola"_i18n));
-        PackListItem* itemFw = new PackListItem(fmt::format("menus/nexus/tu_firmware"_i18n, fw.empty() ? "?" : fw), "",
-                                                "menus/nexus/tu_firmware_sub"_i18n);
+        this->addView(new HeaderOqb("menus/nexus/tu_consola"_i18n, 3));
+        PackListItem* itemFw = new PackListItem("menus/nexus/req_firmware"_i18n + " " + (fw.empty() ? "?" : fw), "",
+                                                fwOk ? "menus/nexus/probado"_i18n : "menus/nexus/fw_no"_i18n);
         if (fwOk) itemFw->setPositiveValue("menus/nexus/compatible"_i18n);
         else itemFw->setWarningValue("menus/nexus/todavia_no"_i18n);
         this->addView(itemFw);
 
-        const std::string base = packVersion::current();
-        std::string nombreBase = base.substr(0, base.rfind(".zip"));
+        std::string nombreBase = clavePack.substr(0, clavePack.rfind(".zip"));
         std::replace(nombreBase.begin(), nombreBase.end(), '-', ' ');
-        PackListItem* itemPack = new PackListItem(fmt::format("menus/nexus/tu_pack"_i18n, nombreBase.empty() ? "menus/nexus/pack_desconocido"_i18n : nombreBase),
-                                                  "", "menus/nexus/tu_pack_sub"_i18n);
-        const bool overclock = packConOverclock();
-        const bool ocBloquea = overclock && !zipConOc;
-        if (overclock) itemPack->setSubLabel(zipConOc ? "menus/nexus/pack_oc_ok_sub"_i18n : "menus/nexus/pack_oc_sub"_i18n);
-        if (conAms && !ocBloquea) itemPack->setPositiveValue("menus/nexus/compatible"_i18n);
+        std::string subPack = !packOk ? "menus/nexus/pack_no_probado_sub"_i18n
+                              : overclock ? (zipConOc ? "menus/nexus/pack_oc_ok_sub"_i18n : "menus/nexus/pack_oc_sub"_i18n)
+                                          : "menus/nexus/probado"_i18n;
+        PackListItem* itemPack = new PackListItem("menus/nexus/req_pack"_i18n + " " + (nombreBase.empty() ? "menus/nexus/pack_desconocido"_i18n : nombreBase), "", subPack);
+        if (conAms && !ocBloquea && packOk) itemPack->setPositiveValue("menus/nexus/compatible"_i18n);
         else itemPack->setWarningValue("menus/nexus/todavia_no"_i18n);
         if (ocBloquea) itemPack->getClickEvent()->subscribe([reinstalarPack](brls::View*) { ofrecerPackNormal(reinstalarPack); });
         this->addView(itemPack);
 
-        PackListItem* itemDisco = new PackListItem("menus/nexus/disco"_i18n, "", "menus/nexus/disco_sub"_i18n);
+        PackListItem* itemDisco = new PackListItem("menus/nexus/req_disco"_i18n, "", "menus/nexus/req_disco_sub"_i18n);
         itemDisco->setValue("exFAT", false, false);
         this->addView(itemDisco);
-
-        this->addView(new HeaderOqb("menus/nexus/instalar_titulo"_i18n));
-        PackListItem* inst = new PackListItem(hayRegistro ? "menus/nexus/reinstalar"_i18n : "menus/nexus/instalar"_i18n, "",
-                                              "menus/nexus/instalar_sub"_i18n);
-        inst->setWarningValue("menus/nexus/en_pruebas"_i18n);
-        inst->getClickEvent()->subscribe([url, publicada, erista, fwOk, conAms, zipLocal, ocBloquea, reinstalarPack](brls::View*) {
-            if (ocBloquea) {
-                ofrecerPackNormal(reinstalarPack);
-                return;
-            }
-            if (!conAms) {
-                aviso("menus/nexus/sin_ams"_i18n);
-                return;
-            }
-            if (!fwOk) {
-                aviso("menus/nexus/fw_no"_i18n);
-                return;
-            }
-            if (!erista && !existe(MARIKO_PAYLOAD_PATH)) {
-                aviso("menus/errors/mariko_payload_missing"_i18n);
-                return;
-            }
-            instalar(url, publicada, erista, zipLocal);
-        });
-        this->addView(inst);
     }
     else {
-        this->addView(new Tablero());
-
-        /* Sobre el pack de overclock sin las piezas de Nexus para HOC (puesto a
-           mano, o de antes de que existieran): avisar arriba de todo. Si el zip
-           publicado ya las trae, reinstalar lo arregla; si no, el pack normal. */
-        if (packConOverclock() && !reg.value("oc", false)) {
-            PackListItem* oc = new PackListItem("menus/nexus/pack_oc_titulo"_i18n, "",
-                                                zipConOc ? "menus/nexus/pack_oc_reinstalar_sub"_i18n : "menus/nexus/pack_oc_sub"_i18n);
-            oc->setWarningValue(zipConOc ? "menus/nexus/reinstalar"_i18n : "menus/nexus/todavia_no"_i18n);
-            if (zipConOc) oc->getClickEvent()->subscribe([url, publicada, erista, zipLocal](brls::View*) { instalar(url, publicada, erista, zipLocal); });
-            else oc->getClickEvent()->subscribe([reinstalarPack](brls::View*) { ofrecerPackNormal(reinstalarPack); });
-            this->addView(oc);
+        /* Avisos arriba de todo, como franja con su boton. */
+        if (overclock && !reg.value("oc", false)) {
+            this->addView(new Franja("menus/nexus/franja_oc"_i18n, "menus/nexus/franja_oc_resto"_i18n, true));
+            PackListItem* re = new PackListItem(zipConOc ? "menus/nexus/reinstalar_boton"_i18n : "menus/nexus/pack_oc_instalar"_i18n);
+            re->setWarningValue(" ");
+            if (zipConOc) re->getClickEvent()->subscribe([intentar](brls::View*) { intentar(); });
+            else re->getClickEvent()->subscribe([reinstalarPack](brls::View*) { ofrecerPackNormal(reinstalarPack); });
+            this->addView(re);
         }
-
-        // Version nueva del pack de Nexus: arriba de todo.
-        if (!publicada.empty() && texto(reg, "version") != publicada) {
-            PackListItem* nueva = new PackListItem("menus/nexus/actualizar"_i18n, "", "menus/nexus/actualizar_sub"_i18n);
-            nueva->setWarningValue("menus/apps/new_version"_i18n);
-            nueva->getClickEvent()->subscribe([url, publicada, erista, zipLocal](brls::View*) { instalar(url, publicada, erista, zipLocal); });
+        else if (!publicada.empty() && texto(reg, "version") != publicada) {
+            this->addView(new Franja("menus/nexus/franja_nueva"_i18n, "menus/nexus/franja_nueva_resto"_i18n, false));
+            PackListItem* nueva = new PackListItem("menus/nexus/actualizar_boton"_i18n);
+            nueva->setWarningValue(" ");
+            nueva->getClickEvent()->subscribe([intentar](brls::View*) { intentar(); });
             this->addView(nueva);
         }
 
-        this->addView(new HeaderOqb("menus/nexus/herramientas"_i18n));
-        // Siempre se puede volver a instalar la versión publicada (si algo quedó a medias o viejo).
-        if (publicada.empty() || texto(reg, "version") == publicada) {
-            brls::ListItem* re = new brls::ListItem("menus/nexus/reinstalar"_i18n, "", "menus/nexus/reinstalar_sub"_i18n);
-            re->getClickEvent()->subscribe([url, publicada, erista](brls::View*) { instalar(url, publicada, erista); });
-            this->addView(re);
-        }
-        PackListItem* abrir = new PackListItem("menus/nexus/abrir"_i18n, "", "menus/nexus/abrir_sub"_i18n);
-        if (existe(NRO)) abrir->setPositiveValue("menus/nexus/instalada"_i18n);
-        else abrir->setWarningValue("menus/nexus/falta"_i18n);
-        abrir->getClickEvent()->subscribe([url, publicada, erista, zipLocal](brls::View*) {
+        // Tu USB y la SD; debajo, lo de todos los dias.
+        this->addView(new TarjetaUsb());
+        PackListItem* abrir = new PackListItem("menus/nexus/abrir"_i18n, "", "menus/nexus/abrir_sub2"_i18n);
+        if (!existe(NRO)) abrir->setWarningValue("menus/nexus/falta"_i18n);
+        abrir->getClickEvent()->subscribe([intentar](brls::View*) {
             if (existe(NRO)) util::abrirAppInstalada(NRO, "Nexus Bacán");
-            else instalar(url, publicada, erista, zipLocal);
+            else intentar();
         });
         this->addView(abrir);
+        brls::ListItem* eject = new brls::ListItem("menus/nexus/expulsar"_i18n, "", "menus/nexus/expulsar_sub"_i18n);
+        eject->getClickEvent()->subscribe([](brls::View*) { expulsar(); });
+        this->addView(eject);
 
+        // Lo instalado, de un vistazo.
+        const Estado est = leerEstado();
+        std::vector<std::pair<std::string, bool>> items = {
+            {"menus/nexus/est_ams"_i18n, est.archivo},
+            {"menus/nexus/est_app"_i18n, existe(NRO)},
+            {"menus/nexus/est_acceso"_i18n, existe(NRO) && fwd::exists(NRO)},
+            {"menus/nexus/est_overlay"_i18n, existe(OVL) && existe(ULTRAHAND)},
+        };
+        if (overclock) items.push_back({"menus/nexus/est_oc"_i18n, reg.value("oc", false)});
+        this->addView(new FilaEstado(items));
+
+        // Lo de vez en cuando.
+        this->addView(new HeaderOqb("menus/nexus/mantenimiento"_i18n, 3));
+        PackListItem* re = new PackListItem("menus/nexus/reinstalar_corto"_i18n, "", "menus/nexus/reinstalar_sub2"_i18n);
+        re->getClickEvent()->subscribe([intentar](brls::View*) { intentar(); });
+        this->addView(re);
         if (existe(NRO)) {
-            /* Sin acceso: crearlo. Con acceso: rehacerlo con el ícono y el nombre actuales. */
+            /* Sin acceso: crearlo (en dorado). Con acceso: rehacerlo con el ícono y el nombre actuales. */
             const bool tiene = fwd::exists(NRO);
-            PackListItem* acceso = new PackListItem(tiene ? "menus/nexus/acceso_rehacer"_i18n : "menus/nexus/acceso"_i18n, "",
-                                                    tiene ? "menus/nexus/acceso_rehacer_sub"_i18n : "menus/nexus/acceso_sub"_i18n);
-            if (tiene) acceso->setPositiveValue("menus/nexus/instalado"_i18n);
-            else acceso->setWarningValue("menus/nexus/falta"_i18n);
+            PackListItem* acceso = new PackListItem(tiene ? "menus/nexus/acceso_rehacer2"_i18n : "menus/nexus/acceso_crear"_i18n, "",
+                                                    tiene ? "menus/nexus/acceso_rehacer_sub2"_i18n : "menus/nexus/acceso_crear_sub"_i18n);
+            if (!tiene) acceso->setWarningValue("menus/nexus/falta"_i18n);
             acceso->getClickEvent()->subscribe([](brls::View*) {
                 brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
                 frame->setTitle("menus/nexus/acceso"_i18n);
@@ -1011,33 +1234,36 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
             });
             this->addView(acceso);
         }
-
-        brls::ListItem* eject = new brls::ListItem("menus/nexus/expulsar"_i18n, "", "menus/nexus/expulsar_sub"_i18n);
-        eject->getClickEvent()->subscribe([](brls::View*) { expulsar(); });
-        this->addView(eject);
-
-        PackListItem* ovl = new PackListItem("menus/nexus/overlay"_i18n, "", existe(ULTRAHAND) ? "menus/nexus/overlay_sub"_i18n : "menus/nexus/overlay_sin_ultrahand"_i18n);
-        if (existe(OVL) && existe(ULTRAHAND)) ovl->setPositiveValue("menus/nexus/instalado"_i18n);
-        else ovl->setWarningValue("menus/nexus/falta"_i18n);
-        ovl->getClickEvent()->subscribe([](brls::View*) { abrirTexto("menus/nexus/overlay"_i18n, "menus/nexus/overlay_texto"_i18n); });
-        this->addView(ovl);
-
-        brls::ListItem* volver = new brls::ListItem("menus/nexus/volver"_i18n, "", "menus/nexus/volver_sub"_i18n);
-        volver->getClickEvent()->subscribe([erista, reinstalarPack](brls::View*) { volverAlNormal(erista, reinstalarPack); });
-        this->addView(volver);
+        PackListItem* quitar = new PackListItem("menus/nexus/quitar"_i18n, "", "menus/nexus/quitar_sub"_i18n);
+        quitar->setPeligro(true);
+        quitar->getClickEvent()->subscribe([erista, reinstalarPack](brls::View*) { quitarNexus(erista, reinstalarPack); });
+        this->addView(quitar);
     }
 
-    this->addView(new HeaderOqb("menus/nexus/ayuda"_i18n));
-    brls::ListItem* guia = new brls::ListItem("menus/nexus/guia"_i18n, "", "menus/nexus/guia_sub"_i18n);
+    this->addView(new HeaderOqb("menus/nexus/ayuda"_i18n, 3));
+    brls::ListItem* guia = new brls::ListItem("menus/nexus/guia"_i18n, "", "menus/nexus/guia_sub2"_i18n);
     const nlohmann::ordered_json copia = datos;
     guia->getClickEvent()->subscribe([copia](brls::View*) { abrirGuia(copia); });
     this->addView(guia);
 
-    brls::ListItem* diag = new brls::ListItem("menus/nexus/diagnostico"_i18n, "", "menus/nexus/diagnostico_sub"_i18n);
+    brls::ListItem* falla = new brls::ListItem("menus/nexus/si_falla"_i18n, "", "menus/nexus/si_falla_sub"_i18n);
+    falla->getClickEvent()->subscribe([](brls::View*) { abrirTexto("menus/nexus/si_falla"_i18n, "menus/nexus/si_falla_texto"_i18n); });
+    this->addView(falla);
+
+    brls::ListItem* diag = new brls::ListItem("menus/nexus/soporte"_i18n, "", "menus/nexus/soporte_sub"_i18n);
     diag->getClickEvent()->subscribe([](brls::View*) {
         abrirEnviarSoporte("OQB Updater", diagnostico, NexusTab::diagnosticoIncluye());
     });
     this->addView(diag);
+}
+
+std::string NexusTab::subtitulo()
+{
+    if (!instalado()) return "menus/nexus/subtitulo"_i18n;
+    const nlohmann::ordered_json reg = registro();
+    const std::string v = texto(reg, "version");
+    if (v.empty()) return "menus/nexus/subtitulo"_i18n;
+    return fmt::format(reg.value("oc", false) ? "menus/nexus/version_sub_oc"_i18n : "menus/nexus/version_sub"_i18n, v);
 }
 
 std::string NexusTab::diagnosticoSoporte() { return diagnostico(); }

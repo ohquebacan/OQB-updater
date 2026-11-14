@@ -46,6 +46,8 @@ public:
     static std::string diagnosticoSoporte();
     // Lo que lleva ese archivo, para decirlo antes de enviarlo.
     static std::vector<std::string> diagnosticoIncluye();
+    // El subtitulo de la pagina: la version instalada (y si es la de overclock), o que es.
+    static std::string subtitulo();
 
     // Hay que mirar la seccion: version nueva, o el pack normal lo quito al actualizarse.
     static bool necesitaAtencion(const nlohmann::ordered_json& nxlinks, const nlohmann::ordered_json& packVersions);
