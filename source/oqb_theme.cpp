@@ -98,6 +98,12 @@ namespace oqb {
                 this->buttonPrimaryEnabledTextColor = nvgRGB(10, 20, 8);
 
                 this->dialogButtonColor = rgb(BRAND_GREEN);
+                /* Las ventanas de borealis (avisos, confirmaciones, Invitanos un
+                   cafe...) con el panel teñido del tema, no el gris fijo de Horizon:
+                   el mismo color que las ventanas propias (Enviar a soporte, Quitar). */
+                this->dialogColor = mezcla(this->sidebarColor, rgb(BRAND_GREEN), 0.07f);
+                this->dialogButtonSeparatorColor = mezcla(this->sidebarColor, rgb(BRAND_GREEN), 0.28f);
+                this->dialogBackdrop = nvgRGBA(0, 0, 0, 150);
             }
         };
 
@@ -126,6 +132,9 @@ namespace oqb {
                 this->buttonPrimaryEnabledTextColor = nvgRGB(255, 255, 255);
 
                 this->dialogButtonColor = rgb(BRAND_GREEN_DARK);
+                this->dialogColor = mezcla(nvgRGB(250, 252, 248), rgb(BRAND_GREEN_DARK), 0.04f);
+                this->dialogButtonSeparatorColor = mezcla(nvgRGB(250, 252, 248), rgb(BRAND_GREEN_DARK), 0.22f);
+                this->dialogBackdrop = nvgRGBA(0, 0, 0, 90);
             }
         };
 
@@ -155,6 +164,8 @@ namespace oqb {
                 g_oscuro->headerRectangleColor = claro;
                 g_oscuro->buttonPrimaryEnabledBackgroundColor = mezcla(claro, nvgRGB(255, 255, 255), 0.2f);
                 g_oscuro->dialogButtonColor = claro;
+                g_oscuro->dialogColor = mezcla(hex(t.panel), claro, 0.07f);
+                g_oscuro->dialogButtonSeparatorColor = mezcla(hex(t.panel), claro, 0.28f);
             }
             if (g_claro && g_tema != 0) {
                 const NVGcolor oscuroAcento = mezcla(fuerte, nvgRGB(0, 0, 0), 0.45f);
@@ -165,6 +176,8 @@ namespace oqb {
                 g_claro->headerRectangleColor = oscuroAcento;
                 g_claro->buttonPrimaryEnabledBackgroundColor = oscuroAcento;
                 g_claro->dialogButtonColor = oscuroAcento;
+                g_claro->dialogColor = mezcla(nvgRGB(250, 252, 248), fuerte, 0.05f);
+                g_claro->dialogButtonSeparatorColor = mezcla(nvgRGB(250, 252, 248), oscuroAcento, 0.22f);
             }
         }
     }  // namespace
@@ -266,6 +279,8 @@ namespace oqb {
                 this->Sidebar.Separator.height = SIDEBAR_SEPARATOR_HEIGHT;
                 this->Sidebar.marginTop = SIDEBAR_MARGIN_TOP;
                 this->Sidebar.marginBottom = SIDEBAR_MARGIN;
+                // Las ventanas con las esquinas de las tarjetas de la app (borealis trae 5 px).
+                this->Dialog.cornerRadius = 18.0f;
             }
         };
 

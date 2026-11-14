@@ -1147,7 +1147,7 @@ namespace {
             const float mx = x + (width - mw) / 2, my = y + (height - mh) / 2;
             nvgBeginPath(vg);
             nvgRoundedRect(vg, mx, my, mw, mh, 18.0f);
-            nvgFillColor(vg, this->a(ctx->theme->sidebarColor));
+            nvgFillColor(vg, this->a(ctx->theme->dialogColor));
             nvgFill(vg);
             nvgStrokeColor(vg, rojo);
             nvgStrokeWidth(vg, 2.0f);
