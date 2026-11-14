@@ -1,3 +1,4 @@
+#include "led.hpp"
 #include "dialogue_page.hpp"
 
 #include <algorithm>
@@ -103,6 +104,10 @@ void DialoguePage_ams::instantiateButtons()
 
 void DialoguePage_ams::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
+    if (!this->luzPuesta) {
+        this->luzPuesta = true;
+        led::reinicio();  // fija y suave hasta que se reinicie
+    }
     this->label->frame(ctx);
     this->button1->frame(ctx);
 

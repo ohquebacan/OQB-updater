@@ -172,7 +172,9 @@
     "scanning": "Checking {} of {}... (B to cancel)",
     "tema": "Tema",
     "tema_sub": "A cor do app, também na tela de carregamento.",
-    "tema_actual": "Atual"
+    "tema_actual": "Atual",
+    "luz_mandos": "Luz dos controles",
+    "luz_mandos_sub": "Pulsa ao instalar, pisca ao terminar ou em caso de erro e fica acesa quando é preciso reiniciar."
   },
   "utils": {
     "fw_warning": "Devido ao tamanho dos arquivos de firmware, o download de firmwares no modo applet não é suportado. Por favor, inicie o aplicativo com acesso total à RAM.",

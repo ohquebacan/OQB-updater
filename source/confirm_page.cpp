@@ -1,3 +1,4 @@
+#include "led.hpp"
 #include "confirm_page.hpp"
 
 #include <algorithm>
@@ -176,4 +177,14 @@ ConfirmPage::~ConfirmPage()
 {
     delete this->label;
     delete this->button;
+}
+void ConfirmPage_AmsUpdate::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    // Al aparecer (no al construirse: el flujo se arma antes de instalar y el
+    // pulso de la instalación la taparía): fija y suave hasta que se reinicie.
+    if (!this->luzPuesta) {
+        this->luzPuesta = true;
+        led::reinicio();
+    }
+    ConfirmPage_Done::draw(vg, x, y, width, height, style, ctx);
 }

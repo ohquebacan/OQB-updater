@@ -54,8 +54,12 @@ public:
 
 class ConfirmPage_AmsUpdate : public ConfirmPage_Done
 {
+private:
+    bool luzPuesta = false;  // la luz de «hay que reiniciar» se pone al mostrarse, no al armar el flujo
+
 public:
     ConfirmPage_AmsUpdate(brls::StagedAppletFrame* frame, const std::string& text, bool erista = true);
+    void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
 };
 
 class ConfirmPage_SelfUpdate : public ConfirmPage_Done

@@ -1,3 +1,4 @@
+#include "led.hpp"
 #include "worker_page.hpp"
 #include "confirm_page.hpp"
 #include "oqb_theme.hpp"
@@ -145,9 +146,11 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
                 this->draw_page = false;
                 const std::string mensaje = fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(ProgressEvent::instance().getStatusCode()));
                 ProgressEvent::instance().setStatusCode(0);
+                led::error();  // parpadea hasta que se cierra el aviso
                 const int niveles = this->nivelesAlVolver;
                 brls::Dialog* aviso = new brls::Dialog(mensaje);
                 aviso->addButton("menus/common/back"_i18n, [aviso, niveles](brls::View* view) {
+                    led::apagar();
                     aviso->close([niveles] { util::volverAtras(niveles); });
                 });
                 aviso->setCancelable(false);
@@ -155,6 +158,7 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
                 return;
             }
             if (cancelado) {
+                led::apagar();
                 this->draw_page = false;
                 ProgressEvent::instance().setInterupt(false);
                 ProgressEvent::instance().setStatusCode(0);
@@ -163,6 +167,8 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
             }
             else {
                 ProgressEvent::instance().setStatusCode(0);
+                // Si sigue otra tarea, su pulso tapa este destello.
+                led::exito();
                 frame->nextStage();
             }
         }
@@ -211,6 +217,9 @@ void WorkerPage::doWork()
        archivo vacio y la ventana simplemente no se dibuja. */
     deep_clean::truncarLog();
     actividad::limpiar();
+    // La luz del botón HOME de los mandos late mientras se trabaja; al terminar,
+    // draw() la cambia a éxito, error o la apaga si se canceló.
+    led::pulso();
     if (this->workerFunc)
         this->workerFunc();
     // La barra puede no haberse completado (una falla que no la llena).

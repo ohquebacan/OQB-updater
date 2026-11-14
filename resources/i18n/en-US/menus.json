@@ -213,7 +213,9 @@
         "diagnostics_desc": "Which programs crashed, when and why",
         "tema": "Theme",
         "tema_sub": "The app's color, also on the loading screen.",
-        "tema_actual": "Current"
+        "tema_actual": "Current",
+        "luz_mandos": "Controller light",
+        "luz_mandos_sub": "Pulses while installing, flashes when done, blinks on errors and stays on when a restart is needed."
     },
     "utils": {
         "fw_warning": "Because of the size of FW archives, downloading firmwares in Applet Mode is not supported. Please launch the app with full RAM access.",

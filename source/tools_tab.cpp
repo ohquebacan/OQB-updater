@@ -1,3 +1,4 @@
+#include "led.hpp"
 #include "tools_tab.hpp"
 #include "pagina_oqb.hpp"
 
@@ -415,6 +416,16 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     if (erista) siVisible(consola, "rebootpayload", rebootPayload);
     siVisible(consola, "jccolor", JCcolor);
     siVisible(consola, "pccolor", PCcolor);
+    {
+        // La luz que late al instalar (y destella, parpadea o queda fija según el caso).
+        auto* luz = new brls::ToggleListItem("menus/tools/luz_mandos"_i18n, led::activada(), "menus/tools/luz_mandos_sub"_i18n);
+        luz->setHeight(LISTITEM_HEIGHT);
+        luz->getClickEvent()->subscribe([luz](brls::View*) {
+            led::setActivada(luz->getToggleState());
+            if (luz->getToggleState()) led::exito();  // para que se vea cómo es
+        });
+        consola.push_back(luz);
+    }
 
     siVisible(red, "netsettings", netSettings);
 

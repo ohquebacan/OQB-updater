@@ -41,6 +41,7 @@ private:
     std::chrono::system_clock::time_point start = std::chrono::high_resolution_clock::now();
     void instantiateButtons() override;
     bool erista = true;
+    bool luzPuesta = false;  // la luz de «hay que reiniciar» se pone al mostrarse
     std::string text;
     brls::StagedAppletFrame* frame;
 

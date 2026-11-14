@@ -213,7 +213,9 @@
         "diagnostics_desc": "Qué programas fallaron, cuándo y por qué",
         "tema": "Tema",
         "tema_sub": "El color de la app, también en la pantalla de carga.",
-        "tema_actual": "Actual"
+        "tema_actual": "Actual",
+        "luz_mandos": "Luz de los mandos",
+        "luz_mandos_sub": "Late al instalar, destella al terminar, parpadea si algo falla y queda fija si hay que reiniciar."
     },
     "utils": {
         "fw_warning": "Debido al tamaño de los FW, descargar firmwares en modo applet no está soportado. Por favor, ejecuta la aplicación con acceso a toda la RAM.",

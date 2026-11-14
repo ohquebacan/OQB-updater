@@ -173,7 +173,9 @@
     "scanning": "Checking {} of {}... (B to cancel)",
     "tema": "Thème",
     "tema_sub": "La couleur de l'app, aussi sur l'écran de chargement.",
-    "tema_actual": "Actuel"
+    "tema_actual": "Actuel",
+    "luz_mandos": "Lumière des manettes",
+    "luz_mandos_sub": "Pulse pendant l'installation, clignote à la fin ou en cas d'erreur et reste allumée s'il faut redémarrer."
   },
   "utils": {
     "fw_warning": "En raison de la taille des archives FW, le téléchargement de firmwares en mode applet n'est pas pris en charge. Veuillez lancer l'application avec un accès complet à la RAM.",

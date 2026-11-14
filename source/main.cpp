@@ -1,3 +1,4 @@
+#include "led.hpp"
 #include <curl/curl.h>
 #include <switch.h>
 
@@ -307,6 +308,9 @@ int main(int argc, char* argv[])
     ntp::waitForBackgroundSync();
 
     curl_global_cleanup();
+
+    // Que la luz de los mandos no quede latiendo si se cierra a mitad de una tarea.
+    led::alSalir();
 
     romfsExit();
     splExit();
