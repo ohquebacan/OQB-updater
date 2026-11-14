@@ -793,7 +793,7 @@
         "subtitulo": "Your games on a USB drive",
         "que_es": "What it is",
         "presentacion": "Move games from the SD card to a USB drive and play them from the HOME menu as usual. You free up space without deleting anything: games are copied, checked, and only then removed from the SD. Your saves stay on the console. If you unplug the USB, those games wait until you plug it back in.",
-        "quitado_por_pack": "Nexus Bacán was installed, but updating the regular pack restored its Atmosphère and turned the USB off. Your games are still on the USB: reinstall it and they will open again.",
+        "quitado_por_pack": "Nexus Bacán was installed, but installing or updating a pack restored the pack's Atmosphère and turned the USB off. Your games are still on the USB: reinstall it and they will open again.",
         "tu_consola": "Your console",
         "tu_firmware": "Firmware {}",
         "tu_firmware_sub": "Nexus Bacán works with the firmwares we have tested.",

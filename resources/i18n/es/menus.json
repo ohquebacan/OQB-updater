@@ -814,7 +814,7 @@
         "subtitulo": "Tus juegos en un disco USB",
         "que_es": "Qué es",
         "presentacion": "Mueve juegos de la SD a un disco USB y juégalos desde el menú HOME como siempre. Liberas espacio sin borrar nada: se copian, se comprueban y recién ahí se quitan de la SD. Tus partidas se quedan en la consola. Si sacas el USB, esos juegos esperan hasta que lo vuelvas a conectar.",
-        "quitado_por_pack": "Nexus Bacán estaba instalado, pero al actualizar el pack normal se volvió a poner su Atmosphère y el USB quedó apagado. Tus juegos siguen en el USB: reinstálalo y vuelven a abrir.",
+        "quitado_por_pack": "Nexus Bacán estaba instalado, pero al instalar o actualizar un pack se volvió a poner el Atmosphère del pack y el USB quedó apagado. Tus juegos siguen en el USB: reinstálalo y vuelven a abrir.",
         "tu_consola": "Tu consola",
         "tu_firmware": "Firmware {}",
         "tu_firmware_sub": "Nexus Bacán funciona con los firmwares que ya probamos.",

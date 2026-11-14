@@ -387,7 +387,7 @@ namespace {
         const float mx = x + (width - mw) / 2, my = y + (height - mh) / 2;
         nvgBeginPath(vg);
         nvgRoundedRect(vg, mx, my, mw, mh, 18.0f);
-        nvgFillColor(vg, this->a(ctx->theme->dialogColor));
+        nvgFillColor(vg, this->a(ctx->theme->sidebarColor));  // el panel del tema, como el resto de la app (el de los Dialog es gris fijo)
         nvgFill(vg);
         nvgStrokeColor(vg, this->paso == Paso::Error ? aviso : acento);
         nvgStrokeWidth(vg, 2.0f);

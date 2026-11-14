@@ -244,6 +244,10 @@ MainFrame::MainFrame() : TabFrame()
     nlohmann::ordered_json nxlinks;
     if (conectado)
         nxlinks = nxlinksGuardado;
+    /* Prueba sin publicar: config/aio-switch-updater/nexus_bacan_prueba.json en
+       la SD reemplaza la entrada de Nexus Bacán del catalogo (por ejemplo, un
+       zip local o "oc": true). Sin ese archivo no cambia nada. */
+    if (conectado) NexusTab::aplicarPrueba(nxlinks);
     /* Iconos propios para los accesos directos del menu HOME (el de Prelude se ve
        muy basico): nombre del .nro -> JPEG de 256x256, desde el catalogo. */
     if (nxlinks.is_object() && nxlinks.contains("iconos_acceso_directo") && nxlinks["iconos_acceso_directo"].is_object()) {
