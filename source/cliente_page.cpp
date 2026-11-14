@@ -48,12 +48,14 @@ namespace {
             const float oy = y + (height - total) / 2.0f;
 
             nvgBeginPath(vg);
-            nvgFillColor(vg, nvgRGB(255, 255, 255));
+            const float al = this->getAlpha();
+            const unsigned char k = static_cast<unsigned char>(std::clamp(al * al, 0.0f, 1.0f) * 255.0f);
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, k));  // alfa al cuadrado: se apaga parejo con la ventana
             nvgRect(vg, ox, oy, total, total);
             nvgFill(vg);
 
             nvgBeginPath(vg);
-            nvgFillColor(vg, nvgRGB(0, 0, 0));
+            nvgFillColor(vg, nvgRGBA(0, 0, 0, k));
             for (int fy = 0; fy < lado; ++fy)
                 for (int fx = 0; fx < lado; ++fx)
                     if (qrcodegen_getModule(qr.data(), fx, fy))

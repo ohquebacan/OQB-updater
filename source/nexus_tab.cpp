@@ -1398,10 +1398,13 @@ void NexusTab::armar()
         else itemFw->setWarningValue("menus/nexus/todavia_no"_i18n);
         this->addView(itemFw);
 
+        // «OQB-HATS-PACK-OC-23.0.zip» -> «Pack OC 23.0»: el título en una línea.
         std::string nombreBase = clavePack.substr(0, clavePack.rfind(".zip"));
+        if (nombreBase.rfind("OQB-HATS-PACK-", 0) == 0) nombreBase.erase(0, 14);
+        else if (nombreBase.rfind("OQB-HATS-PACK", 0) == 0) nombreBase.erase(0, 13);
         std::replace(nombreBase.begin(), nombreBase.end(), '-', ' ');
-        std::string subPack = !packOk ? "menus/nexus/pack_no_probado_sub"_i18n
-                              : overclock ? (zipConOc ? "menus/nexus/pack_oc_ok_sub"_i18n : "menus/nexus/pack_oc_sub"_i18n)
+        std::string subPack = !packOk ? "menus/nexus/pack_no_probado_corto"_i18n
+                              : overclock ? (zipConOc ? "menus/nexus/pack_oc_corto"_i18n : "menus/nexus/pack_oc_falta_corto"_i18n)
                                           : "menus/nexus/probado"_i18n;
         PackListItem* itemPack = new PackListItem("menus/nexus/req_pack"_i18n + " " + (nombreBase.empty() ? "menus/nexus/pack_desconocido"_i18n : nombreBase), "", subPack);
         if (conAms && !ocBloquea && packOk) itemPack->setPositiveValue("menus/nexus/compatible"_i18n);
@@ -1409,8 +1412,9 @@ void NexusTab::armar()
         if (ocBloquea) itemPack->getClickEvent()->subscribe([reinstalarPack](brls::View*) { ofrecerPackNormal(reinstalarPack); });
         this->addView(itemPack);
 
+        // exFAT en su etiqueta, como «Compatible» en las otras dos (antes era texto suelto y desalineado).
         PackListItem* itemDisco = new PackListItem("menus/nexus/req_disco"_i18n, "", "menus/nexus/req_disco_sub"_i18n);
-        itemDisco->setValue("exFAT", false, false);
+        itemDisco->setPositiveValue("exFAT");
         this->addView(itemDisco);
     }
     else {
