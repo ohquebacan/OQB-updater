@@ -4,6 +4,7 @@
 #include <json.hpp>
 #include <functional>
 #include <string>
+#include <vector>
 
 /* Seccion "Nexus Bacán": juegos en un disco USB. Sale solo si el catalogo trae
    la clave "nexus_bacan" en nx-links.json:
@@ -38,6 +39,13 @@ public:
 
     // Instalado y activo: el registro de la app y el USB encendido en la configuracion.
     static bool instalado();
+
+    /* El diagnostico para soporte (USB, SD, modulos, arranque y errores): arma
+       el archivo en /oqb/soporte/ y devuelve su ruta, vacia si no se pudo.
+       Lo usan tambien los informes de error (Inicio › Estado). */
+    static std::string diagnosticoSoporte();
+    // Lo que lleva ese archivo, para decirlo antes de enviarlo.
+    static std::vector<std::string> diagnosticoIncluye();
 
     // Hay que mirar la seccion: version nueva, o el pack normal lo quito al actualizarse.
     static bool necesitaAtencion(const nlohmann::ordered_json& nxlinks, const nlohmann::ordered_json& packVersions);

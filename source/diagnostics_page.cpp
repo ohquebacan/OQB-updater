@@ -1,5 +1,8 @@
 #include "diagnostics_page.hpp"
 
+#include "nexus_tab.hpp"
+#include "soporte.hpp"
+
 #include <switch.h>
 
 #include <memory>
@@ -43,6 +46,13 @@ DiagnosticsPage::DiagnosticsPage() : brls::AppletFrame(true, true)
 void DiagnosticsPage::build()
 {
     const auto grupos = crash::group(crash::readAll(std::vector<std::string>{CRASH_REPORTS_PATH, FATAL_REPORTS_PATH}));
+
+    // Arriba de todo: mandar todo esto (y lo demas del diagnostico) a soporte.
+    brls::ListItem* enviar = new brls::ListItem("menus/nexus/diagnostico"_i18n, "menus/nexus/diagnostico_sub"_i18n);
+    enviar->getClickEvent()->subscribe([](brls::View*) {
+        abrirEnviarSoporte("OQB Updater", NexusTab::diagnosticoSoporte, NexusTab::diagnosticoIncluye());
+    });
+    this->list->addView(enviar);
 
     if (grupos.empty()) {
         this->list->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/diagnostics/none"_i18n, true));

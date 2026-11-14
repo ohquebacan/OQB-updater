@@ -30,6 +30,7 @@
 #include "pack_list_item.hpp"
 #include "pack_version.hpp"
 #include "pagina_oqb.hpp"
+#include "soporte.hpp"
 #include "progress_event.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
@@ -966,9 +967,15 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
 
     brls::ListItem* diag = new brls::ListItem("menus/nexus/diagnostico"_i18n, "", "menus/nexus/diagnostico_sub"_i18n);
     diag->getClickEvent()->subscribe([](brls::View*) {
-        const std::string ruta = diagnostico();
-        if (ruta.empty()) aviso("menus/nexus/diagnostico_error"_i18n);
-        else aviso(fmt::format("menus/nexus/diagnostico_ok"_i18n, ruta));
+        abrirEnviarSoporte("OQB Updater", diagnostico, NexusTab::diagnosticoIncluye());
     });
     this->addView(diag);
+}
+
+std::string NexusTab::diagnosticoSoporte() { return diagnostico(); }
+
+std::vector<std::string> NexusTab::diagnosticoIncluye()
+{
+    return {"menus/soporte/inc_versiones"_i18n, "menus/soporte/inc_registros"_i18n, "menus/soporte/inc_juegos"_i18n,
+            "menus/soporte/inc_modulos"_i18n};
 }
