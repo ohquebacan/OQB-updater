@@ -317,7 +317,8 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
             nvgFontSize(vg, 15.0f);
             if (ambos) h += lineas(vg, e.item->getSubLabel(), tw - 44.0f, 2) * 20.0f + 2.0f;
             // Sin valor, el subtitulo puede ocupar dos lineas (antes se cortaba con «…»).
-            else if (!e.item->getSubLabel().empty()) h += (lineas(vg, e.item->getSubLabel(), tw - 44.0f, 2) - 1) * 20.0f;
+            // Con el mismo ancho con que se dibuja (twFila - 40), si no a veces contaba una linea de mas.
+            else if (!e.item->getSubLabel().empty()) h += (lineas(vg, e.item->getSubLabel(), tw - 40.0f, 2) - 1) * 20.0f;
             if (!e.desc.empty()) h += lineas(vg, e.desc, tw - 44.0f, 3) * 20.0f + 6.0f;
             return std::max(h + 16.0f, dynamic_cast<ConIcono*>(e.item) ? 84.0f : 70.0f);
         };
