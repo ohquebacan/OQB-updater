@@ -853,7 +853,7 @@ namespace {
                 for (int f = 0; f < 4; ++f) {
                     const std::string t = fmt::format("{} · {}", i18n::getStr(claves[f]), cuenta[f]);
                     const Colores c = f == this->filtro ? Colores{ctx->theme->textColor, ctx->theme->backgroundColorRGB} : Colores{oqb::velo(18), ctx->theme->descriptionColor};
-                    cx += pildora(vg, cx, y + 118.0f, t, c, this->alpha) + 10.0f;
+                    cx += pildora(vg, cx, y + 118.0f, t, c, this->getAlpha()) + 10.0f;
                 }
             }
 
@@ -901,7 +901,7 @@ namespace {
                 nvgBeginPath(vg);
                 nvgRoundedRect(vg, ix, iy, lado, lado, 9.0f);
                 if (it->second > 0)
-                    nvgFillPaint(vg, nvgImagePattern(vg, ix, iy, lado, lado, 0, it->second, this->alpha));
+                    nvgFillPaint(vg, nvgImagePattern(vg, ix, iy, lado, lado, 0, it->second, this->getAlpha()));
                 else
                     nvgFillColor(vg, this->a(oqb::velo(25)));
                 nvgFill(vg);
@@ -910,7 +910,7 @@ namespace {
                 const std::string pill = copia ? "menus/trucos/pill_copia"_i18n : etiquetaDe(j.estado);
                 nvgFontSize(vg, 15.0f);
                 const float wp = nvgTextBounds(vg, 0, 0, pill.c_str(), nullptr, nullptr) + 22.0f;
-                pildora(vg, izq + anchoIzq - 14.0f - wp, fy + fila / 2, pill, coloresDe(copia ? OTRA_VERSION : j.estado), this->alpha);
+                pildora(vg, izq + anchoIzq - 14.0f - wp, fy + fila / 2, pill, coloresDe(copia ? OTRA_VERSION : j.estado), this->getAlpha());
 
                 const float tx = ix + lado + 14.0f, tw = izq + anchoIzq - 28.0f - wp - tx;
                 nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
@@ -939,7 +939,7 @@ namespace {
                 nvgBeginPath(vg);
                 nvgRoundedRect(vg, der, dy, lado, lado, 12.0f);
                 if (it != this->iconos.end() && it->second > 0)
-                    nvgFillPaint(vg, nvgImagePattern(vg, der, dy, lado, lado, 0, it->second, this->alpha));
+                    nvgFillPaint(vg, nvgImagePattern(vg, der, dy, lado, lado, 0, it->second, this->getAlpha()));
                 else
                     nvgFillColor(vg, this->a(oqb::velo(25)));
                 nvgFill(vg);
@@ -1063,7 +1063,7 @@ namespace {
                     const std::string p = v.conTrucos ? "menus/trucos/pill_ok"_i18n : "menus/trucos/pill_sin"_i18n;
                     nvgFontSize(vg, 14.0f);
                     const float wp = nvgTextBounds(vg, 0, 0, p.c_str(), nullptr, nullptr) + 22.0f;
-                    pildora(vg, der + anchoDer - wp, vy + alto / 2, p, coloresDe(v.conTrucos ? CON_TRUCOS : SIN_TRUCOS), this->alpha, 14.0f);
+                    pildora(vg, der + anchoDer - wp, vy + alto / 2, p, coloresDe(v.conTrucos ? CON_TRUCOS : SIN_TRUCOS), this->getAlpha(), 14.0f);
                     nvgBeginPath(vg);
                     nvgRect(vg, der, vy + alto - 1, anchoDer, 1);
                     nvgFillColor(vg, this->a(ctx->theme->listItemSeparatorColor));

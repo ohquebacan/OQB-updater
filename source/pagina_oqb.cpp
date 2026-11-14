@@ -421,7 +421,7 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                         if (ci->iconoImagen > 0) {
                             nvgBeginPath(vg);
                             nvgRoundedRect(vg, cx + 16, cy + 16, lado, lado, 12.0f);
-                            nvgFillPaint(vg, nvgImagePattern(vg, cx + 16, cy + 16, lado, lado, 0, ci->iconoImagen, this->alpha));
+                            nvgFillPaint(vg, nvgImagePattern(vg, cx + 16, cy + 16, lado, lado, 0, ci->iconoImagen, this->getAlpha()));
                             nvgFill(vg);
                         }
                         tx0 = cx + 16 + lado + 14;

@@ -85,7 +85,7 @@ namespace {
             nvgStroke(vg);
 
             const float lado = 104.0f;
-            dibujarImagen(vg, imagen(vg, "romfs:/bacan/icono.png"), cx + 26.0f, cy + (ch - lado) / 2.0f, lado, 22.0f, this->alpha);
+            dibujarImagen(vg, imagen(vg, "romfs:/bacan/icono.png"), cx + 26.0f, cy + (ch - lado) / 2.0f, lado, 22.0f, this->getAlpha());
 
             const float tx = cx + 26.0f + lado + 26.0f;
             const float ancho = cw - (tx - cx) - 26.0f - this->reservaDerecha;
@@ -165,7 +165,7 @@ namespace {
                 nvgStrokeWidth(vg, 1.0f);
                 nvgStroke(vg);
 
-                dibujarImagen(vg, imagen(vg, fichas[i].icono), fx + 20.0f, top + 18.0f, 64.0f, 0.0f, this->alpha);
+                dibujarImagen(vg, imagen(vg, fichas[i].icono), fx + 20.0f, top + 18.0f, 64.0f, 0.0f, this->getAlpha());
 
                 nvgFontFaceId(vg, ctx->fontStash->regular);
                 nvgFontSize(vg, 20.0f);

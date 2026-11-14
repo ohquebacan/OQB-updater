@@ -364,6 +364,8 @@ namespace {
     void abrirTexto(const std::string& titulo, const std::string& cuerpo)
     {
         brls::List* l = new brls::List();
+        // Aire arriba: sin esto, el primer renglon quedaba pegado a la linea del titulo.
+        l->setMargins(36, 60, 30, 60);
         brls::Label* t = new Parrafo(brls::LabelStyle::REGULAR, cuerpo, true);
         t->setFontSize(brls::Application::getStyle()->Label.descriptionFontSize + 2);
         l->addView(t);

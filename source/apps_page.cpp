@@ -296,7 +296,7 @@ void AppsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heigh
         nvgBeginPath(vg);
         nvgRoundedRect(vg, ix, iy, lado, lado, 10.0f);
         if (img > 0)
-            nvgFillPaint(vg, nvgImagePattern(vg, ix, iy, lado, lado, 0, img, this->alpha));
+            nvgFillPaint(vg, nvgImagePattern(vg, ix, iy, lado, lado, 0, img, this->getAlpha()));
         else
             nvgFillColor(vg, this->a(oqb::velo(30)));
         nvgFill(vg);
@@ -359,7 +359,7 @@ void AppsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heigh
         nvgBeginPath(vg);
         nvgRoundedRect(vg, px, py, lado, lado, 22.0f);
         if (img > 0)
-            nvgFillPaint(vg, nvgImagePattern(vg, px, py, lado, lado, 0, img, this->alpha));
+            nvgFillPaint(vg, nvgImagePattern(vg, px, py, lado, lado, 0, img, this->getAlpha()));
         else
             nvgFillColor(vg, this->a(oqb::velo(30)));
         nvgFill(vg);

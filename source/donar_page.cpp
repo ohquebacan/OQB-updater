@@ -35,11 +35,12 @@ void QrCodeView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
     const float celda = static_cast<float>(side) / (this->size + 2 * margen);
     const float ox = x + (static_cast<int>(width) - side) / 2.f, oy = y + (static_cast<int>(height) - side) / 2.f;
     nvgBeginPath(vg);
-    nvgFillColor(vg, nvgRGB(255, 255, 255));
+    // Con this->a(): el QR se desvanece junto con su ventana (antes quedaba solido al abrir y cerrar).
+    nvgFillColor(vg, this->a(nvgRGB(255, 255, 255)));
     nvgRect(vg, ox, oy, side, side);
     nvgFill(vg);
     nvgBeginPath(vg);
-    nvgFillColor(vg, nvgRGB(0, 0, 0));
+    nvgFillColor(vg, this->a(nvgRGB(0, 0, 0)));
     for (int fy = 0; fy < this->size; fy++)
         for (int fx = 0; fx < this->size; fx++)
             if (qrcodegen_getModule(this->qr.data(), fx, fy))

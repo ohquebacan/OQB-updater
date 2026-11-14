@@ -276,7 +276,7 @@ void WorkerPage::drawCascada(NVGcontext* vg, float cx, float y, float ancho, brl
         const Lugar& a = lugares[i + 1];
         const float ly = de.y + (a.y - de.y) * e;
         const float tam = de.tam + (a.tam - de.tam) * e;
-        const float alfa = (de.alfa + (a.alfa - de.alfa) * e) * this->alpha;
+        const float alfa = (de.alfa + (a.alfa - de.alfa) * e) * this->getAlpha();
         if (alfa < 0.01f)
             continue;
 
