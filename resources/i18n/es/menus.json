@@ -951,7 +951,9 @@
         "quitar_traer": "Abrir Nexus Bacán",
         "quitar_igual": "Quitar igual",
         "version_sub": "Versión {}",
-        "version_sub_oc": "Versión {} · con Horizon-OC 2.6.0"
+        "version_sub_oc": "Versión {} · con Horizon-OC 2.6.0",
+        "usb_otra": " · {} de otra consola: agrégalos en Nexus Bacán",
+        "usb_otra_uno": " · 1 de otra consola: agrégalo en Nexus Bacán"
     },
     "soporte": {
         "titulo": "ENVIAR A SOPORTE",

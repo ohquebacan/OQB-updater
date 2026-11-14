@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -65,6 +66,8 @@ namespace {
     constexpr const char EXOSPHERE[] = "/atmosphere/exosphere.bin";
     // En el zip, las versiones para el pack de overclock vienen aparte y solo se ponen si hace falta.
     constexpr const char ZIP_OC[] = "/nexus-oc/";
+    // Lo escribe Nexus Bacán tras cada escaneo del USB (usb_resumen.cpp).
+    constexpr const char RESUMEN_USB[] = "/config/nexusmanager/usb-juegos.json";
     constexpr const char* PISADOS[] = {"/atmosphere/package3", "/atmosphere/stratosphere.romfs", FUSEE, HOC_KIP, EXOSPHERE};
 
     bool existe(const std::string& ruta)
@@ -853,10 +856,35 @@ namespace {
 
     /* Arriba de todo con Nexus puesto: tu USB en grande (estado, espacio y que
        juegos tiene) y al lado la SD. Abrir y Expulsar van justo debajo. */
+    /* Lo que Nexus vio en el USB en su ultimo escaneo, tambien los juegos de otra
+       consola (/config/nexusmanager/usb-juegos.json, lo escribe Nexus). Se junta
+       con los de esta consola: id -> {nombre, estado}. Estado: "aqui" (esta en
+       esta consola), "agregar" (de otra consola, listo para agregar) o "revisar". */
+    struct JuegoUsb {
+        std::string nombre, estado;
+    };
+    std::map<u64, JuegoUsb> juegosDelUsb()
+    {
+        std::map<u64, JuegoUsb> out;
+        for (u64 id : juegosEnUsb()) out[id] = {"", "aqui"};
+        const nlohmann::ordered_json j = fs::parseJsonFile(RESUMEN_USB);
+        if (j.is_object() && j.contains("juegos") && j["juegos"].is_array())
+            for (const auto& g : j["juegos"]) {
+                if (!g.is_object()) continue;
+                const u64 id = std::strtoull(g.value("id", std::string()).c_str(), nullptr, 16);
+                if (!id) continue;
+                auto& x = out[id];
+                if (x.estado != "aqui") x.estado = g.value("estado", std::string("revisar"));
+                if (x.nombre.empty()) x.nombre = g.value("nombre", std::string());
+            }
+        return out;
+    }
+
     class TarjetaUsb : public brls::View
     {
         Estado e;
         std::vector<u64> ids;
+        size_t porAgregar = 0;
         std::string nombres;
         s64 sdLibre = -1, sdTotal = -1;
         u64 leido = 0;
@@ -866,9 +894,18 @@ namespace {
         {
             this->setHeight(176);
             this->e = leerEstado();
-            this->ids = juegosEnUsb();
-            for (size_t i = 0; i < this->ids.size() && i < 3; ++i) this->nombres += (i ? ", " : "") + nombreJuego(this->ids[i]);
-            if (this->ids.size() > 3) this->nombres += "…";
+            size_t mostrados = 0;
+            for (const auto& [id, j] : juegosDelUsb()) {
+                if (j.estado == "revisar") continue;
+                this->ids.push_back(id);
+                if (j.estado == "agregar") ++this->porAgregar;
+                if (mostrados < 3) {
+                    // Los de esta consola, con el nombre del sistema; los de otra, con el que vio Nexus.
+                    const std::string n = j.estado == "aqui" ? nombreJuego(id) : j.nombre;
+                    if (!n.empty()) this->nombres += (mostrados++ ? ", " : "") + n;
+                }
+            }
+            if (this->ids.size() > mostrados && mostrados) this->nombres += "…";
             if (FsFileSystem* sd = fsdevGetDeviceFileSystem("sdmc")) {
                 fsFsGetFreeSpace(sd, "/", &this->sdLibre);
                 fsFsGetTotalSpace(sd, "/", &this->sdTotal);
@@ -918,6 +955,9 @@ namespace {
                 std::string juegos = this->ids.empty() ? "menus/nexus/usb_sin_juegos"_i18n
                                      : this->ids.size() == 1 ? fmt::format("menus/nexus/usb_un_juego"_i18n, this->nombres)
                                                              : fmt::format("menus/nexus/usb_juegos"_i18n, this->ids.size(), this->nombres);
+                // Los que vienen de otra consola y aqui todavia no se agregaron.
+                if (this->porAgregar)
+                    juegos += fmt::format(this->porAgregar == 1 ? "menus/nexus/usb_otra_uno"_i18n : "menus/nexus/usb_otra"_i18n, this->porAgregar);
                 nvgFontSize(vg, 15.0f);
                 nvgFillColor(vg, tenue);
                 lineasDe(vg, x + 22, y + 120, wu - 44, 20.0f, 2, juegos);

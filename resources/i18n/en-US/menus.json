@@ -930,7 +930,9 @@
         "quitar_traer": "Open Nexus Bacán",
         "quitar_igual": "Remove anyway",
         "version_sub": "Version {}",
-        "version_sub_oc": "Version {} · with Horizon-OC 2.6.0"
+        "version_sub_oc": "Version {} · with Horizon-OC 2.6.0",
+        "usb_otra": " · {} from another console: add them in Nexus Bacán",
+        "usb_otra_uno": " · 1 from another console: add it in Nexus Bacán"
     },
     "soporte": {
         "titulo": "SEND TO SUPPORT",
