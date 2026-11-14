@@ -924,15 +924,16 @@
         "si_falla_texto": "A USB game won't open\nRestart the console once. If it still fails, in Nexus Bacán: Help and options › Your USB › Repair.\n\nAfter sleep\nWhen it wakes, the console powers the USB again and the drive needs a few seconds to be ready. If the game doesn't continue, eject the USB from the overlay and plug it back in.\n\nThe USB doesn't show up\nTry another cable or port, and make sure it is exFAT. A large hard drive may need more power than the port gives.\n\nWith the overclock pack\nThe Nexus Bacán version with Horizon-OC is installed. If you reinstall or update the pack, come back here and tap Reactivate.\n\nIf none of this fixes it, use Send to support: it gives you a code so we can help.",
         "soporte": "Send to support",
         "soporte_sub": "Sends the diagnostics and gives you a code.",
-        "quitar_dialogo": "Remove Nexus Bacán\n\nYour pack goes back to how it was. These games stay on the USB and won't open without Nexus Bacán:\n\n{}\n\n{}",
-        "quitar_caben": "Your SD has {} GB free: they fit. If you want to keep playing any of them, bring it to the SD first.",
-        "quitar_no_caben": "Your SD has {} GB free. If you want to keep playing any of them, bring it to the SD first.",
+        "quitar_dialogo": "These games stay on the USB and won't open without Nexus Bacán:\n\n{}\n{}",
+        "quitar_caben": "Your SD has {} GB free: they fit. If you want to keep playing any of them, bring it over first.",
+        "quitar_no_caben": "Your SD has {} GB free. If you want to keep playing any of them, bring it over first.",
         "quitar_traer": "Open Nexus Bacán",
         "quitar_igual": "Remove anyway",
         "version_sub": "Version {}",
         "version_sub_oc": "Version {} · with Horizon-OC 2.6.0",
         "usb_otra": " · {} from another console: add them in Nexus Bacán",
-        "usb_otra_uno": " · 1 from another console: add it in Nexus Bacán"
+        "usb_otra_uno": " · 1 from another console: add it in Nexus Bacán",
+        "quitar_mas": "and {} more"
     },
     "soporte": {
         "titulo": "SEND TO SUPPORT",

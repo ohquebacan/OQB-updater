@@ -945,15 +945,16 @@
         "si_falla_texto": "Un juego del USB no abre\nReinicia la consola una vez. Si sigue igual, en Nexus Bacán: Ayuda y opciones › Tu USB › Reparar.\n\nDespués del reposo\nAl despertar, la consola vuelve a dar energía al USB y el disco tarda unos segundos en estar listo. Si el juego no sigue, expulsa el USB desde el overlay y vuelve a conectarlo.\n\nEl USB no aparece\nPrueba otro cable o puerto, y que esté en exFAT. Un disco duro grande puede necesitar más energía de la que da el puerto.\n\nCon el pack de overclock\nSe instala la versión de Nexus Bacán con Horizon-OC. Si reinstalas o actualizas el pack, vuelve aquí y toca Reactivar.\n\nSi nada de esto lo arregla, usa Enviar a soporte: te da un código para que te ayudemos.",
         "soporte": "Enviar a soporte",
         "soporte_sub": "Manda el diagnóstico y te da un código.",
-        "quitar_dialogo": "Quitar Nexus Bacán\n\nTu pack vuelve a quedar como antes. Estos juegos se quedan en el USB y no se abren sin Nexus Bacán:\n\n{}\n\n{}",
-        "quitar_caben": "Tu SD tiene {} GB libres: caben. Si quieres seguir jugando alguno, tráelo a la SD primero.",
-        "quitar_no_caben": "Tu SD tiene {} GB libres. Si quieres seguir jugando alguno, tráelo a la SD primero.",
+        "quitar_dialogo": "Estos juegos se quedan en el USB y no abren sin Nexus Bacán:\n\n{}\n{}",
+        "quitar_caben": "Tu SD tiene {} GB libres: caben. Si quieres seguir jugando alguno, tráelo antes.",
+        "quitar_no_caben": "Tu SD tiene {} GB libres. Si quieres seguir jugando alguno, tráelo antes.",
         "quitar_traer": "Abrir Nexus Bacán",
         "quitar_igual": "Quitar igual",
         "version_sub": "Versión {}",
         "version_sub_oc": "Versión {} · con Horizon-OC 2.6.0",
         "usb_otra": " · {} de otra consola: agrégalos en Nexus Bacán",
-        "usb_otra_uno": " · 1 de otra consola: agrégalo en Nexus Bacán"
+        "usb_otra_uno": " · 1 de otra consola: agrégalo en Nexus Bacán",
+        "quitar_mas": "y {} más"
     },
     "soporte": {
         "titulo": "ENVIAR A SOPORTE",

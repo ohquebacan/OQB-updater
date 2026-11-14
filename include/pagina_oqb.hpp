@@ -20,6 +20,19 @@ public:
 // ahi, dentro de la misma ficha, la entrada que la sigue (Bacán Shop: instalar).
 struct ConBoton {
     float reservaDerecha = 0.0f;
+    virtual ~ConBoton() = default;
+    // Cuantas de las entradas que la siguen se dibujan como botones dentro de la vista.
+    virtual int botones() const { return 1; }
+    /* Donde va el boton i dentro de la vista (de `ancho` x `alto`). Por defecto,
+       uno solo a la derecha y centrado en alto (la ficha de Bacán Shop). */
+    virtual void lugarBoton(int i, float ancho, float alto, float& x, float& y, float& w, float& h) const
+    {
+        (void)i;
+        w = 200.0f;
+        h = 50.0f;
+        x = ancho - 26.0f - w;
+        y = (alto - h) / 2;
+    }
 };
 
 // Una entrada con icono (las apps sugeridas de Bacán Shop).

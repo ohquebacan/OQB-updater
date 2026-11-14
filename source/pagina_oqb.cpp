@@ -302,6 +302,8 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
             if (!e.item->getSubLabel().empty() || !e.item->getValue().empty()) h += 32.0f;
             nvgFontSize(vg, 15.0f);
             if (ambos) h += lineas(vg, e.item->getSubLabel(), tw - 44.0f, 2) * 20.0f + 2.0f;
+            // Sin valor, el subtitulo puede ocupar dos lineas (antes se cortaba con «…»).
+            else if (!e.item->getSubLabel().empty()) h += (lineas(vg, e.item->getSubLabel(), tw - 44.0f, 2) - 1) * 20.0f;
             if (!e.desc.empty()) h += lineas(vg, e.desc, tw - 44.0f, 3) * 20.0f + 6.0f;
             return std::max(h + 16.0f, dynamic_cast<ConIcono*>(e.item) ? 84.0f : 70.0f);
         };
@@ -329,34 +331,34 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                     continue;
                 }
                 if (el.bloque) {
-                    // Una vista propia (la ficha, el QR): se dibuja tal cual, a lo ancho.
+                    // Una vista propia (la ficha, el QR, la tarjeta del USB): se dibuja tal cual, a lo ancho.
                     auto* conBoton = dynamic_cast<ConBoton*>(el.bloque);
-                    const bool boton = conBoton && i + 1 < sec.orden.size() && sec.orden[i + 1].entrada >= 0;
-                    if (conBoton) conBoton->reservaDerecha = boton ? 230.0f : 0.0f;
+                    // Las entradas que la siguen, como botones dentro de la vista, donde ella diga.
+                    size_t nb = 0;
+                    if (conBoton)
+                        while ((int)nb < conBoton->botones() && i + 1 + nb < sec.orden.size() && sec.orden[i + 1 + nb].entrada >= 0) ++nb;
+                    if (conBoton) conBoton->reservaDerecha = nb ? 230.0f : 0.0f;
                     const float h = std::max(el.bloque->getHeight(), 40u);
                     el.bloque->setBoundaries(ox + px, oy + py, ancho, h);
                     el.bloque->invalidate(true);
                     el.bloque->frame(ctx);
-                    if (boton) {
-                        // La entrada que sigue, como boton dentro de la ficha, a la derecha.
-                        const int indice = sec.orden[i + 1].entrada;
+                    for (size_t k = 0; k < nb; ++k) {
+                        const int indice = sec.orden[i + 1 + k].entrada;
                         Entrada& e = this->entradas[indice];
-                        const float bw = 200.0f, bh = 50.0f;
-                        e.x = px + ancho - 26.0f - bw;
-                        e.y = py + (h - bh) / 2;
+                        float bx, by, bw, bh;
+                        conBoton->lugarBoton((int)k, ancho, h, bx, by, bw, bh);
+                        e.x = px + bx;
+                        e.y = py + by;
                         e.w = bw;
                         e.h = bh;
+                        const bool relleno = tonoDe(e.item) == 2 || !e.item->getValue().empty();
                         nvgBeginPath(vg);
                         nvgRoundedRect(vg, ox + e.x, oy + e.y, bw, bh, 12.0f);
-                        if (tonoDe(e.item) == 2 || !e.item->getValue().empty())
-                            nvgFillColor(vg, this->a(oqb::esmeralda()));
-                        else
-                            nvgFillColor(vg, fondoFila);
+                        nvgFillColor(vg, relleno ? this->a(oqb::esmeralda()) : fondoFila);
                         nvgFill(vg);
                         nvgStrokeColor(vg, borde);
                         nvgStrokeWidth(vg, 1.0f);
                         nvgStroke(vg);
-                        const bool relleno = tonoDe(e.item) == 2 || !e.item->getValue().empty();
                         nvgFontSize(vg, 16.0f);
                         nvgFillColor(vg, relleno ? this->a(oqb::oscuro() ? nvgRGB(6, 20, 12) : nvgRGB(255, 255, 255)) : texto);
                         nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
@@ -364,10 +366,8 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                         nvgText(vg, ox + e.x + bw / 2, oy + e.y + bh / 2 + 1, cortar(vg, e.titulo, bw - 16).c_str(), nullptr);
                         nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
                         if (ubicar(indice, -1, e.x, e.y, bw, bh) && conFoco) marco(e.x, e.y, bw, bh, 12.0f);
-                        i += 2;
                     }
-                    else
-                        ++i;
+                    i += 1 + nb;
                     py += h + 12.0f;
                     continue;
                 }
@@ -430,6 +430,14 @@ void PaginaOqb::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
                         nvgFillColor(vg, tenue);
                         parrafo(vg, tx0, ty, sub, twTexto, 20.0f, 2);
                         ty += lineas(vg, sub, twTexto, 2) * 20.0f + 2.0f;
+                    }
+                    else if (!sub.empty() && valor.empty()) {
+                        // Solo subtitulo: hasta dos lineas.
+                        nvgFontSize(vg, 15.0f);
+                        nvgTextLineHeight(vg, 1.3f);
+                        nvgFillColor(vg, tenue);
+                        parrafo(vg, tx0, ty + 4.0f, sub, twTexto, 20.0f, 2);
+                        ty += std::max(32.0f, lineas(vg, sub, twTexto, 2) * 20.0f + 12.0f);
                     }
                     else if (!sub.empty() || !valor.empty()) {
                         float sx = tx0;

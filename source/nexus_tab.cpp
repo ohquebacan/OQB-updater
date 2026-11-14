@@ -880,9 +880,10 @@ namespace {
         return out;
     }
 
-    class TarjetaUsb : public brls::View
+    class TarjetaUsb : public brls::View, public ConBoton
     {
         Estado e;
+        bool conectadoAlArmar = false;
         std::vector<u64> ids;
         size_t porAgregar = 0;
         std::string nombres;
@@ -892,8 +893,9 @@ namespace {
     public:
         TarjetaUsb()
         {
-            this->setHeight(176);
+            this->setHeight(236);
             this->e = leerEstado();
+            this->conectadoAlArmar = this->e.conectado();
             size_t mostrados = 0;
             for (const auto& [id, j] : juegosDelUsb()) {
                 if (j.estado == "revisar") continue;
@@ -911,6 +913,17 @@ namespace {
                 fsFsGetTotalSpace(sd, "/", &this->sdTotal);
             }
             this->leido = ahoraMs();
+        }
+        bool conectado() const { return this->conectadoAlArmar; }
+        // Abrir Nexus Bacán siempre; Expulsar solo si el USB estaba al armar la pagina.
+        int botones() const override { return this->conectadoAlArmar ? 2 : 1; }
+        void lugarBoton(int i, float ancho, float alto, float& bx, float& by, float& bw, float& bh) const override
+        {
+            const float wu = (ancho - 16.0f) * 0.62f;
+            bh = 50.0f;
+            bw = (wu - 44.0f - 12.0f) / 2;
+            bx = 22.0f + i * (bw + 12.0f);
+            by = alto - 22.0f - bh;
         }
         void layout(NVGcontext*, brls::Style*, brls::FontStash*) override {}
         void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style*, brls::FrameContext* ctx) override
@@ -1008,8 +1021,9 @@ namespace {
             nvgFontSize(vg, 15.0f);
             float px = x;
             for (const auto& [t, ok] : this->items) {
-                const std::string s = std::string(ok ? "✓  " : "!  ") + t;
-                const float w = nvgTextBounds(vg, 0, 0, s.c_str(), nullptr, nullptr) + 30.0f;
+                // La fuente de la consola no trae ✓: el icono se dibuja (24 px a la izquierda).
+                const std::string s = t;
+                const float w = nvgTextBounds(vg, 0, 0, s.c_str(), nullptr, nullptr) + 30.0f + 22.0f;
                 if (px + w > x + width) break;
                 NVGcolor c = ok ? oqb::verdeTexto() : oqb::doradoTexto();
                 NVGcolor f = c;
@@ -1023,10 +1037,31 @@ namespace {
                 nvgStrokeColor(vg, this->a(b));
                 nvgStrokeWidth(vg, 1.0f);
                 nvgStroke(vg);
-                nvgFillColor(vg, this->a(ok ? ctx->theme->textColor : c));
-                nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+                const float ix = px + 22.0f, iy = y + height / 2.0f;
+                nvgStrokeColor(vg, this->a(c));
+                nvgStrokeWidth(vg, 2.4f);
+                nvgLineCap(vg, NVG_ROUND);
+                nvgLineJoin(vg, NVG_ROUND);
                 nvgBeginPath(vg);
-                nvgText(vg, px + w / 2, y + height / 2 + 1, s.c_str(), nullptr);
+                if (ok) {
+                    nvgMoveTo(vg, ix - 6, iy);
+                    nvgLineTo(vg, ix - 2, iy + 4.5f);
+                    nvgLineTo(vg, ix + 6, iy - 5);
+                    nvgStroke(vg);
+                }
+                else {
+                    nvgMoveTo(vg, ix, iy - 6);
+                    nvgLineTo(vg, ix, iy + 1.5f);
+                    nvgStroke(vg);
+                    nvgBeginPath(vg);
+                    nvgCircle(vg, ix, iy + 5.5f, 1.5f);
+                    nvgFillColor(vg, this->a(c));
+                    nvgFill(vg);
+                }
+                nvgFillColor(vg, this->a(ok ? ctx->theme->textColor : c));
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                nvgBeginPath(vg);
+                nvgText(vg, px + 38.0f, y + height / 2 + 1, s.c_str(), nullptr);
                 nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
                 px += w + 10.0f;
             }
@@ -1061,16 +1096,17 @@ namespace {
         }
         std::string lista;
         u64 total = 0;
-        for (size_t i = 0; i < ids.size() && i < 6; ++i) {
+        // Hasta cuatro con su tamaño; el resto, contado (si no, los botones quedaban fuera de la ventana).
+        for (size_t i = 0; i < ids.size(); ++i) {
             const u64 t = tamanoJuego(ids[i]);
             total += t;
-            lista += "•  " + nombreJuego(ids[i]) + (t ? "  (" + gb(t) + " GB)" : "") + "\n";
+            if (i < 4) lista += "•  " + nombreJuego(ids[i]) + (t ? "  (" + gb(t) + " GB)" : "") + "\n";
         }
-        if (ids.size() > 6) lista += "…\n";
+        if (ids.size() > 4) lista += fmt::format("menus/nexus/quitar_mas"_i18n, ids.size() - 4) + "\n";
         s64 libre = -1;
         fs::getFreeStorageSD(libre);
         const std::string sd = libre >= 0 ? fmt::format(total && u64(libre) > total ? "menus/nexus/quitar_caben"_i18n : "menus/nexus/quitar_no_caben"_i18n, gb(libre)) : "";
-        brls::Dialog* d = new DialogoCentrado(fmt::format("menus/nexus/quitar_dialogo"_i18n, lista, sd), 520);
+        brls::Dialog* d = new DialogoCentrado(fmt::format("menus/nexus/quitar_dialogo"_i18n, lista, sd), 580);
         d->addButton("menus/nexus/quitar_traer"_i18n, [d](brls::View*) { d->close([] { util::abrirAppInstalada(NRO, "Nexus Bacán"); }); });
         d->addButton("menus/nexus/quitar_igual"_i18n, [d, erista, reinstalarPack](brls::View*) { d->close([erista, reinstalarPack] { volverAlNormal(erista, reinstalarPack); }); });
         d->addButton("menus/common/cancel"_i18n, [d](brls::View*) { d->close(); });
@@ -1225,18 +1261,22 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
             this->addView(nueva);
         }
 
-        // Tu USB y la SD; debajo, lo de todos los dias.
-        this->addView(new TarjetaUsb());
-        PackListItem* abrir = new PackListItem("menus/nexus/abrir"_i18n, "", "menus/nexus/abrir_sub2"_i18n);
-        if (!existe(NRO)) abrir->setWarningValue("menus/nexus/falta"_i18n);
+        /* Tu USB y la SD, con lo de todos los dias dentro de la tarjeta: Abrir
+           Nexus Bacán siempre y Expulsar si el USB esta conectado. */
+        TarjetaUsb* tarjeta = new TarjetaUsb();
+        this->addView(tarjeta);
+        PackListItem* abrir = new PackListItem("menus/nexus/abrir"_i18n);
+        abrir->setWarningValue(" ");  // el boton relleno: lo principal
         abrir->getClickEvent()->subscribe([intentar](brls::View*) {
             if (existe(NRO)) util::abrirAppInstalada(NRO, "Nexus Bacán");
             else intentar();
         });
         this->addView(abrir);
-        brls::ListItem* eject = new brls::ListItem("menus/nexus/expulsar"_i18n, "", "menus/nexus/expulsar_sub"_i18n);
-        eject->getClickEvent()->subscribe([](brls::View*) { expulsar(); });
-        this->addView(eject);
+        if (tarjeta->conectado()) {
+            brls::ListItem* eject = new brls::ListItem("menus/nexus/expulsar"_i18n);
+            eject->getClickEvent()->subscribe([](brls::View*) { expulsar(); });
+            this->addView(eject);
+        }
 
         // Lo instalado, de un vistazo.
         const Estado est = leerEstado();
