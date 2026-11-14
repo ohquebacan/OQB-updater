@@ -221,6 +221,11 @@ std::vector<std::string> findInArchive(const std::string& archivePath, const std
             std::string path(name);
             if (!stripPrefix.empty() && path.rfind(stripPrefix, 0) == 0) path.erase(0, stripPrefix.size());
             while (!path.empty() && path.front() == '/') path.erase(path.begin());
+            /* Lo que va dentro de atmosphere/ no es un juego para el HOME: un
+               sysmodule trae su exefs.nsp en atmosphere/contents/<id>/ (Switube,
+               por ejemplo) y solo se copia. Instalarlo como app falla y la
+               instalación terminaba con un error aunque todo quedó bien. */
+            if (path.rfind("atmosphere/", 0) == 0) continue;
             if (endsWith(path, ".nsp")) paths.push_back("/" + path);
         } while (unzGoToNextFile(zip) == UNZ_OK);
     }
