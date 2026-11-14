@@ -10,6 +10,7 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -57,12 +58,51 @@ namespace {
     constexpr const char SOPORTE[] = "/oqb/soporte/";
 
     // Lo que el pack de Nexus pisa y se respalda antes (y se restaura al volver).
-    constexpr const char* PISADOS[] = {"/atmosphere/package3", "/atmosphere/stratosphere.romfs", FUSEE};
+    /* Las dos piezas propias del pack de overclock (sus entradas de Hekate las
+       cargan con kip1= y secmon=). Nexus las cambia por las suyas con HOC + USB
+       y se respaldan como lo demas. */
+    constexpr const char HOC_KIP[] = "/atmosphere/kips/hoc.kip";
+    constexpr const char EXOSPHERE[] = "/atmosphere/exosphere.bin";
+    // En el zip, las versiones para el pack de overclock vienen aparte y solo se ponen si hace falta.
+    constexpr const char ZIP_OC[] = "/nexus-oc/";
+    constexpr const char* PISADOS[] = {"/atmosphere/package3", "/atmosphere/stratosphere.romfs", FUSEE, HOC_KIP, EXOSPHERE};
 
     bool existe(const std::string& ruta)
     {
         std::error_code ec;
         return std::filesystem::exists(ruta, ec);
+    }
+
+    /* El overlay de Horizon-OC guarda los ajustes del overclock dentro del
+       hoc.kip, en su tabla «CUST». Al cambiar un hoc.kip por otro se pasan los
+       ajustes del que habia, para no perder la configuracion del usuario. Solo
+       si las dos tablas son de la misma version (revision y version del kip);
+       si no, el nuevo queda con los valores de fabrica. */
+    constexpr size_t TABLA_HOC = 0x68C8;  // sizeof(ams::ldr::hoc::CustomizeTable) en HOC 2.6.0 (rev 7)
+
+    bool pasarAjustesHoc(const std::string& desde, const std::string& hacia)
+    {
+        auto leer = [](const std::string& ruta, std::string& out) {
+            std::ifstream f(ruta, std::ios::binary);
+            out.assign((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+            return f.good() || f.eof();
+        };
+        std::string a, b;
+        if (!leer(desde, a) || !leer(hacia, b)) return false;
+        const size_t ia = a.find("CUST"), ib = b.find("CUST");
+        if (ia == std::string::npos || ib == std::string::npos) return false;
+        if (ia + TABLA_HOC > a.size() || ib + TABLA_HOC > b.size()) return false;
+        if (a.compare(ia, 12, b, ib, 12) != 0) return false;  // CUST + revision + version del kip
+        if (a.compare(ia, TABLA_HOC, b, ib, TABLA_HOC) == 0) return true;   // ya iguales
+        b.replace(ib, TABLA_HOC, a, ia, TABLA_HOC);
+        const std::string tmp = hacia + ".tmp";
+        {
+            std::ofstream o(tmp, std::ios::binary | std::ios::trunc);
+            if (!o.write(b.data(), b.size())) return false;
+        }
+        std::error_code ec;
+        std::filesystem::rename(tmp, hacia, ec);
+        return !ec;
     }
 
     std::string texto(const nlohmann::ordered_json& j, const char* clave)
@@ -268,9 +308,10 @@ namespace {
     std::string claveDe(const std::string& url) { return packVersion::keyFromUrl(url); }
 
     /* El pack de overclock arranca con su propio hoc.kip y exosphere.bin, y con
-       esa entrada los juegos del USB no abren (Celeste y un port, 13-nov-2026;
-       desde una entrada sin esas dos piezas sí). Hasta revisarlo, Nexus solo se
-       instala sobre el pack normal. Se mira la clave del pack y el arranque. */
+       los de HOC solos los juegos del USB no abren (Celeste y un port,
+       13-nov-2026): hoc.kip reemplaza al loader y el de HOC no tiene el USB. Un
+       zip de Nexus con "oc": true en el catalogo trae los dos con HOC 2.6.0 +
+       USB, y se ponen en vez de los del pack. Se mira la clave del pack y el arranque. */
     bool packConOverclock()
     {
         std::string clave = packVersion::current();
@@ -408,6 +449,7 @@ namespace {
                 fs::removeDir(RESPALDO);
                 fs::createTree(std::string(RESPALDO) + "atmosphere/");
                 fs::createTree(std::string(RESPALDO) + "bootloader/payloads/");
+                fs::createTree(std::string(RESPALDO) + "atmosphere/kips/");
                 nlohmann::ordered_json habia = nlohmann::ordered_json::object();
                 for (const char* p : PISADOS) {
                     const bool hay = existe(p);
@@ -423,6 +465,19 @@ namespace {
                pero solo se deja si el pack normal lo tenia (si no, sobra). */
             if (!habiaFusee && !(reg["respaldo"].is_object() && reg["respaldo"].value(FUSEE, false)))
                 std::filesystem::remove(FUSEE);
+            /* Pack de overclock: el hoc.kip y el exosphere.bin de Nexus (HOC 2.6.0
+               + USB) reemplazan a los del pack. Con el pack normal no se usan. */
+            const std::string kipOc = std::string(ZIP_OC) + "atmosphere/kips/hoc.kip";
+            const std::string exoOc = std::string(ZIP_OC) + "atmosphere/exosphere.bin";
+            reg["oc"] = false;
+            if (packConOverclock() && existe(kipOc) && existe(exoOc)) {
+                fs::createTree("/atmosphere/kips/");
+                if (existe(HOC_KIP)) reg["oc_ajustes"] = pasarAjustesHoc(HOC_KIP, kipOc);
+                fs::copyFile(kipOc, HOC_KIP);
+                fs::copyFile(exoOc, EXOSPHERE);
+                reg["oc"] = true;
+            }
+            fs::removeDir(ZIP_OC);
             if (!ponerUsbEnIni(true)) {
                 ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
                 ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
@@ -480,6 +535,8 @@ namespace {
         frame->addStage(new WorkerPage(frame, "menus/nexus/volver_trabajando"_i18n, [reg]() {
             for (const char* p : PISADOS) {
                 const std::string copia = std::string(RESPALDO) + (p + 1);
+                // El overclock que se ajusto con Nexus puesto sigue igual con el hoc.kip original.
+                if (std::string(p) == HOC_KIP && existe(copia) && existe(p)) pasarAjustesHoc(p, copia);
                 if (existe(copia)) fs::copyFile(copia, p);
                 else if (!reg["respaldo"].value(p, true)) std::filesystem::remove(p);
             }
@@ -809,6 +866,8 @@ bool NexusTab::necesitaAtencion(const nlohmann::ordered_json& nxlinks, const nlo
     if (!iniTieneUsb()) return true;  // el pack normal lo quito al actualizarse
     const nlohmann::ordered_json reg = registro();
     const std::string publicada = packVersion::published(packVersions, claveDe(texto(nxlinks["nexus_bacan"], "url"))).date;
+    // Sobre el pack de overclock sin la version con HOC, y ya hay una publicada.
+    if (packConOverclock() && !reg.value("oc", false) && nxlinks["nexus_bacan"].value("oc", false)) return true;
     return !publicada.empty() && texto(reg, "version") != publicada;
 }
 
@@ -818,7 +877,9 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
 {
     const nlohmann::ordered_json& datos = this->nxlinks["nexus_bacan"];
     const std::string url = texto(datos, "url");
-    const std::string zipLocal;  // el modo de prueba con zip local ya no se usa: siempre lo publicado
+    /* Solo en el modo de prueba (nexus_bacan_prueba.json en la SD): un zip
+       local en vez del publicado. El catalogo publicado nunca trae esta clave. */
+    const std::string zipLocal = texto(datos, "zip_local");
     const std::string publicada = packVersion::published(packVersions, claveDe(url)).date;
     const bool erista = util::isErista();
     const nlohmann::ordered_json reg = registro();
@@ -829,6 +890,8 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
     const std::string fw = firmware();
     const bool fwOk = firmwareCompatible(datos, fw);
     const bool conAms = CurrentCfw::running_cfw == CFW::ams;
+    // El zip publicado trae la version para el pack de overclock.
+    const bool zipConOc = datos.is_object() && datos.value("oc", false);
 
     if (!activo) {
         /* Sin el pack: que es, si la consola sirve y un solo boton. */
@@ -852,10 +915,11 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
         PackListItem* itemPack = new PackListItem(fmt::format("menus/nexus/tu_pack"_i18n, nombreBase.empty() ? "menus/nexus/pack_desconocido"_i18n : nombreBase),
                                                   "", "menus/nexus/tu_pack_sub"_i18n);
         const bool overclock = packConOverclock();
-        if (overclock) itemPack->setSubLabel("menus/nexus/pack_oc_sub"_i18n);
-        if (conAms && !overclock) itemPack->setPositiveValue("menus/nexus/compatible"_i18n);
+        const bool ocBloquea = overclock && !zipConOc;
+        if (overclock) itemPack->setSubLabel(zipConOc ? "menus/nexus/pack_oc_ok_sub"_i18n : "menus/nexus/pack_oc_sub"_i18n);
+        if (conAms && !ocBloquea) itemPack->setPositiveValue("menus/nexus/compatible"_i18n);
         else itemPack->setWarningValue("menus/nexus/todavia_no"_i18n);
-        if (overclock) itemPack->getClickEvent()->subscribe([reinstalarPack](brls::View*) { ofrecerPackNormal(reinstalarPack); });
+        if (ocBloquea) itemPack->getClickEvent()->subscribe([reinstalarPack](brls::View*) { ofrecerPackNormal(reinstalarPack); });
         this->addView(itemPack);
 
         PackListItem* itemDisco = new PackListItem("menus/nexus/disco"_i18n, "", "menus/nexus/disco_sub"_i18n);
@@ -866,8 +930,8 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
         PackListItem* inst = new PackListItem(hayRegistro ? "menus/nexus/reinstalar"_i18n : "menus/nexus/instalar"_i18n, "",
                                               "menus/nexus/instalar_sub"_i18n);
         inst->setWarningValue("menus/nexus/en_pruebas"_i18n);
-        inst->getClickEvent()->subscribe([url, publicada, erista, fwOk, conAms, zipLocal, overclock, reinstalarPack](brls::View*) {
-            if (overclock) {
+        inst->getClickEvent()->subscribe([url, publicada, erista, fwOk, conAms, zipLocal, ocBloquea, reinstalarPack](brls::View*) {
+            if (ocBloquea) {
                 ofrecerPackNormal(reinstalarPack);
                 return;
             }
@@ -890,11 +954,15 @@ NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordere
     else {
         this->addView(new Tablero());
 
-        // Instalado sobre el pack de overclock (a mano o de antes): avisar arriba de todo.
-        if (packConOverclock()) {
-            PackListItem* oc = new PackListItem("menus/nexus/pack_oc_titulo"_i18n, "", "menus/nexus/pack_oc_sub"_i18n);
-            oc->setWarningValue("menus/nexus/todavia_no"_i18n);
-            oc->getClickEvent()->subscribe([reinstalarPack](brls::View*) { ofrecerPackNormal(reinstalarPack); });
+        /* Sobre el pack de overclock sin las piezas de Nexus para HOC (puesto a
+           mano, o de antes de que existieran): avisar arriba de todo. Si el zip
+           publicado ya las trae, reinstalar lo arregla; si no, el pack normal. */
+        if (packConOverclock() && !reg.value("oc", false)) {
+            PackListItem* oc = new PackListItem("menus/nexus/pack_oc_titulo"_i18n, "",
+                                                zipConOc ? "menus/nexus/pack_oc_reinstalar_sub"_i18n : "menus/nexus/pack_oc_sub"_i18n);
+            oc->setWarningValue(zipConOc ? "menus/nexus/reinstalar"_i18n : "menus/nexus/todavia_no"_i18n);
+            if (zipConOc) oc->getClickEvent()->subscribe([url, publicada, erista, zipLocal](brls::View*) { instalar(url, publicada, erista, zipLocal); });
+            else oc->getClickEvent()->subscribe([reinstalarPack](brls::View*) { ofrecerPackNormal(reinstalarPack); });
             this->addView(oc);
         }
 

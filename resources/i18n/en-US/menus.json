@@ -868,7 +868,9 @@
         "pack_oc_titulo": "Overclock pack",
         "acceso_rehacer": "Update the HOME shortcut",
         "acceso_rehacer_sub": "Recreates it with Nexus Bacán's current icon and name.",
-        "reinstalar_sub": "Downloads and installs the published version again. Your USB games are not touched."
+        "reinstalar_sub": "Downloads and installs the published version again. Your USB games are not touched.",
+        "pack_oc_ok_sub": "Overclock pack: the Nexus Bacán version with Horizon-OC 2.6.0 is installed, so overclocking keeps working and USB games open.",
+        "pack_oc_reinstalar_sub": "Nexus Bacán is installed without the overclock pieces, so USB games probably won't open. Reinstall it to get the Horizon-OC version."
     },
     "soporte": {
         "titulo": "SEND TO SUPPORT",

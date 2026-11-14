@@ -889,7 +889,9 @@
         "pack_oc_titulo": "Pack de overclock",
         "acceso_rehacer": "Actualizar el acceso directo",
         "acceso_rehacer_sub": "Lo vuelve a crear con el ícono y el nombre actuales de Nexus Bacán.",
-        "reinstalar_sub": "Vuelve a bajar e instalar la versión publicada. Tus juegos del USB no se tocan."
+        "reinstalar_sub": "Vuelve a bajar e instalar la versión publicada. Tus juegos del USB no se tocan.",
+        "pack_oc_ok_sub": "Pack de overclock: se instala la versión de Nexus Bacán con Horizon-OC 2.6.0, así que el overclock sigue funcionando y los juegos del USB abren.",
+        "pack_oc_reinstalar_sub": "Nexus Bacán está puesto sin las piezas para el overclock, y así los juegos del USB probablemente no abren. Reinstálalo para poner la versión con Horizon-OC."
     },
     "soporte": {
         "titulo": "ENVIAR A SOPORTE",
