@@ -1089,6 +1089,78 @@ namespace {
         return total;
     }
 
+    /* «Tu consola» (maqueta, pantalla 3): tres tarjetas con la etiqueta chica en
+       mayusculas y su icono en la esquina (✓ bien, ! falta, i dato), el valor en
+       grande y el detalle en una linea. Solo informa: lo que falta lo dice el boton. */
+    class Requisitos : public brls::View
+    {
+    public:
+        struct Item {
+            std::string etiqueta, valor, detalle;
+            int estado;  // 1 bien, 0 falta, -1 dato
+        };
+
+    private:
+        std::vector<Item> items;
+
+    public:
+        explicit Requisitos(std::vector<Item> items) : items(std::move(items)) { this->setHeight(112); }
+        void layout(NVGcontext*, brls::Style*, brls::FontStash*) override {}
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style*, brls::FrameContext* ctx) override
+        {
+            const NVGcolor texto = this->a(ctx->theme->textColor), tenue = this->a(ctx->theme->descriptionColor);
+            const float hueco = 16.0f, n = std::max<size_t>(1, this->items.size());
+            const float w = (width - hueco * (n - 1)) / n;
+            for (size_t i = 0; i < this->items.size(); ++i) {
+                const Item& it = this->items[i];
+                const float cx = x + i * (w + hueco);
+                caja(vg, cx, y, w, height, this->a(oqb::velo(oqb::oscuro() ? 12 : 10)), this->a(ctx->theme->sidebarSeparatorColor));
+                nvgFontFaceId(vg, ctx->fontStash->regular);
+                std::string et = it.etiqueta;
+                std::transform(et.begin(), et.end(), et.begin(), [](unsigned char c) { return c < 0x80 ? std::toupper(c) : c; });
+                nvgTextLetterSpacing(vg, 0.6f);
+                textoArriba(vg, cx + 20, y + 16, 13.0f, tenue, et);
+                nvgTextLetterSpacing(vg, 0.0f);
+
+                // El icono de la esquina, dibujado (la fuente de la consola no trae ✓).
+                const float ix = cx + w - 24.0f, iy = y + 23.0f;
+                const NVGcolor c = this->a(it.estado > 0 ? oqb::verdeTexto() : it.estado == 0 ? oqb::doradoTexto() : ctx->theme->descriptionColor);
+                nvgStrokeColor(vg, c);
+                nvgStrokeWidth(vg, 2.4f);
+                nvgLineCap(vg, NVG_ROUND);
+                nvgLineJoin(vg, NVG_ROUND);
+                nvgBeginPath(vg);
+                if (it.estado > 0) {
+                    nvgMoveTo(vg, ix - 6, iy);
+                    nvgLineTo(vg, ix - 2, iy + 4.5f);
+                    nvgLineTo(vg, ix + 6, iy - 5);
+                    nvgStroke(vg);
+                }
+                else {
+                    // ! (falta) o i (dato): un trazo y un punto, al reves.
+                    const float arriba = it.estado == 0 ? -6.0f : -1.5f, abajo = it.estado == 0 ? 1.5f : 6.0f;
+                    const float punto = it.estado == 0 ? 5.5f : -5.5f;
+                    nvgMoveTo(vg, ix, iy + arriba);
+                    nvgLineTo(vg, ix, iy + abajo);
+                    nvgStroke(vg);
+                    nvgBeginPath(vg);
+                    nvgCircle(vg, ix, iy + punto, 1.5f);
+                    nvgFillColor(vg, c);
+                    nvgFill(vg);
+                }
+
+                nvgFontSize(vg, 21.0f);
+                nvgFillColor(vg, texto);
+                nvgBeginPath(vg);
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+                lineasDe(vg, cx + 20, y + 40, w - 40, 26.0f, 1, it.valor);
+                nvgFontSize(vg, 14.0f);
+                nvgFillColor(vg, tenue);
+                lineasDe(vg, cx + 20, y + 74, w - 40, 19.0f, 1, it.detalle);
+            }
+        }
+    };
+
     /* Quitar Nexus Bacán (maqueta, pantalla 5): una ventana propia con los colores
        del tema, no el Dialog gris de borealis. Dice que juegos se quedan en el USB,
        cuanto pesan y si caben en la SD, y ofrece abrir Nexus para traerlos. */
@@ -1391,31 +1463,21 @@ void NexusTab::armar()
             this->addView(inst);
         }
 
-        this->addView(new HeaderOqb("menus/nexus/tu_consola"_i18n, 3));
-        PackListItem* itemFw = new PackListItem("menus/nexus/req_firmware"_i18n + " " + (fw.empty() ? "?" : fw), "",
-                                                fwOk ? "menus/nexus/probado"_i18n : "menus/nexus/fw_no"_i18n);
-        if (fwOk) itemFw->setPositiveValue("menus/nexus/compatible"_i18n);
-        else itemFw->setWarningValue("menus/nexus/todavia_no"_i18n);
-        this->addView(itemFw);
-
-        // «OQB-HATS-PACK-OC-23.0.zip» -> «Pack OC 23.0»: el título en una línea.
-        std::string nombreBase = clavePack.substr(0, clavePack.rfind(".zip"));
-        if (nombreBase.rfind("OQB-HATS-PACK-", 0) == 0) nombreBase.erase(0, 14);
-        else if (nombreBase.rfind("OQB-HATS-PACK", 0) == 0) nombreBase.erase(0, 13);
-        std::replace(nombreBase.begin(), nombreBase.end(), '-', ' ');
-        std::string subPack = !packOk ? "menus/nexus/pack_no_probado_corto"_i18n
-                              : overclock ? (zipConOc ? "menus/nexus/pack_oc_corto"_i18n : "menus/nexus/pack_oc_falta_corto"_i18n)
-                                          : "menus/nexus/probado"_i18n;
-        PackListItem* itemPack = new PackListItem("menus/nexus/req_pack"_i18n + " " + (nombreBase.empty() ? "menus/nexus/pack_desconocido"_i18n : nombreBase), "", subPack);
-        if (conAms && !ocBloquea && packOk) itemPack->setPositiveValue("menus/nexus/compatible"_i18n);
-        else itemPack->setWarningValue("menus/nexus/todavia_no"_i18n);
-        if (ocBloquea) itemPack->getClickEvent()->subscribe([reinstalarPack](brls::View*) { ofrecerPackNormal(reinstalarPack); });
-        this->addView(itemPack);
-
-        // exFAT en su etiqueta, como «Compatible» en las otras dos (antes era texto suelto y desalineado).
-        PackListItem* itemDisco = new PackListItem("menus/nexus/req_disco"_i18n, "", "menus/nexus/req_disco_sub"_i18n);
-        itemDisco->setPositiveValue("exFAT");
-        this->addView(itemDisco);
+        // Tu consola, como en la maqueta: etiqueta, valor y detalle; el icono dice si sirve.
+        this->addView(new HeaderOqb("menus/nexus/tu_consola"_i18n));
+        // «OQB-HATS-PACK-OC-23.0.zip» -> «OQB HATS OC 23.0».
+        std::string nombrePack = clavePack.substr(0, clavePack.rfind(".zip"));
+        if (const auto q = nombrePack.find("PACK-"); q != std::string::npos) nombrePack.erase(q, 5);
+        std::replace(nombrePack.begin(), nombrePack.end(), '-', ' ');
+        const std::string detallePack = !packOk ? "menus/nexus/pack_no_probado_corto"_i18n
+                                        : overclock ? (zipConOc ? "menus/nexus/pack_oc_corto"_i18n : "menus/nexus/pack_oc_falta_corto"_i18n)
+                                                    : "menus/nexus/probado"_i18n;
+        this->addView(new Requisitos({
+            {"menus/nexus/req_firmware"_i18n, fw.empty() ? "?" : fw, fwOk ? "menus/nexus/probado"_i18n : "menus/nexus/todavia_no"_i18n, fwOk ? 1 : 0},
+            {"menus/nexus/req_pack"_i18n, nombrePack.empty() ? "menus/nexus/pack_desconocido"_i18n : nombrePack, detallePack,
+             conAms && !ocBloquea && packOk ? 1 : 0},
+            {"menus/nexus/req_disco"_i18n, "exFAT", "menus/nexus/req_disco_sub"_i18n, -1},
+        }));
     }
     else {
         /* Avisos arriba de todo, como franja con su boton. */

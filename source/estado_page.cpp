@@ -340,7 +340,11 @@ void EstadoView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
             marco(Apoyo, ax, py, bw, bh, 16.0f);
             nvgBeginPath(vg);
             nvgRoundedRect(vg, ax + 14, py + 14, 112, 112, 10.0f);
-            nvgFillColor(vg, nvgRGB(255, 255, 255));
+            {
+                // El fondo blanco del QR se apaga igual que el QR (alfa al cuadrado, ver QrCodeView).
+                const float al = this->getAlpha();
+                nvgFillColor(vg, nvgRGBA(255, 255, 255, static_cast<unsigned char>(std::min(1.0f, al * al) * 255.0f)));
+            }
             nvgFill(vg);
             this->qr->setBoundaries(ax + 18, py + 18, 104, 104);
             this->qr->frame(ctx);

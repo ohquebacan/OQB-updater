@@ -423,7 +423,11 @@ namespace {
             const float lado = height - 28.0f;
             nvgBeginPath(vg);
             nvgRoundedRect(vg, x + 16, y + 14, lado, lado, 10.0f);
-            nvgFillColor(vg, nvgRGB(255, 255, 255));
+            {
+                // El fondo blanco del QR se apaga igual que el QR (alfa al cuadrado, ver QrCodeView).
+                const float al = this->getAlpha();
+                nvgFillColor(vg, nvgRGBA(255, 255, 255, static_cast<unsigned char>(std::min(1.0f, al * al) * 255.0f)));
+            }
             nvgFill(vg);
             this->qr->setBoundaries(x + 22, y + 20, lado - 12, lado - 12);
             this->qr->frame(ctx);
