@@ -239,9 +239,11 @@ namespace {
         g_inicioModo = ahoraMs();
         g_modoLite = static_cast<int>(modo);
         g_seguir = true;
-        // 0x3B es la prioridad más baja que el sistema le permite a una app
-        // (0x3F da 0xE001, prioridad inválida): si la CPU está ocupada, espera la luz.
-        const Result crear = threadCreate(&g_hilo, hiloLite, nullptr, nullptr, 0x4000, 0x3B, -2);
+        // Prioridad 0x28, un poco más alta que la normal de la app (0x2C): el
+        // hilo casi siempre está dormido (pausas de milisegundos), así que no le
+        // quita velocidad al trabajo, pero con 0x3B (la más baja permitida) se
+        // atrasaba con la CPU a full y el pulso se veía desparejo.
+        const Result crear = threadCreate(&g_hilo, hiloLite, nullptr, nullptr, 0x4000, 0x28, -2);
         anotar("threadCreate", crear);
         if (R_SUCCEEDED(crear)) {
             const Result arrancar = threadStart(&g_hilo);

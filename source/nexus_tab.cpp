@@ -50,6 +50,11 @@ namespace {
     constexpr const char COMANDO_EXPULSAR[] = "/atmosphere/logs/usb_eject_command.bin";
     constexpr const char TRAZA_USB[] = "/atmosphere/logs/usb_loader_trace.txt";
     constexpr const char LOG_APP[] = "/config/nexusmanager/log.txt";
+    // Registro por pasos de Nexus (mover, borrar, reparar): ahí queda el código
+    // exacto de cada falla, por ejemplo «move-open-destination rc=…».
+    constexpr const char LOG_NEXUS[] = "/switch/nexusmanager/nexus.log";
+    // Por qué Atmosphère rechazó la última expulsión y quién tenía el USB.
+    constexpr const char MOTIVO_EXPULSAR[] = "/atmosphere/logs/usb_eject_busy.txt";
     constexpr const char TITLE_MAP[] = "/atmosphere/usb_content/title_map.bin";
     constexpr const char USB_BADGES[] = "/atmosphere/usb_badges";
     constexpr const char NRO[] = "/switch/nexusmanager/NexusManager.nro";
@@ -741,6 +746,8 @@ namespace {
         f << "\n== " << ESTADO_EXPULSAR << "\n" << leerTodo(ESTADO_EXPULSAR);
         f << "\n== " << TRAZA_USB << " (final)\n" << leerTodo(TRAZA_USB, 64 * 1024);
         f << "\n== " << LOG_APP << " (final)\n" << leerTodo(LOG_APP, 64 * 1024);
+        f << "\n== " << LOG_NEXUS << " (final)\n" << leerTodo(LOG_NEXUS, 64 * 1024);
+        f << "\n== " << MOTIVO_EXPULSAR << "\n" << leerTodo(MOTIVO_EXPULSAR);
         f << "\n";
         return f ? ruta : "";
     }

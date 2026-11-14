@@ -240,6 +240,9 @@ int main(int argc, char* argv[])
     pminfoInitialize();
     splInitialize();
     romfsInit();
+    // Si otra app OQB se cerró desde el HOME con la luz de los mandos prendida
+    // (no alcanza a apagarla), aquí se apaga al abrir.
+    led::apagar();
 
     CurrentCfw::running_cfw = CurrentCfw::getCFW();
 
