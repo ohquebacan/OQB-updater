@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "pagina_oqb.hpp"
+
 /* Seccion "Nexus Bacán": juegos en un disco USB. Sale solo si el catalogo trae
    la clave "nexus_bacan" en nx-links.json:
 
@@ -21,7 +23,7 @@
    instala encima, con respaldo de lo que pisa, y se quita restaurando ese
    respaldo. No pasa por la instalacion de packs (ams_cfw) porque esa limpia
    /atmosphere entera. */
-class NexusTab : public brls::List
+class NexusTab : public brls::List, public Recargable
 {
 public:
     /* `reinstalarPack`: abre la instalacion del pack con esa clave (la de
@@ -54,4 +56,12 @@ public:
 
 private:
     nlohmann::ordered_json nxlinks;
+    nlohmann::ordered_json packVersions;
+    std::function<bool(const std::string&)> reinstalarPack;
+    std::string firma;  // lo que se ve; si cambia al volver, la pestaña se arma de nuevo
+    static std::string firmaActual();
+    void armar();
+
+public:
+    bool recargar() override;
 };

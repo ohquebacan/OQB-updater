@@ -143,6 +143,15 @@ void PaginaOqb::leerOrigen()
     }
 }
 
+void PaginaOqb::refrescarOrigen()
+{
+    auto* r = dynamic_cast<Recargable*>(this->origen);
+    if (!r || !r->recargar()) return;
+    // La lista se armo de nuevo: se vuelven a leer sus entradas, dejando el foco donde estaba.
+    this->leerOrigen();
+    if (this->elegida >= (int)this->objetivos.size()) this->elegida = std::max(0, (int)this->objetivos.size() - 1);
+}
+
 bool PaginaOqb::tieneX(brls::ListItem* item) const
 {
     for (const auto& accion : item->getActions())

@@ -1303,8 +1303,33 @@ bool NexusTab::necesitaAtencion(const nlohmann::ordered_json& nxlinks, const nlo
 
 NexusTab::NexusTab(const nlohmann::ordered_json& nxlinks, const nlohmann::ordered_json& packVersions,
                    std::function<bool(const std::string&)> reinstalarPack)
-    : brls::List(), nxlinks(nxlinks)
+    : brls::List(), nxlinks(nxlinks), packVersions(packVersions), reinstalarPack(std::move(reinstalarPack))
 {
+    this->firma = firmaActual();
+    this->armar();
+}
+
+std::string NexusTab::firmaActual()
+{
+    const nlohmann::ordered_json reg = registro();
+    return fmt::format("{}|{}|{}|{}|{}|{}|{}", iniTieneUsb(), existe(NRO), existe(NRO) && fwd::exists(NRO), texto(reg, "version"),
+                       reg.value("oc", false), juegosEnUsb().size(), leerEstado().conectado());
+}
+
+bool NexusTab::recargar()
+{
+    const std::string ahora = firmaActual();
+    if (ahora == this->firma) return false;
+    this->firma = ahora;
+    this->clear(true);
+    this->armar();
+    return true;
+}
+
+void NexusTab::armar()
+{
+    const nlohmann::ordered_json& packVersions = this->packVersions;
+    const auto reinstalarPack = this->reinstalarPack;
     const nlohmann::ordered_json& datos = this->nxlinks["nexus_bacan"];
     const std::string url = texto(datos, "url");
     /* Solo en el modo de prueba (nexus_bacan_prueba.json en la SD): un zip

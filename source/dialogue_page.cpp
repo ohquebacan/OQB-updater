@@ -82,7 +82,7 @@ void DialoguePage_ams::instantiateButtons()
         if (!frame->isLastStage())
             frame->nextStage();
         else {
-            brls::Application::pushView(new MainFrame());
+            brls::Application::popView();  // volver a donde se estaba, no a Inicio
         }
     });
 
@@ -127,7 +127,7 @@ void DialoguePage_fw::instantiateButtons()
         if (!frame->isLastStage())
             frame->nextStage();
         else {
-            brls::Application::pushView(new MainFrame());
+            brls::Application::popView();  // volver a donde se estaba, no a Inicio
         }
     });
 
@@ -145,12 +145,12 @@ void DialoguePage_confirm::instantiateButtons()
         if (!frame->isLastStage())
             frame->nextStage();
         else {
-            brls::Application::pushView(new MainFrame());
+            brls::Application::popView();  // volver a donde se estaba, no a Inicio
         }
     });
 
     this->button2->getClickEvent()->subscribe([this](View* view) {
-        brls::Application::pushView(new MainFrame());
+        brls::Application::popView();  // volver a donde se estaba, no a Inicio
     });
 
     this->label = new brls::Label(brls::LabelStyle::DIALOG, this->text, true);
@@ -163,7 +163,7 @@ void DialoguePage_optional::instantiateButtons()
         if (!frame->isLastStage())
             frame->nextStage();
         else {
-            brls::Application::pushView(new MainFrame());
+            brls::Application::popView();  // volver a donde se estaba, no a Inicio
         }
     };
 

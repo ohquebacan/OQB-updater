@@ -36,7 +36,7 @@ NetPage::NetPage() : AppletFrame(true, true)
         label = new brls::Label(brls::LabelStyle::DESCRIPTION, labelText, true);
         list->addView(label);
         cancel = new brls::ListItem("menus/common/go_back"_i18n);
-        cancel->getClickEvent()->subscribe([](brls::View* view) { brls::Application::pushView(new MainFrame()); });
+        cancel->getClickEvent()->subscribe([](brls::View* view) { brls::Application::popView(); });
         list->addView(cancel);
     }
     else {

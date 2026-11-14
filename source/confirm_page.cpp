@@ -17,8 +17,12 @@ ConfirmPage::ConfirmPage(brls::StagedAppletFrame* frame, const std::string& text
     this->button->getClickEvent()->subscribe([frame, this](View* view) {
         if (!frame->isLastStage())
             frame->nextStage();
+        /* Al terminar se vuelve a donde se estaba (la pestaña y la tarjeta desde
+           donde se abrio la accion). Antes se armaba una ventana principal nueva
+           encima, que siempre abria en Inicio y apilaba ventanas. Las pestañas se
+           actualizan solas al volver (appUpdates::generacionInstalaciones, Recargable). */
         else if (this->goHome)
-            brls::Application::pushView(new MainFrame());
+            brls::Application::popView();
     });
 
     this->label = new brls::Label(brls::LabelStyle::DIALOG, text, true);

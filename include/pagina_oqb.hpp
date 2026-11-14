@@ -35,6 +35,14 @@ struct ConBoton {
     }
 };
 
+/* Una lista de origen que puede rearmarse al volver a la pagina: al terminar una
+   accion se vuelve a donde se estaba, y si algo cambio (Nexus: se creo el acceso
+   directo, se conecto el USB) la lista se arma de nuevo. Devuelve true si cambio. */
+struct Recargable {
+    virtual ~Recargable() = default;
+    virtual bool recargar() = 0;
+};
+
 // Una entrada con icono (las apps sugeridas de Bacán Shop).
 struct ConIcono {
     std::string iconoRuta;               // archivo (cache del catalogo o generico)
@@ -80,6 +88,7 @@ public:
     void willAppear(bool resetState) override
     {
         if (this->origen) this->origen->willAppear(resetState);
+        this->refrescarOrigen();
         brls::View::willAppear(resetState);
     }
 
@@ -122,6 +131,7 @@ private:
     bool fuenteIntentada = false;
 
     void leerOrigen();
+    void refrescarOrigen();
     bool mover(int dx, int dy);
     bool tieneX(brls::ListItem* item) const;
 };
