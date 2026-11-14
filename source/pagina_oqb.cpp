@@ -74,6 +74,11 @@ PaginaOqb::PaginaOqb(const std::string& titulo, const std::string& subtitulo, br
     : titulo(titulo), subtitulo(subtitulo), origen(origen), op(std::move(opciones))
 {
     this->op.columnas = std::max(1, this->op.columnas);
+    /* La lista de origen no se muestra, pero sus vistas propias (la tarjeta del
+       USB, la ficha de Bacán Shop, el QR) se dibujan aqui. Sin padre, su
+       transparencia no seguia a la de la pagina: al entrar o salir con el
+       desvanecido, esas partes quedaban solidas mientras el resto se iba. */
+    if (this->origen) this->origen->setParent(this);
     this->leerOrigen();
 
     this->registerAction("", brls::Key::DUP, [this] { return this->mover(0, -1); }, true);
