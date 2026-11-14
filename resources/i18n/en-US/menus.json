@@ -925,15 +925,19 @@
         "soporte": "Send to support",
         "soporte_sub": "Sends the diagnostics and gives you a code.",
         "quitar_dialogo": "These games stay on the USB and won't open without Nexus Bacán:\n\n{}\n{}",
-        "quitar_caben": "Your SD has {} GB free: they fit. If you want to keep playing any of them, bring it over first.",
-        "quitar_no_caben": "Your SD has {} GB free. If you want to keep playing any of them, bring it over first.",
+        "quitar_caben": "Your SD has {} GB free: they fit. If you want to keep playing any of them, bring it to the SD first.",
+        "quitar_no_caben": "Your SD has {} GB free. If you want to keep playing any of them, bring it to the SD first.",
         "quitar_traer": "Open Nexus Bacán",
         "quitar_igual": "Remove anyway",
         "version_sub": "Version {}",
         "version_sub_oc": "Version {} · with Horizon-OC 2.6.0",
         "usb_otra": " · {} from another console: add them in Nexus Bacán",
         "usb_otra_uno": " · 1 from another console: add it in Nexus Bacán",
-        "quitar_mas": "and {} more"
+        "quitar_mas": "and {} more",
+        "quitar_titulo": "REMOVE NEXUS BACÁN",
+        "quitar_intro": "Your pack goes back to how it was. These games stay on the USB and won't open without Nexus Bacán:",
+        "quitar_traer2": "Open Nexus Bacán to bring them",
+        "quitar_pie": "Cancel  ·  If you leave them on the USB, they open again when you reinstall Nexus Bacán."
     },
     "soporte": {
         "titulo": "SEND TO SUPPORT",

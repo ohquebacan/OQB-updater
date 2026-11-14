@@ -1087,6 +1087,154 @@ namespace {
         return total;
     }
 
+    /* Quitar Nexus Bacán (maqueta, pantalla 5): una ventana propia con los colores
+       del tema, no el Dialog gris de borealis. Dice que juegos se quedan en el USB,
+       cuanto pesan y si caben en la SD, y ofrece abrir Nexus para traerlos. */
+    class VentanaQuitar : public brls::View
+    {
+        std::vector<std::pair<std::string, u64>> juegos;
+        size_t resto = 0;
+        std::string nota;
+        bool erista;
+        std::function<bool(const std::string&)> reinstalarPack;
+        int foco = 0;  // 0: Abrir Nexus Bacán, 1: Quitar igual
+
+        void abrirNexus()
+        {
+            brls::Application::popView(brls::ViewAnimation::FADE, [] { util::abrirAppInstalada(NRO, "Nexus Bacán"); });
+        }
+        void quitarIgual()
+        {
+            const bool e = this->erista;
+            auto r = this->reinstalarPack;
+            brls::Application::popView(brls::ViewAnimation::FADE, [e, r] { volverAlNormal(e, r); });
+        }
+
+    public:
+        VentanaQuitar(std::vector<std::pair<std::string, u64>> juegos, size_t resto, std::string nota, bool erista,
+                      std::function<bool(const std::string&)> reinstalarPack)
+            : juegos(std::move(juegos)), resto(resto), nota(std::move(nota)), erista(erista), reinstalarPack(std::move(reinstalarPack))
+        {
+            this->registerAction("", brls::Key::DLEFT, [this] { this->foco = 0; return true; }, true);
+            this->registerAction("", brls::Key::DRIGHT, [this] { this->foco = 1; return true; }, true);
+            this->registerAction("", brls::Key::A, [this] {
+                if (this->foco == 0) this->abrirNexus();
+                else this->quitarIgual();
+                return true;
+            }, true);
+            this->registerAction("", brls::Key::X, [this] { this->quitarIgual(); return true; }, true);
+            this->registerAction("", brls::Key::B, [] { brls::Application::popView(); return true; }, true);
+        }
+        bool isTranslucent() override { return true; }
+        brls::View* getDefaultFocus() override { return this; }
+        void layout(NVGcontext*, brls::Style*, brls::FontStash*) override {}
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style*, brls::FrameContext* ctx) override
+        {
+            const int regular = ctx->fontStash->regular, up = fuenteUpheaval(vg);
+            const NVGcolor texto = this->a(ctx->theme->textColor), tenue = this->a(ctx->theme->descriptionColor);
+            const NVGcolor rojo = this->a(oqb::rojoTexto()), foco = this->a(ctx->theme->highlightColor1);
+
+            nvgBeginPath(vg);
+            nvgRect(vg, x, y, width, height);
+            nvgFillColor(vg, this->a(ctx->theme->dialogBackdrop));
+            nvgFill(vg);
+
+            // Alto segun lo que lleva: titulo, intro (2 lineas), lista, nota (2), botones y pie.
+            const float mw = 780.0f, px = 40.0f, aw = mw - 2 * px;
+            const size_t filas = this->juegos.size() + (this->resto ? 1 : 0);
+            const float lista = 24.0f + filas * 30.0f;
+            const float mh = 36 + 50 + 56 + lista + 16 + 50 + 18 + 56 + 20 + 22 + 30;
+            const float mx = x + (width - mw) / 2, my = y + (height - mh) / 2;
+            nvgBeginPath(vg);
+            nvgRoundedRect(vg, mx, my, mw, mh, 18.0f);
+            nvgFillColor(vg, this->a(ctx->theme->sidebarColor));
+            nvgFill(vg);
+            nvgStrokeColor(vg, rojo);
+            nvgStrokeWidth(vg, 2.0f);
+            nvgStroke(vg);
+
+            float py = my + 36;
+            nvgFontFaceId(vg, up >= 0 ? up : regular);
+            nvgTextLetterSpacing(vg, 1.0f);
+            textoArriba(vg, mx + px, py, 40.0f, texto, "menus/nexus/quitar_titulo"_i18n);
+            nvgTextLetterSpacing(vg, 0.0f);
+            py += 50;
+
+            nvgFontFaceId(vg, regular);
+            nvgFontSize(vg, 18.0f);
+            nvgFillColor(vg, this->a(ctx->theme->textColor));
+            lineasDe(vg, mx + px, py, aw, 25.0f, 2, "menus/nexus/quitar_intro"_i18n);
+            py += 56;
+
+            // Los juegos, en una tarjeta: nombre a la izquierda, tamano a la derecha.
+            caja(vg, mx + px, py, aw, lista, this->a(oqb::velo(oqb::oscuro() ? 12 : 10)), this->a(ctx->theme->sidebarSeparatorColor));
+            float fy = py + 12;
+            nvgFontSize(vg, 18.0f);
+            for (const auto& [nombre, bytes] : this->juegos) {
+                nvgFillColor(vg, texto);
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+                nvgBeginPath(vg);
+                nvgText(vg, mx + px + 20, fy + 3, nombre.c_str(), nullptr);
+                if (bytes) {
+                    nvgFillColor(vg, tenue);
+                    nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP);
+                    nvgBeginPath(vg);
+                    nvgText(vg, mx + px + aw - 20, fy + 3, (gb(bytes) + " GB").c_str(), nullptr);
+                }
+                fy += 30;
+            }
+            if (this->resto) {
+                nvgFillColor(vg, tenue);
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+                nvgBeginPath(vg);
+                nvgText(vg, mx + px + 20, fy + 3, fmt::format("menus/nexus/quitar_mas"_i18n, this->resto).c_str(), nullptr);
+            }
+            nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+            py += lista + 16;
+
+            nvgFontSize(vg, 16.0f);
+            nvgFillColor(vg, this->a(ctx->theme->textColor));
+            lineasDe(vg, mx + px, py, aw, 22.0f, 2, this->nota);
+            py += 50 + 18;
+
+            // Los dos botones: Abrir (violeta, lo principal) y Quitar igual.
+            const float bw = (aw - 16) / 2, bh = 56;
+            for (int i = 0; i < 2; ++i) {
+                const float bx = mx + px + i * (bw + 16);
+                nvgBeginPath(vg);
+                nvgRoundedRect(vg, bx, py, bw, bh, 12.0f);
+                nvgFillColor(vg, i == 0 ? this->a(violeta()) : this->a(oqb::velo(oqb::oscuro() ? 14 : 10)));
+                nvgFill(vg);
+                if (i == 1) {
+                    nvgStrokeColor(vg, this->a(ctx->theme->sidebarSeparatorColor));
+                    nvgStrokeWidth(vg, 1.0f);
+                    nvgStroke(vg);
+                }
+                if (this->foco == i) {
+                    nvgBeginPath(vg);
+                    nvgRoundedRect(vg, bx - 4, py - 4, bw + 8, bh + 8, 15.0f);
+                    nvgStrokeColor(vg, foco);
+                    nvgStrokeWidth(vg, 3.0f);
+                    nvgStroke(vg);
+                }
+                const std::string t = i == 0 ? "  " + "menus/nexus/quitar_traer2"_i18n : "  " + "menus/nexus/quitar_igual"_i18n;
+                nvgFontSize(vg, 19.0f);
+                nvgFillColor(vg, i == 0 ? this->a(nvgRGB(20, 15, 31)) : texto);
+                nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+                nvgBeginPath(vg);
+                nvgText(vg, bx + bw / 2, py + bh / 2 + 1, t.c_str(), nullptr);
+            }
+            py += bh + 20;
+
+            nvgFontSize(vg, 14.0f);
+            nvgFillColor(vg, tenue);
+            nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+            nvgBeginPath(vg);
+            nvgText(vg, mx + mw / 2, py, ("  " + "menus/nexus/quitar_pie"_i18n).c_str(), nullptr);
+            nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+        }
+    };
+
     void quitarNexus(bool erista, std::function<bool(const std::string&)> reinstalarPack)
     {
         const auto ids = juegosEnUsb();
@@ -1094,24 +1242,19 @@ namespace {
             volverAlNormal(erista, reinstalarPack);
             return;
         }
-        std::string lista;
+        // Hasta cuatro con su tamaño; el resto, contado.
+        std::vector<std::pair<std::string, u64>> juegos;
         u64 total = 0;
-        // Hasta cuatro con su tamaño; el resto, contado (si no, los botones quedaban fuera de la ventana).
         for (size_t i = 0; i < ids.size(); ++i) {
             const u64 t = tamanoJuego(ids[i]);
             total += t;
-            if (i < 4) lista += "•  " + nombreJuego(ids[i]) + (t ? "  (" + gb(t) + " GB)" : "") + "\n";
+            if (i < 4) juegos.push_back({nombreJuego(ids[i]), t});
         }
-        if (ids.size() > 4) lista += fmt::format("menus/nexus/quitar_mas"_i18n, ids.size() - 4) + "\n";
         s64 libre = -1;
         fs::getFreeStorageSD(libre);
-        const std::string sd = libre >= 0 ? fmt::format(total && u64(libre) > total ? "menus/nexus/quitar_caben"_i18n : "menus/nexus/quitar_no_caben"_i18n, gb(libre)) : "";
-        brls::Dialog* d = new DialogoCentrado(fmt::format("menus/nexus/quitar_dialogo"_i18n, lista, sd), 580);
-        d->addButton("menus/nexus/quitar_traer"_i18n, [d](brls::View*) { d->close([] { util::abrirAppInstalada(NRO, "Nexus Bacán"); }); });
-        d->addButton("menus/nexus/quitar_igual"_i18n, [d, erista, reinstalarPack](brls::View*) { d->close([erista, reinstalarPack] { volverAlNormal(erista, reinstalarPack); }); });
-        d->addButton("menus/common/cancel"_i18n, [d](brls::View*) { d->close(); });
-        d->setCancelable(true);
-        d->open();
+        const std::string nota =
+            libre >= 0 ? fmt::format(total && u64(libre) > total ? "menus/nexus/quitar_caben"_i18n : "menus/nexus/quitar_no_caben"_i18n, gb(libre)) : "";
+        brls::Application::pushView(new VentanaQuitar(std::move(juegos), ids.size() > 4 ? ids.size() - 4 : 0, nota, erista, reinstalarPack));
     }
 
     // El catalogo puede decir con que packs se probo Nexus ("packs": [...]); sin esa lista, cualquiera.
