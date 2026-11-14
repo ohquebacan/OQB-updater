@@ -139,6 +139,8 @@ static int load_keep(void)
     static const char *always[] = {
         "Nintendo", "emuMMC", "backup", "payload.bin", "payload.bin.aio",
         "config/aio-switch-updater", SWAP_STAGING,
+        /* Android / Linux (L4T) and the hekate entries that boot them */
+        "switchroot", "bootloader/ini", "bootloader/res",
     };
     g_keepCount = 0;
     for (unsigned i = 0; i < sizeof(always) / sizeof(always[0]); i++) add_keep(always[i]);
@@ -201,6 +203,16 @@ static int is_under_kept(const char *rel)
     return 0;
 }
 
+/* Folders where files of the pack replace same-named files, but nothing else
+ * is ever deleted (user payloads stay even if the pack has no newer ones). */
+static int is_merge(const char *rel)
+{
+    static const char *const m[] = {"bootloader/payloads"};
+    for (unsigned i = 0; i < sizeof(m) / sizeof(m[0]); i++)
+        if (ieq(rel, m[i]) || (istartsn(rel, m[i], strlen(m[i])) && rel[strlen(m[i])] == '/')) return 1;
+    return 0;
+}
+
 /* ---------- delete ---------- */
 
 static int rm_rf(const char *abs)
@@ -242,7 +254,7 @@ static void wipe_dir(const char *abs, const char *rel, int depth)
             free(crel);
             continue;
         }
-        if (!is_kept(crel)) {
+        if (!is_kept(crel) && !is_merge(crel)) {
             if (e->isDir && is_ancestor_of_kept(crel)) {
                 wipe_dir(cabs, crel, depth + 1);
             }
@@ -262,6 +274,50 @@ static void wipe_dir(const char *abs, const char *rel, int depth)
         free(crel);
     }
     list_free(&l);
+}
+
+/* Only top-level folders of the pack that are really "firmware/CFW" get their
+ * stale files removed. Everything else on the SD (Android, Linux, roms, the
+ * user's own folders ...) is never even opened, so it costs no time or RAM. */
+static const char *const MANAGED_DIRS[] = {"atmosphere", "bootloader", "sept", "SaltySD"};
+/* Removed even if the new pack does not contain them: old themes may not
+ * work on the new firmware. */
+static const char *const ALWAYS_REMOVE[] = {"themes"};
+
+static void scoped_wipe(void)
+{
+    SwapList top;
+    if (list_read("sd:/" SWAP_STAGING, &top) == FR_OK) {
+        for (int i = 0; i < top.n; i++) {
+            if (!top.v[i].isDir) continue;
+            for (unsigned m = 0; m < sizeof(MANAGED_DIRS) / sizeof(MANAGED_DIRS[0]); m++) {
+                if (!ieq(top.v[i].name, MANAGED_DIRS[m])) continue;
+                char *abs = join("sd:/", top.v[i].name);
+                if (abs) {
+                    FILINFO fi;
+                    if (f_stat(abs, &fi) == FR_OK && (fi.fattrib & AM_DIR)) {
+                        gfx_printf("  cleaning %s\n", top.v[i].name);
+                        wipe_dir(abs, top.v[i].name, 1);
+                    }
+                    free(abs);
+                }
+            }
+        }
+        list_free(&top);
+    }
+    for (unsigned a = 0; a < sizeof(ALWAYS_REMOVE) / sizeof(ALWAYS_REMOVE[0]); a++) {
+        char *abs = join("sd:/", ALWAYS_REMOVE[a]);
+        FILINFO fi;
+        if (abs && !is_kept(ALWAYS_REMOVE[a]) && f_stat(abs, &fi) == FR_OK) {
+            int r = (fi.fattrib & AM_DIR) ? rm_rf(abs) : (int)f_unlink(abs);
+            if (r == FR_OK) {
+                g_removed++;
+                gfx_printf("  - %s\n", ALWAYS_REMOVE[a]);
+            }
+            else g_failed++;
+        }
+        free(abs);
+    }
 }
 
 /* ---------- move staged files into place ---------- */
@@ -415,7 +471,7 @@ void aiosu_run_pending_swap(void)
         return;
     }
 
-    gfx_printf("Wiping the SD card in 5 s. Hold POWER to abort.\n");
+    gfx_printf("Replacing CFW files in 5 s. Hold POWER to abort.\n");
     for (int i = 5; i > 0; i--) {
         gfx_printf("%d ", i);
         usleep(1000000);
@@ -423,7 +479,7 @@ void aiosu_run_pending_swap(void)
     gfx_printf("\n");
 
     g_removed = g_failed = g_moved = g_skipped = 0;
-    wipe_dir("sd:/", "", 0);
+    scoped_wipe();
     gfx_printf("Installing new files...\n");
     move_tree("sd:/" SWAP_STAGING, "sd:/", "");
     refresh_hekate();
