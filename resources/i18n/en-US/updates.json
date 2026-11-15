@@ -1,0 +1,11 @@
+{
+    "tab_title": "Updates",
+    "description": "Shows installed homebrew apps, overlays and sysmodules the app knows about and whether GitHub has a newer version. Press A to install or update. Add your own entries in /config/aio-switch-updater/updates_catalog.json; themes and other repos go into the \"Custom links\" tab.",
+    "empty": "No known installed apps found.",
+    "section_update": "Update available",
+    "section_unknown": "Version unknown",
+    "section_current": "Up to date",
+    "notify": "{} update(s) available for installed apps",
+    "no_info": "no info",
+    "latest": "latest: {}"
+}

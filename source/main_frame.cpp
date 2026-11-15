@@ -12,6 +12,7 @@
 #include "language_tab.hpp"
 #include "list_download_tab.hpp"
 #include "tools_tab.hpp"
+#include "updates_tab.hpp"
 #include "user_links_tab.hpp"
 #include "utils.hpp"
 
@@ -77,6 +78,7 @@ MainFrame::MainFrame() : TabFrame()
     // Own links (GitHub repos / direct downloads). Hide it with "user_links": true in hide_tabs.json.
     if (!util::getBoolValue(hideStatus, "user_links"))
         this->addTab("user_links/tab_title"_i18n, new UserLinksTab());
+    if (!util::getBoolValue(hideStatus, "updates")) this->addTab("updates/tab_title"_i18n, new UpdatesTab());
 
     /* Mira los dos grupos anteriores, no solo el de descargas: ocultandolas
        todas, estado y ajustes quedarian pegados sin separador. Cada separador

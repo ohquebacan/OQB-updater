@@ -101,4 +101,9 @@ namespace userlinks {
     bool updateAvailable(const Link& link);
     std::string latestKnownTag(const Link& link);
 
+    // newest release tag of owner/repo (pre-releases included as fallback); error codes as in Resolved
+    bool fetchLatestTag(const std::string& owner, const std::string& repo, std::string& tag, std::string& error);
+    // tag recorded for installs that are not in the user's link list (Updates tab)
+    std::string recordedTag(const std::string& url);
+
 }  // namespace userlinks

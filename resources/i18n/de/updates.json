@@ -1,0 +1,11 @@
+{
+    "tab_title": "Updates",
+    "description": "Zeigt installierte Homebrew-Apps, Overlays und Sysmodule, die die App kennt, und ob es eine neuere Version auf GitHub gibt. Antippen = installieren bzw. aktualisieren. Eigene Einträge kannst du in /config/aio-switch-updater/updates_catalog.json ergänzen; Themes und weitere Repos fügst du im Tab „Eigene Links“ hinzu.",
+    "empty": "Keine bekannten installierten Apps gefunden.",
+    "section_update": "Update verfügbar",
+    "section_unknown": "Version unbekannt",
+    "section_current": "Aktuell",
+    "notify": "{} Update(s) für installierte Apps verfügbar",
+    "no_info": "keine Info",
+    "latest": "neueste: {}"
+}

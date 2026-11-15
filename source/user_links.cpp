@@ -11,6 +11,7 @@ namespace userlinks {
     namespace {
         constexpr const char USER_LINKS_PATH[] = "/config/aio-switch-updater/user_links.json";
         constexpr const char USER_LINKS_DIR[] = "/config/aio-switch-updater/";
+        constexpr const char INSTALLED_TAGS_PATH[] = "/config/aio-switch-updater/installed_tags.json";
         constexpr int MAX_UPDATE_CHECKS = 15;
 
         using json = nlohmann::ordered_json;
@@ -81,7 +82,34 @@ namespace userlinks {
                 found = true;
             }
         }
-        return found && save(links);
+        if (found) return save(links);
+
+        // not a user-added link (e.g. an entry of the Updates tab): remember the tag separately
+        json rec = fs::parseJsonFile(INSTALLED_TAGS_PATH);
+        if (!rec.is_object()) rec = json::object();
+        rec[link.url] = tag;
+        fs::createTree(USER_LINKS_DIR);
+        fs::writeJsonToFile(rec, INSTALLED_TAGS_PATH);
+        return true;
+    }
+
+    std::string recordedTag(const std::string& url)
+    {
+        json rec = fs::parseJsonFile(INSTALLED_TAGS_PATH);
+        if (!rec.is_object()) return "";
+        auto it = rec.find(url);
+        return (it != rec.end() && it->is_string()) ? it->get<std::string>() : std::string();
+    }
+
+    bool fetchLatestTag(const std::string& owner, const std::string& repo, std::string& tag, std::string& error)
+    {
+        GithubRef ref;
+        ref.owner = owner;
+        ref.repo = repo;
+        json release;
+        if (!fetchRelease(ref, release, error)) return false;
+        tag = release.at("tag_name").get<std::string>();
+        return true;
     }
 
     Resolved resolve(const Link& link)
