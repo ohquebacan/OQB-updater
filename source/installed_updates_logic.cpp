@@ -108,6 +108,7 @@ namespace updates {
             zip("sys-clk", "retronx-team/sys-clk", "/atmosphere/contents/00FF0000636C6BFF"),
             zip("ldn_mitm", "DefenderOfHyrule/ldn_mitm", "/atmosphere/contents/4200000000000010"),
             zip("sys-ftpd-light", "cathery/sys-ftpd-light", "/atmosphere/contents/420000000000000E"),
+            zip("MissionControl", "ndeadly/MissionControl", "/atmosphere/contents/010000000000bd00"),
             zip("emuiibo", "XorTroll/emuiibo", "/atmosphere/contents/0100000000000352"),
         };
     }
