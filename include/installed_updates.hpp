@@ -20,6 +20,8 @@ namespace updates {
         bool extract = false;             // zip that is unpacked ...
         std::string extractTo = "/";      // ... to this folder
         std::string filter;               // optional asset name filter
+    std::string installDir;           // where a single downloaded file goes ("" = folder of the detected file)
+    bool autoLayout = false;          // zip may be SD layout or app-only: see ziplayout::detect
     };
 
     enum class Status

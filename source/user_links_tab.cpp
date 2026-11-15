@@ -1,5 +1,7 @@
 #include "user_links_tab.hpp"
 
+#include <cctype>
+
 #include <memory>
 #include <string>
 
@@ -11,6 +13,7 @@
 #include "progress_event.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
+#include "zip_layout.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -53,41 +56,74 @@ namespace {
         ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
     }
 
-    void downloadStage(const Link& link, std::shared_ptr<userlinks::Resolved> resolved)
+    struct InstallState
     {
-        *resolved = userlinks::resolve(link);
-        if (!resolved->ok) {
-            failStage(errorText(resolved->error));
+        userlinks::Resolved resolved;
+        bool extractNow = false;  // the downloaded file is a zip that has to be unpacked
+    };
+
+    bool endsWithZip(const std::string& name)
+    {
+        if (name.size() < 4) return false;
+        std::string tail = name.substr(name.size() - 4);
+        for (auto& c : tail) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        return tail == ".zip";
+    }
+
+    // Apps may ship a plain .nro or a zip: the zip case is unpacked too.
+    bool wantsExtract(const Link& link, const std::string& fileName)
+    {
+        return link.extract || (link.kind == Kind::app && endsWithZip(fileName));
+    }
+
+    void downloadStage(const Link& link, std::shared_ptr<InstallState> state)
+    {
+        state->resolved = userlinks::resolve(link);
+        const userlinks::Resolved& resolved = state->resolved;
+        if (!resolved.ok) {
+            failStage(errorText(resolved.error));
             return;
         }
+        state->extractNow = wantsExtract(link, resolved.fileName);
 
         std::string target;
-        if (link.extract) {
+        if (state->extractNow) {
             fs::createTree(DOWNLOAD_PATH);
             target = CUSTOM_FILENAME;
         }
         else {
             fs::createTree(link.saveTo);
-            target = link.saveTo + resolved->fileName;
+            target = link.saveTo + resolved.fileName;
         }
 
-        long code = download::downloadFile(resolved->url, target, OFF);
+        long code = download::downloadFile(resolved.url, target, OFF);
         if (code < 200 || code >= 400) {
             ProgressEvent::instance().setStatusCode(code == 0 ? 503 : code);
             return;
         }
-        if (!link.extract) userlinks::markInstalled(link, resolved->tag);
+        if (!state->extractNow) userlinks::markInstalled(link, resolved.tag);
     }
 
-    void extractStage(const Link& link, std::shared_ptr<userlinks::Resolved> resolved)
+    void extractStage(const Link& link, std::shared_ptr<InstallState> state)
     {
+        if (!state->extractNow) return;  // it was a single file: already in place
+
         if (!util::isArchive(CUSTOM_FILENAME)) {
             failStage("user_links/err_not_zip"_i18n);
             return;
         }
-        fs::createTree(link.extractTo);
-        extract::extract(CUSTOM_FILENAME, link.extractTo, false);
-        userlinks::markInstalled(link, resolved->tag);
+        // directory used for zips that do not bring their own SD-card folders
+        const std::string fallback = link.extract ? link.extractTo : link.saveTo;
+        std::string dir = link.extractTo;
+        std::string strip;
+        if (link.autoLayout || !link.extract) {
+            const ziplayout::Layout layout = ziplayout::detect(CUSTOM_FILENAME, fallback);
+            dir = layout.dir;
+            strip = layout.strip;
+        }
+        fs::createTree(dir);
+        extract::extract(CUSTOM_FILENAME, dir, false, []() { return; }, strip);
+        userlinks::markInstalled(link, state->resolved.tag);
     }
 
 }  // namespace
@@ -195,10 +231,10 @@ void UserLinksTab::startInstall(const Link& link)
                                                  : fmt::format("user_links/dest_save"_i18n, link.saveTo);
     staged->addStage(new ConfirmPage(staged, fmt::format("user_links/confirm_download"_i18n, link.name, destination)));
 
-    auto resolved = std::make_shared<userlinks::Resolved>();
-    staged->addStage(new WorkerPage(staged, "menus/common/downloading"_i18n, [link, resolved]() { downloadStage(link, resolved); }));
-    if (link.extract)
-        staged->addStage(new WorkerPage(staged, "menus/common/extracting"_i18n, [link, resolved]() { extractStage(link, resolved); }));
+    auto state = std::make_shared<InstallState>();
+    staged->addStage(new WorkerPage(staged, "menus/common/downloading"_i18n, [link, state]() { downloadStage(link, state); }));
+    if (link.extract || link.kind == Kind::app)
+        staged->addStage(new WorkerPage(staged, "menus/common/extracting"_i18n, [link, state]() { extractStage(link, state); }));
     staged->addStage(new ConfirmPage_Done(staged, "menus/common/all_done"_i18n));
     brls::Application::pushView(staged);
 }

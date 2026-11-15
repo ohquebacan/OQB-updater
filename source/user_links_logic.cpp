@@ -244,7 +244,7 @@ namespace userlinks {
         if (link.extract)
             prefer = {".zip"};
         else if (link.kind == Kind::app)
-            prefer = {".nro", ".zip"};
+            prefer = {".nro", ".zip", ".ovl"};
         else if (link.kind == Kind::theme)
             prefer = {".nxtheme", ".zip"};
         else

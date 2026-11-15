@@ -93,7 +93,38 @@ namespace updates {
             e.extractTo = "/";
             return e;
         };
+        // folder-based apps: a release may be a plain .nro or a zip (SD layout or app-only)
+        auto folder = [](const char* name, const char* repo, const char* detect, const char* dir) {
+            Entry e;
+            e.name = name;
+            e.repo = repo;
+            e.detect = {detect};
+            e.installDir = dir;
+            e.autoLayout = true;
+            return e;
+        };
+        // overlay: a plain .ovl or a zip (maybe with its sysmodule in SD layout)
+        auto overlay = [](const char* name, const char* repo, const char* detect) {
+            Entry e;
+            e.name = name;
+            e.repo = repo;
+            e.detect = {detect};
+            e.installDir = "/switch/.overlays/";
+            e.autoLayout = true;
+            return e;
+        };
         return {
+            folder("FlashNX", "Jonathan8520/FlashNX", "/switch/FlashNX", "/switch/FlashNX/"),
+            folder("melonDS", "melonDS-emu/melonDS", "/switch/melonds", "/switch/melonds/"),
+            folder("Homebrew-Manager (HomeTile)", "Amir-Ehsani/HomeTile-switch", "/switch/Homebrew-Manager", "/switch/Homebrew-Manager/"),
+            folder("SwitchU", "PoloNX/SwitchU", "/switch/SwitchU", "/switch/SwitchU/"),
+            folder("CustomBootScreen", "esteban-cz/CustomBootScreen", "/switch/CustomBootScreen", "/switch/CustomBootScreen/"),
+            folder("AmiiboGenerator", "Slluxx/AmiiboGenerator", "/switch/AmiiboGenerator", "/switch/AmiiboGenerator/"),
+            app("nsp-forwarder", "TooTallNate/switch-nsp-forwarder", {"/switch/nsp-forwarder.nro"}, ".nro"),
+            app("SaltyNX-Tool", "masagrator/SaltyNX-Tool", {"/switch/SaltyNX-Tool.nro"}, ".nro"),
+            overlay("homenx achievements", "ad3333m/homenx", "/switch/.overlays/homenx-achievements.ovl"),
+            overlay("Horizon OC", "Horizon-OC/Horizon-OC", "/switch/.overlays/horizon-oc-overlay.ovl"),
+            overlay("EdiZon Overlay", "proferabg/EdiZon-Overlay", "/switch/.overlays/ovlEdiZon.ovl"),
             app("DBI", "rashevskyv/dbi", {"/switch/DBI/DBI.nro", "/switch/DBI.nro"}, "DBI.nro"),
             app("Checkpoint", "FlagBrew/Checkpoint", {"/switch/Checkpoint/Checkpoint.nro", "/switch/Checkpoint.nro"}, ".nro"),
             app("JKSV", "J-D-K/JKSV", {"/switch/JKSV/JKSV.nro", "/switch/JKSV.nro"}, ".nro"),
@@ -105,7 +136,6 @@ namespace updates {
             app("ovl-sysmodules", "WerWolv/ovl-sysmodules", {"/switch/.overlays/ovl-sysmodules.ovl"}, ".ovl"),
             zip("Awoo Installer", "Huntereb/Awoo-Installer", "/switch/awoo-installer"),
             zip("sys-con (Controller)", "cathery/sys-con", "/atmosphere/contents/690000000000000D"),
-            zip("sys-clk", "retronx-team/sys-clk", "/atmosphere/contents/00FF0000636C6BFF"),
             zip("ldn_mitm", "DefenderOfHyrule/ldn_mitm", "/atmosphere/contents/4200000000000010"),
             zip("sys-ftpd-light", "cathery/sys-ftpd-light", "/atmosphere/contents/420000000000000E"),
             zip("MissionControl", "ndeadly/MissionControl", "/atmosphere/contents/010000000000bd00"),
@@ -138,6 +168,10 @@ namespace updates {
             e.extract = (x != o.end() && x->is_boolean() && x->get<bool>());
             const std::string to = userlinks::normalizeDir(str(o, "extract_to"));
             if (!to.empty()) e.extractTo = to;
+            const std::string inst = userlinks::normalizeDir(str(o, "install_dir"));
+            if (!inst.empty()) e.installDir = inst;
+            auto au = o.find("auto_layout");
+            e.autoLayout = (au != o.end() && au->is_boolean() && au->get<bool>());
             // needs a name, a repo of the form owner/repo and at least one absolute detect path
             if (e.name.empty() || e.detect.empty()) continue;
             const size_t slash = e.repo.find('/');
@@ -209,7 +243,10 @@ namespace updates {
         l.extractTo = item.entry.extractTo;
         l.kind = item.entry.extract ? userlinks::Kind::mod : userlinks::Kind::app;
         // a single file replaces the one that is installed, wherever the user put it
-        l.saveTo = parentDir(item.foundPath.empty() ? item.entry.detect.front() : item.foundPath);
+        l.saveTo = item.entry.installDir.empty() ? parentDir(item.foundPath.empty() ? item.entry.detect.front() : item.foundPath)
+                                                 : item.entry.installDir;
+        l.autoLayout = item.entry.autoLayout;
+        if (l.autoLayout && l.extract) l.extractTo = l.saveTo;  // fallback when the zip has no SD folders
         return l;
     }
 

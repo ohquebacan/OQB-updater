@@ -32,6 +32,7 @@ namespace userlinks {
         std::string extractTo = "/";  // directory (ends with '/'), used when extracting
         std::string filter;           // optional: only assets whose name contains this text
         std::string installedTag;     // release tag that was installed last
+        bool autoLayout = false;      // zip: SD-card layout -> extract to "/", else into extractTo (not saved)
     };
 
     struct Defaults
