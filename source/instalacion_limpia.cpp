@@ -1,3 +1,4 @@
+#include "hekate_idioma.hpp"
 #include "instalacion_limpia.hpp"
 
 #include <borealis.hpp>
@@ -357,6 +358,7 @@ namespace {
                 util::extractArchive(contentType::ams_cfw);
                 if (ProgressEvent::instance().getStatusCode() <= 399) {
                     packVersion::recordInstalled(estado->clave, estado->fecha);
+                    hekateIdioma::trasInstalarPack();  // el pack trae hekate en inglés
                     std::error_code ec;
                     std::filesystem::remove(AMS_FILENAME, ec);  // 100+ MB que ya no sirven
                 }

@@ -12,6 +12,7 @@
 #include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
+#include "hekate_idioma.hpp"
 #include "pagina_oqb.hpp"
 #include "instalacion_limpia.hpp"
 #include "list_download_tab.hpp"
@@ -221,8 +222,11 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
             /* Se anota la fecha que estaba publicada al empezar, no la de hoy:
                es la del pack que acaba de quedar en la SD. Despues de extraer,
                y solo si salio bien, para no dar por instalado algo que fallo. */
-            if (ProgressEvent::instance().getStatusCode() <= 399)
+            if (ProgressEvent::instance().getStatusCode() <= 399) {
                 packVersion::recordInstalled(packKey, packDate);
+                /* El pack trae hekate en inglés: se pone en el idioma de la consola. */
+                if (this->type == contentType::ams_cfw && !packKey.empty()) hekateIdioma::trasInstalarPack();
+            }
         }));
     if (hekate) {
         stagedFrame->addStage(

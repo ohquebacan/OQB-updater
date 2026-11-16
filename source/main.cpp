@@ -1,3 +1,4 @@
+#include "hekate_idioma.hpp"
 #include "led.hpp"
 #include <curl/curl.h>
 #include <switch.h>
@@ -213,6 +214,7 @@ int main(int argc, char* argv[])
 
     i18n::loadTranslations(idioma);
     arranque::marca("interfaz y traducciones listas");
+    hekateIdioma::alAbrir();  // una sola vez: hekate en el idioma de la consola
 
         // appletInitializeGamePlayRecording();
 
