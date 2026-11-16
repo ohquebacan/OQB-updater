@@ -21,6 +21,9 @@ namespace protection {
     namespace {
 
         constexpr const char HOSTS_DIR[] = "/atmosphere/hosts/";
+        // Primera linea del sysmmc.txt que deja el interruptor de PRODINFO del
+        // Inicio OQB de hekate (gui_oqb.c) al poner la sysNAND en linea.
+        constexpr const char SYSNAND_ONLINE_MARK[] = "# OQB: sysNAND en linea";
         constexpr const char SYSTEM_SETTINGS[] = "/atmosphere/config/system_settings.ini";
         constexpr const char EXOSPHERE_INI[] = "/exosphere.ini";
         constexpr const char EMUMMC_DIR[] = "/emuMMC/";
@@ -284,9 +287,26 @@ namespace protection {
                                       true});
                     break;
 
+                case HostsResult::DoesNotBlock:
+                    /* La sysNAND puesta en linea a proposito con el interruptor
+                       de PRODINFO del Inicio OQB de hekate: deja este sysmmc.txt
+                       con su marca y el PRODINFO real. Las dos cosas juntas son
+                       una eleccion, no un descuido: se avisa sin alarmar. Si solo
+                       esta la marca, sigue siendo una falla. */
+                    if (std::string(name) == "sysmmc.txt" &&
+                        readFile(root + HOSTS_DIR + name).rfind(SYSNAND_ONLINE_MARK, 0) == 0) {
+                        std::string blank;
+                        if (findIniValue(readFile(root + EXOSPHERE_INI), "blank_prodinfo_sysmmc", blank) && blank == "0") {
+                            checks.push_back({"hosts/sysmmc.txt", Status::Warning,
+                                              "la sysNAND está en línea a propósito (interruptor de PRODINFO en "
+                                              "hekate): se conecta a los servidores de Nintendo. Para volver a "
+                                              "protegerla, ponlo en «Protegido» desde el Inicio OQB de hekate"});
+                            break;
+                        }
+                    }
+                    [[fallthrough]];
                 case HostsResult::RedirectsNextendo:
                 case HostsResult::RedirectsOther:
-                case HostsResult::DoesNotBlock:
                     // El caso peligroso: existe, asi que deja fuera a
                     // default.txt, y no bloquea.
                     checks.push_back({std::string("hosts/") + name, Status::Fail,

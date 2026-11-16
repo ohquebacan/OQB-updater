@@ -129,6 +129,36 @@ int main()
         expect("sysmmc.txt vacio ES una falla", checks, "hosts/sysmmc.txt", protection::Status::Fail);
     }
 
+    // La sysNAND en linea a proposito desde el Inicio OQB de hekate: sysmmc.txt
+    // con la marca y PRODINFO real. Es una eleccion: aviso, no falla.
+    {
+        const std::string marca = "# OQB: sysNAND en linea (interruptor de PRODINFO del Inicio OQB en hekate).\n"
+                                  "# Sin bloqueos: la sysNAND se conecta a los servidores de Nintendo.\n";
+        {
+            const std::string sd = makeSd();
+            write(sd + "/atmosphere/hosts/sysmmc.txt", marca);
+            write(sd + "/exosphere.ini", "[exosphere]\nblank_prodinfo_emummc=1\nblank_prodinfo_sysmmc=0\n");
+            const auto checks = protection::run(sd);
+            expect("sysNAND en linea a proposito es un aviso", checks, "hosts/sysmmc.txt", protection::Status::Warning);
+            expect("y default.txt sigue en verde", checks, "hosts/default.txt", protection::Status::Ok);
+        }
+        {
+            // La marca sola, con el PRODINFO todavia en blanco, no es la eleccion completa.
+            const std::string sd = makeSd();
+            write(sd + "/atmosphere/hosts/sysmmc.txt", marca);
+            const auto checks = protection::run(sd);
+            expect("la marca con PRODINFO en blanco sigue siendo falla", checks, "hosts/sysmmc.txt", protection::Status::Fail);
+        }
+        {
+            // Sin la marca, un sysmmc.txt que no bloquea es falla aunque el PRODINFO sea real.
+            const std::string sd = makeSd();
+            write(sd + "/atmosphere/hosts/sysmmc.txt", "# puesto a mano\n");
+            write(sd + "/exosphere.ini", "[exosphere]\nblank_prodinfo_emummc=1\nblank_prodinfo_sysmmc=0\n");
+            const auto checks = protection::run(sd);
+            expect("sin la marca de OQB sigue siendo falla", checks, "hosts/sysmmc.txt", protection::Status::Fail);
+        }
+    }
+
     // Si default.txt no bloquea y no hay fichero de arranque, no hay respaldo
     // ninguno: entonces si es una falla que falten.
     {
