@@ -252,6 +252,9 @@ int main()
         const auto en_emu = protection::run(sd, emu);
         const bool ok_emu = !protection::anyFailed(en_emu) && !protection::sysnandOnlineHere(en_emu) &&
                             protection::dnsBlockingOk(en_emu);
+        const bool aclara = protection::sysnandOnlineOtherNand(en_emu) && !protection::sysnandOnlineOtherNand(checks);
+        std::cout << (aclara ? "ok     " : "FALLA  ") << "en emuNAND se aclara que la sysNAND esta en linea (y en sysNAND no)\n";
+        if (!aclara) ++failures;
         std::cout << (ok_emu ? "ok     " : "FALLA  ") << "en emuNAND sigue protegida y con bloqueo DNS\n";
         if (!ok_emu) ++failures;
 

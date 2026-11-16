@@ -319,6 +319,7 @@ namespace protection {
                                 "«Protegido» desde el Inicio OQB de hekate",
                                 true};
                         c.sysnandOnline = booted_sysnand;
+                        c.otherNand = !booted_sysnand;  // en emuNAND es cosa de la otra NAND
                         checks.push_back(c);
                         break;
                     }
@@ -582,6 +583,13 @@ namespace protection {
     bool sysnandOnlineHere(const std::vector<Check>& checks)
     {
         return std::any_of(checks.begin(), checks.end(), [](const Check& c) { return c.sysnandOnline; });
+    }
+
+    bool sysnandOnlineOtherNand(const std::vector<Check>& checks)
+    {
+        return std::any_of(checks.begin(), checks.end(), [](const Check& c) {
+            return c.name == "hosts/sysmmc.txt" && c.status == Status::Warning && c.otherNand;
+        });
     }
 
     bool nextendoIncomplete(const std::vector<Check>& checks)

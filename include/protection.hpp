@@ -114,6 +114,9 @@ namespace protection {
     /* true si se arranco en la sysNAND y esta en linea a proposito desde
        hekate. Se explica aparte, como Nextendo: no es un pack roto. */
     bool sysnandOnlineHere(const std::vector<Check>& checks);
+    /* true si se arranco en emuNAND y la sysNAND esta en linea a proposito:
+       esta NAND sigue protegida, solo se aclara. */
+    bool sysnandOnlineOtherNand(const std::vector<Check>& checks);
 
     // true si hay fallas y todas son por Nextendo.
     bool failedOnlyByNextendo(const std::vector<Check>& checks);

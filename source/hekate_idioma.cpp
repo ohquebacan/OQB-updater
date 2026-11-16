@@ -36,9 +36,20 @@ namespace hekateIdioma {
                 f << datos;
                 if (!f.good()) return false;
             }
+            /* En la Switch, renombrar encima de un archivo que existe falla
+               (en la Mac no): si pasa, se borra el original y se reintenta. */
             std::error_code ec;
             std::filesystem::rename(tmp, ruta, ec);
-            if (ec) std::filesystem::remove(tmp, ec);
+            if (ec) {
+                std::error_code ec2;
+                std::filesystem::remove(ruta, ec2);
+                ec.clear();
+                std::filesystem::rename(tmp, ruta, ec);
+            }
+            if (ec) {
+                std::error_code ec3;
+                std::filesystem::remove(tmp, ec3);
+            }
             return !ec;
         }
 
@@ -77,7 +88,12 @@ namespace hekateIdioma {
             }
             if (actual == deseado) return true;
             const std::string nuevo = conIdioma(ini, deseado);
-            if (nuevo != ini && escribirArchivo(NYX_INI, nuevo)) anotar("idioma de la consola", deseado);
+            if (nuevo == ini) return true;  // sin [config]: no hay donde ponerlo
+            if (!escribirArchivo(NYX_INI, nuevo)) {
+                anotar("no se pudo escribir nyx.ini", deseado);
+                return false;  // sin la marca, se reintenta la próxima vez
+            }
+            anotar("idioma de la app", deseado);
             return true;
         }
     }  // namespace

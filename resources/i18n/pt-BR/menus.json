@@ -493,6 +493,7 @@
     "subtitulo": "Suas proteções e seu registro na OQB",
     "prot_ok": "Proteções ativas",
     "prot_ok_sub": "O console não pode se conectar à Nintendo",
+    "prot_ok_sysnand_online_sub": "A sysNAND está online, mas esta emuNAND continua protegida. Use com tranquilidade.",
     "prot_falla": "Há proteções desativadas",
     "prot_falla_sub": "O console pode se conectar à Nintendo. Pressione A para ver.",
     "prot_nextendo": "Desligadas pelo Nextendo",
