@@ -85,7 +85,8 @@ namespace {
     std::string protecciones()
     {
         const auto checks = protection::runOnConsole();
-        if (!protection::anyFailed(checks)) return "menus/cliente/prot_ok"_i18n;
+        if (!protection::anyFailed(checks))
+            return protection::sysnandOnlineHere(checks) ? "menus/cliente/prot_sysnand_online"_i18n : "menus/cliente/prot_ok"_i18n;
         if (protection::failedOnlyByNextendo(checks)) return "menus/cliente/prot_nextendo"_i18n;
         std::string fallan;
         for (const auto& c : checks)

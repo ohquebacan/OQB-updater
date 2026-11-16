@@ -214,7 +214,8 @@ int main(int argc, char* argv[])
 
     i18n::loadTranslations(idioma);
     arranque::marca("interfaz y traducciones listas");
-    hekateIdioma::alAbrir();  // una sola vez: hekate en el idioma de la consola
+    hekateIdioma::fijarIdiomaApp(idioma);
+    hekateIdioma::alAbrir();  // una sola vez: hekate en el idioma de la app
 
         // appletInitializeGamePlayRecording();
 

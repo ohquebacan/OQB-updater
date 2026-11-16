@@ -21,7 +21,9 @@
         "status_protection_nextendo": "Nextendo",
         "status_protection_nextendo_sub": "Nextendo apaga el bloqueo para conectarse a sus servidores. Es normal mientras lo uses. Presiona A para ver el detalle.",
         "status_protection_nextendo_incomplete_sub": "Nextendo quedó a medias y no va a funcionar. Presiona A para ver qué falta.",
-        "status_protection_nextendo_sysnand_sub": "Nextendo está activo en la consola original (sysNAND). Mejor úsalo en emuNAND para evitar baneos. Presiona A para ver cómo."
+        "status_protection_nextendo_sysnand_sub": "Nextendo está activo en la consola original (sysNAND). Mejor úsalo en emuNAND para evitar baneos. Presiona A para ver cómo.",
+        "status_protection_sysnand_online": "En línea (sysNAND)",
+        "status_protection_sysnand_online_sub": "Activaste el modo en línea de la sysNAND en hekate: se conecta a Nintendo. Úsala con precaución. Presiona A para ver el detalle."
     },
     "cheats": {
         "installed": "Trucos instalados",
@@ -515,6 +517,7 @@
         "pack": "Pack instalado",
         "prot_ok": "Todas activas",
         "prot_nextendo": "Apagadas por Nextendo",
+        "prot_sysnand_online": "sysNAND en línea (activado en hekate)",
         "prot_fail": "Fallan: {}"
     },
     "registro": {
@@ -810,7 +813,9 @@
         "diag_uno": "1 error",
         "diag_varios": "{} errores",
         "prot_otra_nand": "Protegida en esta NAND",
-        "prot_otra_nand_sub": "Nextendo está activo en la {}. Esta sigue bloqueando a Nintendo."
+        "prot_otra_nand_sub": "Nextendo está activo en la {}. Esta sigue bloqueando a Nintendo.",
+        "prot_sysnand_online": "En línea en sysNAND",
+        "prot_sysnand_online_sub": "Activado en hekate. Úsala con precaución: se conecta a Nintendo. A para ver más."
     },
     "nexus": {
         "subtitulo": "Tus juegos en un disco o memoria USB",

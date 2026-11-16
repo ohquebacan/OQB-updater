@@ -181,6 +181,19 @@ namespace protection {
     {
         std::vector<Check> checks;
 
+        /* La sysNAND en linea a proposito: el interruptor de PRODINFO del Inicio
+           OQB de hekate deja sysmmc.txt con su marca y el PRODINFO real. Solo
+           cuenta en ESTE arranque si se arranco en la sysNAND. */
+        bool sysnand_online = false;
+        {
+            std::string blank;
+            sysnand_online = readFile(root + HOSTS_DIR + "sysmmc.txt").rfind(SYSNAND_ONLINE_MARK, 0) == 0 &&
+                             findIniValue(readFile(root + EXOSPHERE_INI), "blank_prodinfo_sysmmc", blank) && blank == "0";
+        }
+        const bool booted_sysnand = rt.nand == Runtime::Nand::Sys ||
+                                    (rt.nand == Runtime::Nand::Unknown && !std::filesystem::exists(root + EMUMMC_DIR));
+        const bool sysnand_online_here = sysnand_online && booted_sysnand;
+
         /* 1. El MITM, probado de verdad cuando se puede. Leer el ajuste no
               basta: Prelude lo deja en 0 al volver del modo Nextendo, y el
               Atmosphere del pack OQB lo ignora y deja el MITM siempre puesto,
@@ -188,6 +201,12 @@ namespace protection {
               Preguntarle al DNS por un host de Nintendo si lo dice. */
         if (rt.dns == Runtime::Dns::Blocked) {
             checks.push_back({"DNS MITM activado", Status::Ok, "probado: " + rt.dnsDetail, true});
+        }
+        else if (rt.dns == Runtime::Dns::Redirected && sysnand_online_here && !isNextendoServer(rt.dnsAddress)) {
+            Check c{"DNS MITM activado", Status::Warning,
+                    "probado: " + rt.dnsDetail + ", la sysNAND está en línea a propósito (desde hekate)", true};
+            c.sysnandOnline = true;
+            checks.push_back(c);
         }
         else if (rt.dns == Runtime::Dns::Redirected) {
             checks.push_back({"DNS MITM activado", Status::Fail,
@@ -293,16 +312,15 @@ namespace protection {
                        con su marca y el PRODINFO real. Las dos cosas juntas son
                        una eleccion, no un descuido: se avisa sin alarmar. Si solo
                        esta la marca, sigue siendo una falla. */
-                    if (std::string(name) == "sysmmc.txt" &&
-                        readFile(root + HOSTS_DIR + name).rfind(SYSNAND_ONLINE_MARK, 0) == 0) {
-                        std::string blank;
-                        if (findIniValue(readFile(root + EXOSPHERE_INI), "blank_prodinfo_sysmmc", blank) && blank == "0") {
-                            checks.push_back({"hosts/sysmmc.txt", Status::Warning,
-                                              "la sysNAND está en línea a propósito (interruptor de PRODINFO en "
-                                              "hekate): se conecta a los servidores de Nintendo. Para volver a "
-                                              "protegerla, ponlo en «Protegido» desde el Inicio OQB de hekate"});
-                            break;
-                        }
+                    if (std::string(name) == "sysmmc.txt" && sysnand_online) {
+                        Check c{"hosts/sysmmc.txt", Status::Warning,
+                                "la sysNAND está en línea a propósito (interruptor de PRODINFO en hekate): se "
+                                "conecta a los servidores de Nintendo. Para volver a protegerla, ponlo en "
+                                "«Protegido» desde el Inicio OQB de hekate",
+                                true};
+                        c.sysnandOnline = booted_sysnand;
+                        checks.push_back(c);
+                        break;
                     }
                     [[fallthrough]];
                 case HostsResult::RedirectsNextendo:
@@ -555,9 +573,15 @@ namespace protection {
 
     bool dnsBlockingOk(const std::vector<Check>& checks)
     {
-        return std::none_of(checks.begin(), checks.end(), [](const Check& c) {
+        // En linea a proposito es aviso, pero el bloqueo de verdad no esta.
+        return !sysnandOnlineHere(checks) && std::none_of(checks.begin(), checks.end(), [](const Check& c) {
             return c.dnsRelated && c.status == Status::Fail;
         });
+    }
+
+    bool sysnandOnlineHere(const std::vector<Check>& checks)
+    {
+        return std::any_of(checks.begin(), checks.end(), [](const Check& c) { return c.sysnandOnline; });
     }
 
     bool nextendoIncomplete(const std::vector<Check>& checks)

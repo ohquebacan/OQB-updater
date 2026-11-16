@@ -503,6 +503,8 @@
     "prot_falla_sub": "La console peut se connecter à Nintendo. Appuyez sur A pour voir.",
     "prot_nextendo": "Désactivées par Nextendo",
     "prot_nextendo_sub": "C'est normal pendant que vous utilisez Nextendo.",
+    "prot_sysnand_online": "En ligne sur la sysNAND",
+    "prot_sysnand_online_sub": "Activé dans hekate. À utiliser avec prudence : elle se connecte à Nintendo.",
     "bien": "{} sur {} OK",
     "diag_nada": "Aucune erreur enregistrée.",
     "diag_ultimo": "Dernière : {} ({}) le {}.",

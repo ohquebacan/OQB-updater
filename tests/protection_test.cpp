@@ -225,6 +225,43 @@ int main()
                protection::Status::Fail);
     }
     {
+        // sysNAND en linea a proposito desde hekate, arrancada en sysNAND: el DNS
+        // sale a internet porque se eligio asi. Aviso, como Nextendo, pero el
+        // bloqueo de verdad no esta.
+        const std::string sd = makeSd();
+        write(sd + "/atmosphere/hosts/sysmmc.txt", "# OQB: sysNAND en linea (interruptor de PRODINFO del Inicio OQB en hekate).\n");
+        write(sd + "/exosphere.ini", "[exosphere]\nblank_prodinfo_emummc=1\nblank_prodinfo_sysmmc=0\n");
+        Rt rt;
+        rt.nand = Rt::Nand::Sys;
+        rt.dns = Rt::Dns::Redirected;
+        rt.dnsAddress = "203.0.113.7";
+        rt.dnsDetail = "accounts.nintendo.com → 203.0.113.7";
+        const auto checks = protection::run(sd, rt);
+        expect("en sysNAND en linea, el DNS que sale es aviso", checks, "DNS MITM activado", protection::Status::Warning);
+        expect("y sysmmc.txt tambien", checks, "hosts/sysmmc.txt", protection::Status::Warning);
+        const bool ok = !protection::anyFailed(checks) && protection::sysnandOnlineHere(checks) &&
+                        !protection::dnsBlockingOk(checks);
+        std::cout << (ok ? "ok     " : "FALLA  ") << "sin fallas, se reconoce en linea y el bloqueo DNS NO se da por puesto\n";
+        if (!ok) ++failures;
+
+        // Arrancada en emuNAND: esa sigue protegida; la sysNAND en linea solo es aviso.
+        Rt emu;
+        emu.nand = Rt::Nand::Emu;
+        emu.dns = Rt::Dns::Blocked;
+        emu.dnsDetail = "accounts.nintendo.com → 127.0.0.1";
+        const auto en_emu = protection::run(sd, emu);
+        const bool ok_emu = !protection::anyFailed(en_emu) && !protection::sysnandOnlineHere(en_emu) &&
+                            protection::dnsBlockingOk(en_emu);
+        std::cout << (ok_emu ? "ok     " : "FALLA  ") << "en emuNAND sigue protegida y con bloqueo DNS\n";
+        if (!ok_emu) ++failures;
+
+        // Sin la marca, el mismo DNS sigue siendo falla.
+        const std::string sd2 = makeSd();
+        write(sd2 + "/exosphere.ini", "[exosphere]\nblank_prodinfo_emummc=1\nblank_prodinfo_sysmmc=0\n");
+        const auto sin_marca = protection::run(sd2, rt);
+        expect("sin la marca, el DNS que sale sigue siendo falla", sin_marca, "DNS MITM activado", protection::Status::Fail);
+    }
+    {
         // Sin respuesta queda el ajuste, como antes.
         const std::string sd = makeSd();
         write(sd + "/atmosphere/config/system_settings.ini", "[atmosphere]\nenable_dns_mitm = u8!0x0\n");

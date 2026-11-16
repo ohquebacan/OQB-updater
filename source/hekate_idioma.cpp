@@ -42,8 +42,11 @@ namespace hekateIdioma {
             return !ec;
         }
 
+        std::string g_idiomaApp;
+
         std::string localeConsola()
         {
+            if (!g_idiomaApp.empty()) return g_idiomaApp;
 #ifdef __SWITCH__
             return brls::i18n::getCurrentLocale();
 #else
@@ -145,6 +148,11 @@ namespace hekateIdioma {
             puesta = true;
         }
         return hayConfig ? salida : ini;
+    }
+
+    void fijarIdiomaApp(const std::string& idioma)
+    {
+        g_idiomaApp = idioma;
     }
 
     void trasInstalarPack()

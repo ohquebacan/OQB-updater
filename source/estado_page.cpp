@@ -219,8 +219,12 @@ void EstadoView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
            salia "Apagadas por Nextendo" en sysNAND solo porque emuNAND lo usa. */
         const bool otraNand = protection::nextendoOnlyOtherNand(this->checks);
         const bool nextendo = !otraNand && protection::failedOnlyByNextendo(this->checks);
+        /* La sysNAND en linea a proposito desde hekate: como Nextendo, se
+           explica aparte y con precaucion, no como un pack roto. */
+        const bool enLinea = !falla && protection::sysnandOnlineHere(this->checks);
         const NVGcolor tono = nextendo ? (oqb::oscuro() ? nvgRGB(187, 168, 255) : nvgRGB(75, 50, 168))
                               : falla  ? oqb::rojoTexto()
+                              : enLinea ? oqb::doradoTexto()
                                        : oqb::verdeTexto();
         const size_t bien = std::count_if(this->checks.begin(), this->checks.end(),
                                           [](const protection::Check& c) { return c.status == protection::Status::Ok; });
@@ -241,7 +245,7 @@ void EstadoView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
         nvgFontSize(vg, 24.0f);
         nvgFillColor(vg, texto);
         nvgBeginPath(vg);
-        nvgText(vg, px + 100, py + 24, (otraNand ? "menus/estado/prot_otra_nand"_i18n : nextendo ? "menus/estado/prot_nextendo"_i18n : falla ? "menus/estado/prot_falla"_i18n : "menus/estado/prot_ok"_i18n).c_str(), nullptr);
+        nvgText(vg, px + 100, py + 24, (otraNand ? "menus/estado/prot_otra_nand"_i18n : nextendo ? "menus/estado/prot_nextendo"_i18n : falla ? "menus/estado/prot_falla"_i18n : enLinea ? "menus/estado/prot_sysnand_online"_i18n : "menus/estado/prot_ok"_i18n).c_str(), nullptr);
         nvgFontSize(vg, 16.0f);
         nvgFillColor(vg, tenue);
         nvgBeginPath(vg);
@@ -251,7 +255,7 @@ void EstadoView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
         const std::string subNextendo = protection::nextendoOnSysnand(this->checks) ? "menus/estado/prot_nextendo_sysnand_sub"_i18n
                                         : protection::nextendoIncomplete(this->checks) ? "menus/estado/prot_nextendo_incomplete_sub"_i18n
                                                                                        : "menus/estado/prot_nextendo_sub"_i18n;
-        nvgText(vg, px + 100, py + 58, cortar(vg, otraNand ? fmt::format("menus/estado/prot_otra_nand_sub"_i18n, protection::nextendoOtherNandName(this->checks).empty() ? std::string("otra NAND") : protection::nextendoOtherNandName(this->checks)) : nextendo ? subNextendo : falla ? "menus/estado/prot_falla_sub"_i18n : "menus/estado/prot_ok_sub"_i18n, ancho - 330).c_str(), nullptr);
+        nvgText(vg, px + 100, py + 58, cortar(vg, otraNand ? fmt::format("menus/estado/prot_otra_nand_sub"_i18n, protection::nextendoOtherNandName(this->checks).empty() ? std::string("otra NAND") : protection::nextendoOtherNandName(this->checks)) : nextendo ? subNextendo : falla ? "menus/estado/prot_falla_sub"_i18n : enLinea ? "menus/estado/prot_sysnand_online_sub"_i18n : "menus/estado/prot_ok_sub"_i18n, ancho - 330).c_str(), nullptr);
         pildora(vg, px + ancho - 26, py + 44, fmt::format("menus/estado/bien"_i18n, bien, this->checks.size()), this->a(tono), this->a(conAlfa(tono, 0.16f)));
 
         const float cw = (ancho - 52 - 24) / 2;

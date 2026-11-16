@@ -22,7 +22,9 @@
         "status_protection_nextendo": "Nextendo",
         "status_protection_nextendo_sub": "Nextendo turns off blocking to reach its servers. This is normal while you use it. Press A for the details.",
         "status_protection_nextendo_incomplete_sub": "Nextendo is only half set up and will not work. Press A to see what is missing.",
-        "status_protection_nextendo_sysnand_sub": "Nextendo is on in the original console (sysNAND). Use it in emuNAND to avoid bans. Press A to see how."
+        "status_protection_nextendo_sysnand_sub": "Nextendo is on in the original console (sysNAND). Use it in emuNAND to avoid bans. Press A to see how.",
+        "status_protection_sysnand_online": "Online (sysNAND)",
+        "status_protection_sysnand_online_sub": "You turned on online mode for the sysNAND in hekate: it connects to Nintendo. Use it with care. Press A to see the details."
     },
     "cheats": {
         "installed": "Installed cheats",
@@ -494,6 +496,7 @@
         "pack": "Installed pack",
         "prot_ok": "All active",
         "prot_nextendo": "Off for Nextendo",
+        "prot_sysnand_online": "sysNAND online (turned on in hekate)",
         "prot_fail": "Failing: {}"
     },
     "registro": {
@@ -789,7 +792,9 @@
         "diag_uno": "1 error",
         "diag_varios": "{} errors",
         "prot_otra_nand": "Protected on this NAND",
-        "prot_otra_nand_sub": "Nextendo is active on the {}. This one still blocks Nintendo."
+        "prot_otra_nand_sub": "Nextendo is active on the {}. This one still blocks Nintendo.",
+        "prot_sysnand_online": "Online on sysNAND",
+        "prot_sysnand_online_sub": "Turned on in hekate. Use it with care: it connects to Nintendo. A for more."
     },
     "nexus": {
         "subtitulo": "Your games on a USB drive or flash drive",

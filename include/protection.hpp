@@ -35,6 +35,11 @@ namespace protection {
            sysNAND, el emummc.txt y el PRODINFO de emuNAND que dejo Prelude.
            La NAND actual sigue protegida. */
         bool otherNand = false;
+        /* La sysNAND puesta en linea a proposito desde el Inicio OQB de hekate
+           (sysmmc.txt con la marca de OQB y PRODINFO real), y se arranco en
+           ella: no bloquea porque se eligio asi. Es aviso, no falla, pero el
+           bloqueo DNS sigue sin estar puesto (dnsBlockingOk lo sabe). */
+        bool sysnandOnline = false;
     };
 
     /* Lo que solo se sabe con la consola encendida: como resuelve el DNS de
@@ -105,6 +110,10 @@ namespace protection {
     bool nextendoOnlyOtherNand(const std::vector<Check>& checks);
     /** Con nextendoOnlyOtherNand: "emuNAND" o "sysNAND", la NAND donde esta Nextendo (sale del nombre de lo marcado). */
     std::string nextendoOtherNandName(const std::vector<Check>& checks);
+
+    /* true si se arranco en la sysNAND y esta en linea a proposito desde
+       hekate. Se explica aparte, como Nextendo: no es un pack roto. */
+    bool sysnandOnlineHere(const std::vector<Check>& checks);
 
     // true si hay fallas y todas son por Nextendo.
     bool failedOnlyByNextendo(const std::vector<Check>& checks);
