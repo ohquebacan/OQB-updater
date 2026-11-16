@@ -200,7 +200,8 @@ namespace util {
     }
 
     /* Borra lo que el pack lista en pack_remove.txt y despues la lista. Solo
-       rutas absolutas dentro de /switch, /config o /atmosphere y sin "..": la
+       rutas absolutas dentro de /switch, /config o /atmosphere y sin "..", mas el
+       fondo de Hekate (ver abajo): la
        lista viene en un zip descargado y no puede tocar nada mas de la SD. Las
        versiones viejas de la app no la conocen y solo la dejan en la SD. */
     void removePackLeftovers()
@@ -216,9 +217,13 @@ namespace util {
                 linea.pop_back();
             if (linea.empty() || linea[0] == '#')
                 continue;
-            const bool permitida = (linea.rfind("/switch/", 0) == 0 || linea.rfind("/config/", 0) == 0 ||
-                                    linea.rfind("/atmosphere/", 0) == 0) &&
-                                   linea.find("..") == std::string::npos;
+            /* Fuera de esas tres carpetas, solo archivos sueltos con nombre exacto:
+               el fondo viejo de Hekate tapa el fondo del Inicio OQB de Nyx. */
+            const bool exacta = linea == "/bootloader/res/background.bmp";
+            const bool permitida = exacta ||
+                                   ((linea.rfind("/switch/", 0) == 0 || linea.rfind("/config/", 0) == 0 ||
+                                     linea.rfind("/atmosphere/", 0) == 0) &&
+                                    linea.find("..") == std::string::npos);
             if (!permitida) {
                 brls::Logger::error("pack_remove.txt: se ignora {}", linea);
                 continue;
