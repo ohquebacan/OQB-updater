@@ -1079,10 +1079,25 @@ namespace util {
         return std::filesystem::exists(ruta, ec);
     }
 
+    /* Apps que exigen estar sueltas en /switch/ y no en su carpeta: se
+       actualizan solas reemplazando esa ruta exacta y usan /switch/<nombre>/
+       para sus datos. En su carpeta, la primera actualizacion dejaria dos
+       copias. */
+    bool nroDebeIrSuelto(const std::string& filename)
+    {
+        static const char* const SUELTAS[] = {
+            "brewser.nro",  // src/update/paths.ts: BREWSER_NRO = sdmc:/switch/brewser.nro
+        };
+        std::string baja = filename;
+        std::transform(baja.begin(), baja.end(), baja.begin(), [](unsigned char c) { return std::tolower(c); });
+        return std::find(std::begin(SUELTAS), std::end(SUELTAS), baja) != std::end(SUELTAS);
+    }
+
     std::string resolveNroDestination(const std::string& filename)
     {
         std::error_code ec;
         const std::string stem = filename.substr(0, filename.rfind(".nro"));
+        if (nroDebeIrSuelto(filename)) return std::string(APP_PATH) + filename;
 
         // 1. Su carpeta propia, la convención de hbmenu.
         const std::string inOwnDir = std::string(APP_PATH) + stem + "/" + filename;
@@ -1143,6 +1158,7 @@ namespace util {
         // Mismo orden que resolveNroDestination. Las dos primeras se construyen
         // aunque no existan: la ubicación que la app ya abandonó es justo la que
         // deja el acceso directo apuntando a la nada.
+        if (nroDebeIrSuelto(filename)) push(std::string(APP_PATH) + filename);
         push(std::string(APP_PATH) + stem + "/" + filename);
         push(std::string(APP_PATH) + filename);
 
