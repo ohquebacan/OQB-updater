@@ -262,7 +262,10 @@ void EstadoView::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
         for (size_t i = 0; i < this->checks.size(); ++i) {
             const protection::Check& c = this->checks[i];
             const float cx = px + 26 + (i % 2) * (cw + 24), cy = py + 94 + (i / 2) * 30;
-            const NVGcolor punto = c.status == protection::Status::Ok        ? oqb::esmeralda()
+            /* Colores fijos de estado, no el acento del tema: con un tema
+               dorado o rojo, el punto de "bien" salia igual que el de aviso o
+               el de falla. */
+            const NVGcolor punto = c.status == protection::Status::Ok        ? oqb::verdeTexto()
                                    : c.byNextendo                           ? (oqb::oscuro() ? nvgRGB(187, 168, 255) : nvgRGB(75, 50, 168))
                                    : c.status == protection::Status::Warning ? oqb::doradoTexto()
                                                                             : oqb::rojoTexto();
