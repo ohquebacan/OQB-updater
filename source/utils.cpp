@@ -347,6 +347,15 @@ namespace util {
                     ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
                     break;
                 }
+                /* Antes de borrar nada: el zip entero tiene que estar sano
+                   (cada archivo contra su CRC) y traer el package3. Si no, la
+                   SD queda como estaba. Un zip dañado o sin package3 dejaba la
+                   consola en «Error while loading fss0: atmosphere/package3». */
+                if (!extract::zipIntegro(AMS_FILENAME, true)) {
+                    pasoInstalacion("zip dañado o sin package3: no se toca la SD");
+                    ProgressEvent::instance().setStatusCode(STATUS_CORRUPT_ARCHIVE);
+                    break;
+                }
                 /* Antes aqui se preguntaban dos cosas: si sobrescribir los .ini y
                    si desactivar la carga de sysmodules. Las dos quedan fijadas en
                    el valor que deja el pack funcionando tal como se armo, porque
@@ -986,6 +995,12 @@ namespace util {
                 break;
             case STATUS_NO_SPACE:
                 res = "menus/errors/insufficient_storage"_i18n;
+                break;
+            case STATUS_CORRUPT_ARCHIVE:
+                res = "menus/errors/corrupt_archive"_i18n;
+                break;
+            case STATUS_EXTRACT_FAILED:
+                res = "menus/errors/extract_failed"_i18n;
                 break;
             case 500:
                 res = fmt::format("{0:}: Internal Server Error", status_code);

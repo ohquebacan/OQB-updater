@@ -218,6 +218,8 @@
   },
   "errors": {
     "insufficient_storage": "Não há espaço suficiente disponível no seu cartão SD para realizar esta operação.",
+    "corrupt_archive": "O pack baixado está danificado. Nada no seu SD foi alterado. O mais provável é que o download tenha corrompido; tente de novo. Se repetir com boa conexão, a causa pode ser o SD.",
+    "extract_failed": "Alguns arquivos não puderam ser gravados corretamente no SD. O Atmosphère fica com a versão anterior, então o console continua iniciando. O mais provável é uma falha no SD ou falta de espaço; verifique e instale o pack de novo.",
     "error_message": "{}\nPor favor, tente novamente em breve. Se o problema persistir, abra uma issue no GitHub.",
     "mariko_payload_missing": "Para atualizar o Atmosphère em Switches modificados, o seu payload precisa ter o nome de \"payload.bin\" e deve estar na raiz do seu cartão SD.",
     "empty_cheats": "A base de trapaças baixada não tem nenhuma trapaça; provavelmente foi publicada incompleta. Nada foi alterado no seu SD; tente de novo mais tarde."
@@ -244,6 +246,7 @@
     "descargando": "Baixando {}",
     "descargado": "{} baixado · {} MB",
     "abriendo": "Abrindo {}",
+    "comprobando": "Conferindo {}",
     "copiando": "Copiando {}",
     "conserva": "Mantendo {}",
     "copiados": "{} arquivos copiados",

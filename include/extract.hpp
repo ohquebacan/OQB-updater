@@ -37,6 +37,11 @@ namespace extract {
     // true si no se pudo saber cuanto espacio queda.
     bool hayEspacioPara(const std::string& archivePath);
 
+    /* Lee el zip entero y comprueba cada entrada contra su CRC. Si debe traer
+       el package3 (pack de Atmosphère) y no lo trae, tampoco vale. Se llama
+       antes de borrar nada de la SD. */
+    bool zipIntegro(const std::string& archivePath, bool debeTraerPackage3);
+
     void extract(
         const std::string& filename, const std::string& workingPath = ROOT_PATH, bool preserveInis = false, std::function<void()> func = []() { return; },
         const std::string& stripPrefix = "");

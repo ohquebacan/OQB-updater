@@ -270,7 +270,9 @@
         "mariko_payload_missing": "In order to update Atmosphère on patched Switches, your payload needs to be named \"payload.bin\" and should be at the root of your SD card.",
         "download_failed": "The download failed: check your internet connection (airplane mode?). Nothing on your SD card was changed.",
         "incomplete_download": "The download arrived incomplete. Nothing on your SD card was changed; try again on a stable connection.",
-        "empty_cheats": "The cheat database that was downloaded has no cheats in it; it was probably published incomplete. Nothing on your SD was changed; try again later."
+        "empty_cheats": "The cheat database that was downloaded has no cheats in it; it was probably published incomplete. Nothing on your SD was changed; try again later.",
+        "corrupt_archive": "The downloaded pack is damaged. Nothing on your SD card was changed. Most likely the download got corrupted; try again. If it happens again on a good connection, the SD card may be the cause.",
+        "extract_failed": "Some files could not be written correctly to the SD card. Atmosphère keeps the previous version, so the console still boots. Most likely the SD card has errors or ran out of space; check it and install the pack again."
     },
     "worker": {
         "of": "of",
@@ -505,6 +507,7 @@
         "descargando": "Downloading {}",
         "descargado": "{} downloaded · {} MB",
         "abriendo": "Opening {}",
+        "comprobando": "Checking {}",
         "copiando": "Copying {}",
         "conserva": "Keeping {}",
         "copiados": "{} files copied",

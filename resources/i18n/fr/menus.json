@@ -219,6 +219,8 @@
   },
   "errors": {
     "insufficient_storage": "Il n'y a pas assez d'espace disponible sur la carte SD pour effectuer cette opération.",
+    "corrupt_archive": "Le pack téléchargé est endommagé. Rien n'a été modifié sur ta carte SD. Le téléchargement a probablement été corrompu ; réessaie. Si cela se répète avec une bonne connexion, la carte SD peut être en cause.",
+    "extract_failed": "Certains fichiers n'ont pas pu être écrits correctement sur la carte SD. Atmosphère garde la version précédente, la console démarre donc toujours. La carte SD a probablement des erreurs ou est pleine ; vérifie-la et réinstalle le pack.",
     "error_message": "{}\nVeuillez réessayer un peu plus tard. Si le problème persiste, ouvrez une issue sur GitHub",
     "mariko_payload_missing": "Pour mettre à jour Atmopshère sur une Switch patchée, le payload doit être nommé \"payload.bin\" et être placé à la racine de votre carte SD.",
     "empty_cheats": "La base de codes téléchargée ne contient aucun code ; elle a probablement été publiée incomplète. Rien n'a été modifié sur votre SD ; réessayez plus tard."
@@ -250,6 +252,7 @@
     "descargando": "Téléchargement de {}",
     "descargado": "{} téléchargé · {} Mo",
     "abriendo": "Ouverture de {}",
+    "comprobando": "Vérification de {}",
     "copiando": "Copie de {}",
     "conserva": "Conservé : {}",
     "copiados": "{} fichiers copiés",

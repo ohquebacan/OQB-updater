@@ -127,25 +127,58 @@ namespace extract {
             return true;
         }
 
-        void extractEntry(std::string filename, unzFile& zfile, bool forceCreateTree = false)
+        /* Devuelve false si el archivo no quedo igual al del zip: datos dañados
+           (CRC), lectura cortada o escritura incompleta en la SD. Antes no se
+           miraba nada de eso y un package3 a medias pasaba por bueno. */
+        bool extractEntry(std::string filename, unzFile& zfile, bool forceCreateTree = false)
         {
             if (filename.back() == '/') {
                 fs::createTree(filename);
-                return;
+                return true;
             }
             // Always create parent directories — some zips omit directory entries
             fs::createTree(filename);
+            unz_file_info info{};
+            unzGetCurrentFileInfo(zfile, &info, NULL, 0, NULL, 0, NULL, 0);
             void* buf = malloc(WRITE_BUFFER_SIZE);
             FILE* outfile = fopen(filename.c_str(), "wb");
             if (!outfile) {
                 free(buf);
-                return;
+                return false;
             }
-            for (int j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE); j > 0; j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE)) {
-                fwrite(buf, 1, j, outfile);
+            bool ok = true;
+            uLong crc = crc32(0L, Z_NULL, 0);
+            uLong total = 0;
+            int j;
+            while ((j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE)) > 0) {
+                if (fwrite(buf, 1, j, outfile) != (size_t)j) ok = false;
+                crc = crc32(crc, static_cast<const Bytef*>(buf), j);
+                total += j;
             }
+            if (j < 0) ok = false;
+            if (fclose(outfile) != 0) ok = false;
             free(buf);
-            fclose(outfile);
+            if (total != info.uncompressed_size || crc != info.crc) ok = false;
+            if (!ok)
+                brls::Logger::error("extract: {} no quedo bien ({} de {} bytes)", filename, total, info.uncompressed_size);
+            return ok;
+        }
+
+        // Relee de la SD lo que se acaba de escribir y lo compara con el CRC del zip.
+        bool coincideConZip(const std::string& filename, uLong esperado, uLong tam)
+        {
+            FILE* f = fopen(filename.c_str(), "rb");
+            if (!f) return false;
+            void* buf = malloc(WRITE_BUFFER_SIZE);
+            uLong crc = crc32(0L, Z_NULL, 0), total = 0;
+            size_t n;
+            while ((n = fread(buf, 1, WRITE_BUFFER_SIZE, f)) > 0) {
+                crc = crc32(crc, static_cast<const Bytef*>(buf), n);
+                total += n;
+            }
+            fclose(f);
+            free(buf);
+            return total == tam && crc == esperado;
         }
     }  // namespace
 
@@ -202,6 +235,46 @@ namespace extract {
         return candidate + "/";
     }
 
+    bool zipIntegro(const std::string& archivePath, bool debeTraerPackage3)
+    {
+        unzFile zfile = unzOpen(archivePath.c_str());
+        if (!zfile) return false;
+        unz_global_info gi;
+        if (unzGetGlobalInfo(zfile, &gi) != UNZ_OK || gi.number_entry == 0) {
+            unzClose(zfile);
+            return false;
+        }
+        actividad::paso(actividad::texto("comprobando", actividad::nombre(archivePath)));
+        bool ok = true, hayPackage3 = false;
+        void* buf = malloc(WRITE_BUFFER_SIZE);
+        for (uLong i = 0; ok && i < gi.number_entry; ++i) {
+            char nombre[0x301] = "";
+            unz_file_info info{};
+            if (unzGetCurrentFileInfo(zfile, &info, nombre, sizeof(nombre), NULL, 0, NULL, 0) != UNZ_OK) { ok = false; break; }
+            const std::string ruta = nombre;
+            if (ruta == "atmosphere/package3" && info.uncompressed_size > 0) hayPackage3 = true;
+            if (unzOpenCurrentFile(zfile) != UNZ_OK) { ok = false; break; }
+            int j;
+            uLong total = 0;
+            while ((j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE)) > 0) total += j;
+            // Con todo leído, cerrar compara el CRC: UNZ_CRCERROR si no coincide.
+            if (j < 0 || unzCloseCurrentFile(zfile) != UNZ_OK || total != info.uncompressed_size) {
+                brls::Logger::error("zipIntegro: entrada dañada {}", ruta);
+                ok = false;
+                break;
+            }
+            const int sig = unzGoToNextFile(zfile);
+            if (sig != UNZ_OK && sig != UNZ_END_OF_LIST_OF_FILE) ok = false;
+        }
+        free(buf);
+        unzClose(zfile);
+        if (ok && debeTraerPackage3 && !hayPackage3) {
+            brls::Logger::error("zipIntegro: el pack no trae atmosphere/package3");
+            ok = false;
+        }
+        return ok;
+    }
+
     bool hayEspacioPara(const std::string& archivePath)
     {
         const s64 uncompressedSize = getUncompressedSize(archivePath);
@@ -225,6 +298,8 @@ namespace extract {
         ProgressEvent::instance().setStep(0);
         actividad::paso(actividad::texto("abriendo", actividad::nombre(archivePath)));
         size_t copiados = 0;
+        size_t fallos = 0;          // archivos que no quedaron igual al zip
+        bool fallaCritica = false;  // el package3 o el stratosphere.romfs
 
         std::set<std::string> ignoreList = fs::readLineByLine(FILES_IGNORE);
         std::string appPath = util::getAppPath();
@@ -307,7 +382,7 @@ namespace extract {
                                                                                                                     return (res == 0 || res == 1); }) != ignoreList.end())) {
                     if (!std::filesystem::exists(filename)) {
                         actividad::detalle(actividad::texto("copiando", filename));
-                        extractEntry(filename, zfile);
+                        if (!extractEntry(filename, zfile)) fallos++;
                         copiados++;
                     }
                     else if (filename.back() != '/') {
@@ -320,11 +395,24 @@ namespace extract {
                         copiados++;
                     }
                     if ((filename == "/atmosphere/package3") || (filename == "/atmosphere/stratosphere.romfs")) {
-                        extractEntry(filename + ".aio", zfile);
+                        /* El payload de la app cambia estos .aio por los de verdad
+                           al reiniciar. Si no quedaron idénticos al zip (escritura
+                           cortada, SD con fallas), se borran: así arranca con los
+                           que ya estaban en vez de con uno dañado. */
+                        unz_file_info infoAio{};
+                        unzGetCurrentFileInfo(zfile, &infoAio, NULL, 0, NULL, 0, NULL, 0);
+                        const std::string aio = filename + ".aio";
+                        if (!extractEntry(aio, zfile) || !coincideConZip(aio, infoAio.crc, infoAio.uncompressed_size)) {
+                            std::filesystem::remove(aio);
+                            fallos++;
+                            fallaCritica = true;
+                        }
                     }
                     else {
-                        extractEntry(filename, zfile);
-                        if (filename.substr(0, 14) == "/hekate_ctcaer") {
+                        const bool escrito = extractEntry(filename, zfile);
+                        if (!escrito) fallos++;
+                        // Un hekate dañado no se copia a los payloads de arranque.
+                        if (escrito && filename.substr(0, 14) == "/hekate_ctcaer") {
                             fs::copyFile(filename, UPDATE_BIN_PATH);
 
                             /* Antes se preguntaba si copiarlo tambien a
@@ -349,6 +437,11 @@ namespace extract {
         }
         unzClose(zfile);
         actividad::paso(actividad::texto("copiados", std::to_string(copiados)));
+        if (fallos > 0) {
+            brls::Logger::error("extract: {} archivos no quedaron igual al zip{}", fallos,
+                                fallaCritica ? " (package3/stratosphere.romfs: se quedan los anteriores)" : "");
+            ProgressEvent::instance().setStatusCode(STATUS_EXTRACT_FAILED);
+        }
         ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
     }
 

@@ -270,7 +270,9 @@
         "mariko_payload_missing": "Para actualizar Atmosphère en Switch parcheadas tu payload debe de llamarse \"payload.bin\" y debe de estar en la raíz de tu tarjeta SD.",
         "download_failed": "No se pudo descargar: revisa tu conexión a internet (¿modo avión?). No se cambió nada en tu SD.",
         "incomplete_download": "La descarga llegó incompleta. No se cambió nada en tu SD; vuelve a intentarlo con una conexión estable.",
-        "empty_cheats": "La base de trucos que se bajó no trae ningún truco; probablemente la publicaron incompleta. No se cambió nada en tu SD; prueba de nuevo más tarde."
+        "empty_cheats": "La base de trucos que se bajó no trae ningún truco; probablemente la publicaron incompleta. No se cambió nada en tu SD; prueba de nuevo más tarde.",
+        "corrupt_archive": "El pack descargado viene dañado. No se cambió nada en tu SD. Lo más probable es que la descarga se corrompiera; vuelve a intentarlo. Si se repite con buena conexión, la causa puede ser la SD.",
+        "extract_failed": "Algunos archivos no se pudieron escribir bien en la SD. Atmosphère se queda con la versión anterior, así que la consola sigue arrancando. Lo más probable es una falla de la SD o que se llenara; revísala y vuelve a instalar el pack."
     },
     "worker": {
         "of": "de",
@@ -526,6 +528,7 @@
         "descargando": "Descargando {}",
         "descargado": "{} descargado · {} MB",
         "abriendo": "Abriendo {}",
+        "comprobando": "Comprobando {}",
         "copiando": "Copiando {}",
         "conserva": "Se conserva {}",
         "copiados": "{} archivos copiados",

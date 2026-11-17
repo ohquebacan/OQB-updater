@@ -19,6 +19,8 @@ constexpr long STATUS_DOWNLOAD_FAILED = 600;      // sin respuesta o transferenc
 constexpr long STATUS_INCOMPLETE_DOWNLOAD = 601;  // el archivo no es un zip completo
 constexpr long STATUS_EMPTY_CHEATS = 602;         // la base de trucos bajada no trae ningun truco
 constexpr long STATUS_NO_SPACE = 603;             // no hay espacio en la SD para bajar o extraer
+constexpr long STATUS_CORRUPT_ARCHIVE = 604;     // el zip trae datos dañados o le falta el package3
+constexpr long STATUS_EXTRACT_FAILED = 605;      // no se pudo escribir bien en la SD al extraer
 
 constexpr const char CHANGELOG_URL[] = "https://github.com/HamletDuFromage/aio-switch-updater/releases";
 
