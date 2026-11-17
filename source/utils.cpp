@@ -1,5 +1,6 @@
 #include <cctype>
 #include <cstring>
+#include "contents_keep.hpp"
 #include "utils.hpp"
 
 #include <switch.h>
@@ -371,6 +372,20 @@ namespace util {
                     auto preserved = fs::readLineByLine(FILES_IGNORE);
                     for (const auto& folder : AMS_CONTENTS_KEEP) {
                         preserved.insert(std::string(AMS_CONTENTS) + folder);
+                    }
+                    /* Lo de los juegos tampoco se toca: traducciones, mods y
+                       trucos van en la carpeta del ID del juego y nunca llevan un
+                       exefs.nsp suelto (eso es de los sysmodules que trae el pack). */
+                    {
+                        std::error_code ec;
+                        for (const auto& entry : std::filesystem::directory_iterator(AMS_CONTENTS, ec)) {
+                            if (ec) break;
+                            if (!entry.is_directory(ec)) continue;
+                            const std::string nombre = entry.path().filename().string();
+                            const bool nsp = std::filesystem::exists(entry.path() / "exefs.nsp", ec);
+                            if (contentsKeep::esContenidoDeJuego(nombre, nsp))
+                                preserved.insert(std::string(AMS_CONTENTS) + nombre);
+                        }
                     }
                     /* El tema o menu alternativo se queda si el usuario lo pidio
                        (pregunta antes de instalar; solo sale si hay uno activo). */

@@ -123,6 +123,11 @@ constexpr const char* ALWAYS_OVERWRITE_INIS[] = {
 
 constexpr const char* AMS_CONTENTS_KEEP[] = {
     "0100B00B51230000",
+    // Servicios en segundo plano de apps del catálogo: el pack no los trae, y
+    // borrarlos dejaba la app sin música al salir.
+    "4200000000535754",  // SpotiBacán
+    "4200000000535755",  // Switube
+    "4200000000057331",  // NX-MCP
 };
 constexpr const char REINX_CONTENTS[] = "/ReiNX/contents/";
 constexpr const char SXOS_TITLES[] = "/sxos/titles/";
