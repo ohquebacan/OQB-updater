@@ -163,9 +163,15 @@ void ConfirmPage::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* st
         this->label->getWidth(),
         this->label->getHeight());
 
+    /* Si el texto no cabe sobre el boton, el boton baja hasta quedar debajo
+       del texto (sin salirse de la vista) en vez de taparlo. */
+    int botonY = (int)this->height - (int)style->CrashFrame.buttonHeight * 3;
+    const int finTexto = arriba + (int)this->label->getHeight() + 16;
+    if (finTexto > botonY)
+        botonY = std::min(finTexto, (int)this->height - (int)style->CrashFrame.buttonHeight - 8);
     this->button->setBoundaries(
         this->x + this->width / 2 - style->CrashFrame.buttonWidth / 2,
-        this->y + (this->height - style->CrashFrame.buttonHeight * 3),
+        this->y + botonY,
         style->CrashFrame.buttonWidth,
         style->CrashFrame.buttonHeight);
     this->button->invalidate();

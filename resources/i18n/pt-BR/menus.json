@@ -160,7 +160,7 @@
     "clean_mac_listo": "Pronto: {} arquivos e {} pastas do Mac removidos ({}).",
     "home_rotos": "Remover ícones quebrados do HOME",
     "home_rotos_sub": "Os que ficam carregando e mostram 0,0 MB.",
-    "home_rotos_confirm": "Há {} ícones no HOME que ficam carregando: o jogo não está mais no console ou está danificado.\n\n{}\nEles são removidos do HOME junto com o que restar do conteúdo. Seus saves não são tocados, e se você reinstalar o jogo ele aparece normalmente.\n\nJogos de cartucho e os do USB do Nexus não são tocados.",
+    "home_rotos_confirm": "Há {} ícones no HOME que ficam carregando: o jogo não está mais lá ou está danificado.\n\n{}\nEles são removidos do HOME. Seus saves não são tocados e, se você reinstalar o jogo, ele volta a aparecer. Jogos de cartucho e os do USB do Nexus que funcionam não são tocados.",
     "home_rotos_trabajando": "Removendo ícones quebrados...",
     "home_rotos_nada": "Não há ícones quebrados no HOME.",
     "home_rotos_listo": "Pronto: {} ícones removidos do HOME.",

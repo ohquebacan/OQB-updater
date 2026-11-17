@@ -12,13 +12,16 @@
    Cuenta como dañado solo si NO se puede leer la información del juego ni de
    la caché del sistema ni del contenido. Quedan fuera:
    - los juegos de cartucho (sin el cartucho puesto tampoco se leen);
-   - los juegos del USB de Nexus (sin el USB conectado tampoco se leen);
+   - los juegos del USB de Nexus que funcionan (tienen su ícono en la caché;
+     los que Nexus dejó sin ícono ni contenido sí cuentan, y a esos solo se les
+     quita el registro, nunca contenido);
    - los archivados desde el HOME (la caché tiene su ícono).
    Borrar quita el registro y lo que quede de su contenido; las partidas no se
    tocan. */
 namespace homeRotos {
     struct Entrada {
         u64 id = 0;
+        bool nexus = false;  // está en la tabla del USB de Nexus
     };
 
     std::vector<Entrada> buscar();

@@ -19,9 +19,11 @@ namespace {
     constexpr const char USB_BADGES[] = "/atmosphere/usb_badges";
     constexpr u64 MASCARA = ~0x1FFFULL;  // juego, actualización y DLC como uno
 
-    std::set<u64> registros()
+    constexpr const char LOG[] = "/config/aio-switch-updater/home_rotos.log";
+
+    std::vector<NsApplicationRecord> registrosCompletos()
     {
-        std::set<u64> ids;
+        std::vector<NsApplicationRecord> todos;
         constexpr s32 PAGINA = 128;
         std::vector<NsApplicationRecord> pagina(PAGINA);
         for (s32 desde = 0; desde < 65536; desde += PAGINA) {
@@ -29,11 +31,39 @@ namespace {
             if (R_FAILED(nsListApplicationRecord(pagina.data(), PAGINA, desde, &leidos)) || leidos <= 0)
                 break;
             for (s32 i = 0; i < leidos; ++i)
-                if (pagina[i].application_id) ids.insert(pagina[i].application_id);
+                if (pagina[i].application_id) todos.push_back(pagina[i]);
             if (leidos < PAGINA)
                 break;
         }
+        return todos;
+    }
+
+    std::set<u64> registros()
+    {
+        std::set<u64> ids;
+        for (const NsApplicationRecord& r : registrosCompletos())
+            ids.insert(r.application_id);
         return ids;
+    }
+
+    // "app:sd upd:sd" (tipo:almacenamiento) de lo que el registro dice tener.
+    std::string contenido(u64 id)
+    {
+        NsApplicationContentMetaStatus estados[16] = {};
+        s32 n = 0;
+        const Result rc = nsListApplicationContentMetaStatus(id, 0, estados, 16, &n);
+        if (R_FAILED(rc))
+            return fmt::format("error {:X}", rc);
+        std::string s;
+        for (s32 i = 0; i < n; ++i) {
+            const u8 t = estados[i].meta_type;
+            const char* tipo = t == NcmContentMetaType_Application ? "app" : t == NcmContentMetaType_Patch ? "upd" : t == NcmContentMetaType_AddOnContent ? "dlc" : "otro";
+            const u8 st = estados[i].storageID;
+            const char* donde = st == NcmStorageId_GameCard ? "gc" : st == NcmStorageId_SdCard ? "sd" : st == NcmStorageId_BuiltInUser ? "nand" : st == NcmStorageId_None ? "ninguno" : "otro";
+            if (!s.empty()) s += ' ';
+            s += fmt::format("{}:{}", tipo, donde);
+        }
+        return s;
     }
 
     /* Los juegos que Nexus tiene en el USB (su tabla de rutas y las marcas
@@ -69,25 +99,6 @@ namespace {
         return juegos;
     }
 
-    bool seLee(u64 id, NsApplicationControlSource fuente, NsApplicationControlData* control)
-    {
-        u64 size = 0;
-        return R_SUCCEEDED(nsGetApplicationControlData(fuente, id, control, sizeof(NsApplicationControlData), &size)) &&
-               size >= sizeof(control->nacp);
-    }
-
-    bool deCartucho(u64 id)
-    {
-        NsApplicationContentMetaStatus estados[16] = {};
-        s32 n = 0;
-        if (R_FAILED(nsListApplicationContentMetaStatus(id, 0, estados, 16, &n)))
-            return false;
-        for (s32 i = 0; i < n; ++i)
-            if (estados[i].storageID == NcmStorageId_GameCard)
-                return true;
-        return false;
-    }
-
     // IApplicationManagerInterface 27: DeleteApplicationRecord (como Sphaira).
     Result borrarRegistro(u64 id)
     {
@@ -109,42 +120,74 @@ namespace homeRotos {
         std::vector<Entrada> rotos;
         const std::set<u64> usb = juegosEnUsb();
         auto control = std::make_unique<NsApplicationControlData>();
-        for (const u64 id : registros()) {
+        /* Una línea por juego con lo que se miró, para soporte: si un ícono
+           cargando no aparece en la lista, aquí se ve por qué. */
+        std::ofstream log(LOG, std::ios::trunc);
+        for (const NsApplicationRecord& r : registrosCompletos()) {
+            const u64 id = r.application_id;
+            u64 tam = 0;
             // Primero la caché: es lo que usa el HOME y no lee el juego, así
             // que con una biblioteca grande esto sigue siendo rápido.
-            if (seLee(id, NsApplicationControlSource_CacheOnly, control.get()))
-                continue;
-            if (seLee(id, NsApplicationControlSource_Storage, control.get()))
-                continue;
-            if (usb.count(id & MASCARA) || deCartucho(id))
-                continue;
-            rotos.push_back({id});
+            const Result rcCache = nsGetApplicationControlData(NsApplicationControlSource_CacheOnly, id, control.get(), sizeof(NsApplicationControlData), &tam);
+            const bool cache = R_SUCCEEDED(rcCache) && tam >= sizeof(control->nacp);
+            Result rcJuego = 0;
+            bool juego = false;
+            if (!cache) {
+                rcJuego = nsGetApplicationControlData(NsApplicationControlSource_Storage, id, control.get(), sizeof(NsApplicationControlData), &tam);
+                juego = R_SUCCEEDED(rcJuego) && tam >= sizeof(control->nacp);
+            }
+            std::string nombre;
+            NacpLanguageEntry* entrada = nullptr;
+            if ((cache || juego) && R_SUCCEEDED(nacpGetLanguageEntry(&control->nacp, &entrada)) && entrada)
+                nombre = entrada->name;
+            const bool enUsb = usb.count(id & MASCARA) > 0;
+            const std::string metas = contenido(id);
+            const bool cartucho = metas.find("gc") != std::string::npos;
+            /* Los del USB de Nexus que funcionan tienen su ícono en la caché aunque
+               el USB no esté. Sin caché ni contenido son entradas dañadas que dejó
+               Nexus: también cuentan, pero solo se les quita el registro. */
+            const bool roto = !cache && !juego && !cartucho;
+            if (log)
+                log << fmt::format("{:016X} evento={} cache={:X} juego={:X} usb={} contenido=[{}] {} {}\n", id, r.last_event,
+                                   rcCache, rcJuego, enUsb ? 1 : 0, metas, roto ? "ROTO" : "ok", nombre);
+            if (roto)
+                rotos.push_back({id, enUsb});
         }
         return rotos;
     }
 
     int quitar(const std::vector<Entrada>& lista)
     {
+        std::ofstream log(LOG, std::ios::app);
         for (const Entrada& e : lista) {
             actividad::detalle(fmt::format("{:016X}", e.id));
             /* Completo quita también lo que quede del contenido (NCA sueltos,
                la entrada en la base de datos). Si falla, al menos el registro,
                que es lo que dibuja el ícono. Las partidas no se tocan. */
-            if (R_FAILED(nsDeleteApplicationCompletely(e.id)))
-                borrarRegistro(e.id);
+            /* Si Nexus lo tiene en su tabla, solo el registro: así nunca se
+               borra nada del USB. */
+            const Result rc = e.nexus ? MAKERESULT(Module_Libnx, LibnxError_NotFound) : nsDeleteApplicationCompletely(e.id);
+            Result rc2 = 0;
+            if (R_FAILED(rc))
+                rc2 = borrarRegistro(e.id);
+            if (log)
+                log << fmt::format("quitar {:016X} completo={:X} registro={:X}\n", e.id, rc, rc2);
         }
         const std::set<u64> quedan = registros();
         int quitados = 0;
         for (const Entrada& e : lista)
             if (!quedan.count(e.id)) ++quitados;
+        if (log)
+            log << fmt::format("quitados {} de {}\n", quitados, lista.size());
         return quitados;
     }
 
     std::string listado(const std::vector<Entrada>& lista, size_t maximo)
     {
+        // Dos por línea, para que el texto no baje hasta el botón.
         std::string s;
         for (size_t i = 0; i < lista.size() && i < maximo; ++i)
-            s += fmt::format("{:016X}\n", lista[i].id);
+            s += fmt::format("{:016X}{}", lista[i].id, i + 1 == lista.size() || i + 1 == maximo ? "\n" : (i % 2 ? "\n" : "   "));
         if (lista.size() > maximo)
             s += fmt::format("menus/tools/home_rotos_mas"_i18n, lista.size() - maximo) + "\n";
         return s;
