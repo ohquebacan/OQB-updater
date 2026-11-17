@@ -24,6 +24,7 @@
 #include "hide_tabs_page.hpp"
 #include "instalacion_limpia.hpp"
 #include "limpieza_mac.hpp"
+#include "home_rotos.hpp"
 #include "net_page.hpp"
 #include "ntp.hpp"
 #include "oqb_theme.hpp"
@@ -251,6 +252,32 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     cleanMac->setHeight(LISTITEM_HEIGHT);
 
+    /* Iconos del HOME que se quedan cargando (0,0 MB): registros de juegos
+       cuyo contenido ya no esta o esta danado. Se buscan al tocar la opcion,
+       se muestran antes de borrar y al final se dice cuantos se quitaron. */
+    brls::ListItem* homeRotosItem = new brls::ListItem("menus/tools/home_rotos"_i18n, "", "menus/tools/home_rotos_sub"_i18n);
+    homeRotosItem->getClickEvent()->subscribe([](brls::View* view) {
+        const std::vector<homeRotos::Entrada> rotos = homeRotos::buscar();
+        if (rotos.empty()) {
+            util::showDialogBoxInfo("menus/tools/home_rotos_nada"_i18n);
+            return;
+        }
+        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+        frame->setTitle("menus/tools/home_rotos"_i18n);
+        frame->addStage(new ConfirmPage(frame, fmt::format("menus/tools/home_rotos_confirm"_i18n, rotos.size(), homeRotos::listado(rotos))));
+        auto mensaje = std::make_shared<std::string>();
+        frame->addStage(new WorkerPage(frame, "menus/tools/home_rotos_trabajando"_i18n, [mensaje, rotos]() {
+            const int quitados = homeRotos::quitar(rotos);
+            *mensaje = quitados == static_cast<int>(rotos.size())
+                           ? fmt::format("menus/tools/home_rotos_listo"_i18n, quitados)
+                           : fmt::format("menus/tools/home_rotos_parcial"_i18n, quitados, rotos.size());
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+        }));
+        frame->addStage(new ConfirmPage_Deferred(frame, mensaje));
+        brls::Application::pushView(frame);
+    });
+    homeRotosItem->setHeight(LISTITEM_HEIGHT);
+
     /* Instalacion limpia: el pack con la SD como recien formateada. Antes de
        borrar nada muestra una vista previa y pide mantener A. */
     brls::ListItem* limpia = new brls::ListItem("menus/limpia/entrada"_i18n, "", "menus/limpia/entrada_sub"_i18n);
@@ -432,6 +459,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     siVisible(archivos, "move", move);
     siVisible(archivos, "cleanup", cleanUp);
     siVisible(archivos, "cleanup", cleanMac);
+    siVisible(archivos, "cleanup", homeRotosItem);
     siVisible(archivos, "cleanup", limpia);
 
     siVisible(inicio, "createforwarder", createForwarder);
@@ -455,7 +483,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     quitar(juegos, cheats);
     quitar(consola, protectionCheck);
     std::vector<brls::View*> sdOrden;
-    for (brls::View* v : {static_cast<brls::View*>(cleanUp), static_cast<brls::View*>(cleanMac)})
+    for (brls::View* v : {static_cast<brls::View*>(cleanUp), static_cast<brls::View*>(cleanMac), static_cast<brls::View*>(homeRotosItem)})
         if (std::find(archivos.begin(), archivos.end(), v) != archivos.end()) sdOrden.push_back(v);
     std::vector<brls::View*> otrosArchivos;
     for (brls::View* v : archivos)
