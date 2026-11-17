@@ -10,6 +10,7 @@ namespace led {
     void error();      // falló: tres parpadeos rápidos que se repiten hasta apagar()
     void reinicio();   // hay que reiniciar: fija y suave, se queda aunque se cierre la app
     void apagar();
+    void refrescar();  // llamarla seguido (se limita sola a cada 20 s): renueva el patrón que se repite
     void alSalir();    // al cerrar la app: apaga, salvo que esté pidiendo reiniciar
 
     // Ajustes › Consola: «Luz de los mandos». Se guarda en la SD.

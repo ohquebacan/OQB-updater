@@ -172,6 +172,11 @@ namespace {
     };
 }  // namespace
 
+namespace {
+    AppletHookCookie g_luzCookie{};
+    bool g_exitBloqueado = true;  // appletLockExit hasta que se pida cerrar
+}
+
 int main(int argc, char* argv[])
 {
     arranque::marca("inicio");
@@ -247,6 +252,19 @@ int main(int argc, char* argv[])
     // (no alcanza a apagarla), aquí se apaga al abrir.
     led::apagar();
 
+    /* Al cerrarla desde el HOME a mitad de una tarea, el sistema la terminaba
+       al instante y la luz de los mandos quedaba prendida. Ahora el sistema
+       avisa primero: se apaga la luz y se deja cerrar enseguida, igual que
+       antes (no se cambia nada mas del cierre). */
+    appletLockExit();
+    appletHook(&g_luzCookie, [](AppletHookType hook, void*) {
+        if (hook != AppletHookType_OnExitRequest)
+            return;
+        led::alSalir();
+        g_exitBloqueado = false;
+        appletUnlockExit();
+    }, nullptr);
+
     CurrentCfw::running_cfw = CurrentCfw::getCFW();
 
     /* En hora desde el arranque. Con los servidores de Nintendo bloqueados la
@@ -307,7 +325,8 @@ int main(int argc, char* argv[])
         brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
     }
 
-    while (seguir && brls::Application::mainLoop());
+    while (seguir && brls::Application::mainLoop())
+        led::refrescar();  // el pulso del mando tiene fin: se renueva mientras siga
 
     // Antes de cerrar servicios: el hilo de la hora todavia puede estar usando
     // la red y el servicio de time.
@@ -317,6 +336,9 @@ int main(int argc, char* argv[])
 
     // Que la luz de los mandos no quede latiendo si se cierra a mitad de una tarea.
     led::alSalir();
+    appletUnhook(&g_luzCookie);
+    if (g_exitBloqueado)
+        appletUnlockExit();
 
     romfsExit();
     splExit();

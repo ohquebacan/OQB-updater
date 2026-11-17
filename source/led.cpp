@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstdio>
 #include <cstring>
+#include <mutex>
 
 namespace led {
 
@@ -93,6 +94,18 @@ namespace {
         hidsysExit();
     }
 
+    /* Los patrones que se repiten no son infinitos: el mando los corre solo y,
+       si la app muere sin apagarlos (cierre forzado, apagado, fallo), seguirían
+       para siempre. Con 15 vueltas duran 30-50 s y la app los renueva cada 20 s
+       mientras sigan (refrescar). */
+    constexpr u8 VueltasConFin = 0xF;
+    constexpr u64 RenovarCadaMs = 20'000;
+
+    std::mutex g_mutex;
+    HidsysNotificationLedPattern g_ultimo{};
+    bool g_renovar = false;
+    u64 g_ultimaVez = 0;
+
     HidsysNotificationLedPattern vacio()
     {
         HidsysNotificationLedPattern p;
@@ -114,12 +127,14 @@ namespace {
         switch (modo) {
             case Modo::Pulso:  // de tenue a pleno y de vuelta (el «fade» de lite-led)
                 p.baseMiniCycleDuration = 0x8;
+                p.totalFullCycles = VueltasConFin;
                 p.startIntensity = 0x2;
                 ciclo(p, 0xF, 0xF, 0x0);
                 ciclo(p, 0x2, 0xF, 0x0);
                 break;
             case Modo::PulsoBateria:  // el mismo pulso y un doble parpadeo: ojo, batería baja
                 p.baseMiniCycleDuration = 0x8;
+                p.totalFullCycles = VueltasConFin;
                 p.startIntensity = 0x2;
                 ciclo(p, 0xF, 0xF, 0x0);
                 ciclo(p, 0x2, 0xF, 0x0);
@@ -138,6 +153,7 @@ namespace {
                 break;
             case Modo::Error:  // tres parpadeos rápidos y una pausa, sin parar
                 p.baseMiniCycleDuration = 0x2;
+                p.totalFullCycles = VueltasConFin;
                 for (int i = 0; i < 3; ++i) {
                     ciclo(p, 0xF, 0x1, 0x6);
                     ciclo(p, 0x0, 0x1, 0x6);
@@ -260,7 +276,14 @@ namespace {
         if (!activada())
             return;
         g_reinicioPendiente = false;
-        aplicar(patronMando(modo));
+        const auto patron = patronMando(modo);
+        {
+            std::lock_guard<std::mutex> lock(g_mutex);
+            g_ultimo = patron;
+            g_renovar = modo == Modo::Pulso || modo == Modo::PulsoBateria || modo == Modo::Error;
+            g_ultimaVez = armTicksToNs(armGetSystemTick()) / 1'000'000;
+        }
+        aplicar(patron);
         if (esLite()) {
             // Cada modo arranca su propio hilo: más simple que reusar uno que
             // pudo haber terminado (el éxito se apaga solo).
@@ -284,6 +307,10 @@ void reinicio()
     p.baseMiniCycleDuration = 0xF;
     p.startIntensity = 0x5;
     ciclo(p, 0x5, 0xF, 0xF);
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        g_renovar = false;
+    }
     aplicar(p);
     g_reinicioPendiente = true;
     if (esLite()) {
@@ -301,8 +328,26 @@ void reinicio()
     }
 }
 
+void refrescar()
+{
+    HidsysNotificationLedPattern patron;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        const u64 ahora = armTicksToNs(armGetSystemTick()) / 1'000'000;
+        if (!g_renovar || ahora - g_ultimaVez < RenovarCadaMs)
+            return;
+        g_ultimaVez = ahora;
+        patron = g_ultimo;
+    }
+    aplicar(patron);
+}
+
 void apagar()
 {
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        g_renovar = false;
+    }
     g_reinicioPendiente = false;
     pararLite();
     aplicar(vacio());
