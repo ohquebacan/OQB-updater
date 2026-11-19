@@ -2,6 +2,7 @@
 
 #include <switch.h>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -31,4 +32,10 @@ namespace homeRotos {
 
     // "0100ABCD12345000" por línea, como mucho `maximo` y "... y N más".
     std::string listado(const std::vector<Entrada>& lista, size_t maximo = 6);
+
+    // Juegos que Nexus tiene en el USB (ID con los últimos 13 bits en cero).
+    std::set<u64> juegosNexus();
+
+    // Quita solo el registro del juego (DeleteApplicationRecord), nunca contenido.
+    Result quitarRegistro(u64 id);
 }

@@ -182,6 +182,10 @@ namespace homeRotos {
         return quitados;
     }
 
+    std::set<u64> juegosNexus() { return juegosEnUsb(); }
+
+    Result quitarRegistro(u64 id) { return borrarRegistro(id); }
+
     std::string listado(const std::vector<Entrada>& lista, size_t maximo)
     {
         // Dos por línea, para que el texto no baje hasta el botón.

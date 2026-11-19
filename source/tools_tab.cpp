@@ -25,6 +25,7 @@
 #include "instalacion_limpia.hpp"
 #include "limpieza_mac.hpp"
 #include "home_rotos.hpp"
+#include "limpiar_emunand.hpp"
 #include "net_page.hpp"
 #include "ntp.hpp"
 #include "oqb_theme.hpp"
@@ -255,6 +256,62 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     /* Iconos del HOME que se quedan cargando (0,0 MB): registros de juegos
        cuyo contenido ya no esta o esta danado. Se buscan al tocar la opcion,
        se muestran antes de borrar y al final se dice cuantos se quitaron. */
+    /* Limpiar la emuNAND (como «Clean emuMMC» de HATS-Tools): quita los juegos
+       que una emuNAND recién hecha copió de la consola y, si se elige, sus
+       partidas. Solo en emuNAND con su propia carpeta Nintendo. */
+    brls::ListItem* limpiarEmu = new brls::ListItem("menus/tools/limpiar_emunand"_i18n, "", "menus/tools/limpiar_emunand_sub"_i18n);
+    limpiarEmu->getClickEvent()->subscribe([](brls::View* view) {
+        auto plan = std::make_shared<limpiarEmunand::Plan>(limpiarEmunand::armar());
+        using limpiarEmunand::Donde;
+        if (plan->donde == Donde::SysNand) {
+            util::showDialogBoxInfo("menus/tools/limpiar_emunand_sysnand"_i18n);
+            return;
+        }
+        if (plan->donde == Donde::SinCarpeta) {
+            util::showDialogBoxInfo("menus/tools/limpiar_emunand_sin_carpeta"_i18n);
+            return;
+        }
+        if (plan->donde != Donde::Emunand || plan->error) {
+            util::showDialogBoxInfo("menus/tools/limpiar_emunand_error"_i18n);
+            return;
+        }
+        if (plan->juegos.empty() && plan->partidas.empty()) {
+            util::showDialogBoxInfo("menus/tools/limpiar_emunand_nada"_i18n);
+            return;
+        }
+        auto abrir = [plan](bool partidas) {
+            brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+            frame->setTitle("menus/tools/limpiar_emunand"_i18n);
+            frame->addStage(new ConfirmPage(frame, partidas ? fmt::format("menus/tools/limpiar_emunand_confirm_partidas"_i18n, plan->juegos.size(), plan->partidas.size())
+                                                            : fmt::format("menus/tools/limpiar_emunand_confirm_juegos"_i18n, plan->juegos.size())));
+            auto mensaje = std::make_shared<std::string>();
+            frame->addStage(new WorkerPage(frame, "menus/tools/limpiar_emunand_trabajando"_i18n, [mensaje, plan, partidas]() {
+                const limpiarEmunand::Resultado r = limpiarEmunand::ejecutar(*plan, partidas);
+                if (r.cambio && r.juegos == 0 && r.partidas == 0) {
+                    *mensaje = "menus/tools/limpiar_emunand_cambio"_i18n;
+                } else {
+                    std::string t = fmt::format("menus/tools/limpiar_emunand_listo_juegos"_i18n, r.juegos, plan->juegos.size());
+                    if (partidas) t += fmt::format("menus/tools/limpiar_emunand_listo_partidas"_i18n, r.partidas, plan->partidas.size());
+                    if (r.quedanJuegos >= 0) t += fmt::format("menus/tools/limpiar_emunand_quedan"_i18n, r.quedanJuegos, r.quedanPartidas);
+                    if (r.juegosMal || r.partidasMal || r.cambio) t += "menus/tools/limpiar_emunand_fallos"_i18n;
+                    *mensaje = t;
+                }
+                ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            }));
+            frame->addStage(new ConfirmPage_Deferred(frame, mensaje));
+            brls::Application::pushView(frame);
+        };
+        const std::string nexus = plan->nexus ? fmt::format("menus/tools/limpiar_emunand_nexus"_i18n, plan->nexus) : std::string();
+        brls::Dialog* dialogo = new brls::Dialog(fmt::format("menus/tools/limpiar_emunand_resumen"_i18n, plan->juegos.size(), plan->actualizaciones,
+                                                             plan->dlc, plan->partidas.size(), nexus));
+        if (!plan->juegos.empty())
+            dialogo->addButton("menus/tools/limpiar_emunand_solo_juegos"_i18n, [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(false); }); });
+        if (!plan->partidas.empty())
+            dialogo->addButton("menus/tools/limpiar_emunand_con_partidas"_i18n, [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(true); }); });
+        dialogo->setCancelable(true);
+        dialogo->open();
+    });
+
     brls::ListItem* homeRotosItem = new brls::ListItem("menus/tools/home_rotos"_i18n, "", "menus/tools/home_rotos_sub"_i18n);
     homeRotosItem->getClickEvent()->subscribe([](brls::View* view) {
         const std::vector<homeRotos::Entrada> rotos = homeRotos::buscar();
@@ -438,6 +495,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
 
     siVisible(juegos, "cheats", cheats);
     siVisible(juegos, "outdatedtitles", outdatedTitles);
+    siVisible(juegos, "limpiaremunand", limpiarEmu);
 
     siVisible(consola, "protection", protectionCheck);
     if (erista) siVisible(consola, "rebootpayload", rebootPayload);
