@@ -29,6 +29,7 @@ public:
 private:
     struct App {
         std::string nombre, url, categoria, desc, tengo, nueva;
+        std::string soloEn;  // sección propia fuera de «Todas» (los ports): "" si está en todas
         int estado = 0;  // 0 sin instalar, 1 instalada, 2 version nueva
         int imagen = -1;  // textura del icono (-1 sin pedir, 0 sin icono)
     };
@@ -45,6 +46,7 @@ private:
     int fuente = -1;
     bool fuenteIntentada = false;
     ListDownloadTab* oculto = nullptr;  // las entradas de siempre, para instalar
+    std::map<std::string, ListDownloadTab*> ocultosSeccion;  // lo mismo para las secciones que no están en «Todas»
 
     std::vector<int> visibles() const;
     void releer();

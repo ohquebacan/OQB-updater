@@ -20,7 +20,11 @@ namespace {
     constexpr Seccion SECCIONES[] = {
         {"apps_emuladores", "menus/apps/sec_emuladores"}, {"apps_mods", "menus/apps/sec_mods"},       {"apps_sysmodules", "menus/apps/sec_sysmodules"},
         {"apps_instaladores", "menus/apps/sec_instaladores"}, {"apps_sistema", "menus/apps/sec_sistema"},
+        {"apps_ports", "menus/apps/sec_ports"},
     };
+    /* Secciones que no van en «Todas las aplicaciones» ni en el buscador: los
+       ports son más de cien y ahí solo harían ruido. Se ven en su chip. */
+    constexpr const char* SOLO_EN_SU_SECCION[] = {"apps_ports"};
 
     std::string cortar(NVGcontext* vg, const std::string& texto, float ancho)
     {
@@ -72,6 +76,19 @@ AppsPage::AppsPage(const nlohmann::ordered_json& nxlinks) : nxlinks(nxlinks)
             this->apps.push_back(a);
         }
     }
+    for (const char* clave : SOLO_EN_SU_SECCION) {
+        const auto sec = nxlinks.find(clave);
+        if (sec == nxlinks.end() || !sec->is_object()) continue;
+        for (const auto& [nombre, url] : sec->items()) {
+            if (!url.is_string()) continue;
+            App a;
+            a.nombre = nombre;
+            a.url = url.get<std::string>();
+            a.categoria = categoriaDe.count(nombre) ? categoriaDe[nombre] : "";
+            a.soloEn = clave;
+            this->apps.push_back(a);
+        }
+    }
     this->releer();
 
     this->registerAction("", brls::Key::DUP, [this] {
@@ -111,6 +128,8 @@ AppsPage::~AppsPage()
     for (auto& a : this->apps)
         if (a.imagen > 0) nvgDeleteImage(vg, a.imagen);
     delete this->oculto;
+    for (auto& [clave, lista] : this->ocultosSeccion)
+        delete lista;
 }
 
 // Estado de cada app y los chips (el de "Con actualizacion" solo si hay alguna).
@@ -144,7 +163,8 @@ std::vector<int> AppsPage::visibles() const
     for (int i = 0; i < (int)this->apps.size(); ++i) {
         const App& a = this->apps[i];
         if (clave == "_nuevas" ? a.estado == 2
-                               : clave.empty() || (this->porSeccion.count(clave) &&
+                               : clave.empty() ? a.soloEn.empty()
+                               : (a.soloEn.empty() || a.soloEn == clave) && (this->porSeccion.count(clave) &&
                                                    std::find(this->porSeccion.at(clave).begin(), this->porSeccion.at(clave).end(), a.nombre) != this->porSeccion.at(clave).end()))
             out.push_back(i);
     }
@@ -158,12 +178,14 @@ void AppsPage::instalar()
     const auto v = this->visibles();
     if (this->elegida < 0 || this->elegida >= (int)v.size()) return;
     const std::string& nombre = this->apps[v[this->elegida]].nombre;
-    if (!this->oculto) {
+    const std::string& soloEn = this->apps[v[this->elegida]].soloEn;
+    ListDownloadTab*& lista = soloEn.empty() ? this->oculto : this->ocultosSeccion[soloEn];
+    if (!lista) {
         util::LecturaSwitch lectura;  // /switch se lee una vez para toda la lista
-        this->oculto = new ListDownloadTab(contentType::apps, this->nxlinks);
+        lista = soloEn.empty() ? new ListDownloadTab(contentType::apps, this->nxlinks) : new ListDownloadTab(contentType::apps, this->nxlinks, soloEn);
     }
-    for (size_t i = 0; i < this->oculto->getViewsCount(); ++i)
-        if (auto* item = dynamic_cast<brls::ListItem*>(this->oculto->getChild(i)))
+    for (size_t i = 0; i < lista->getViewsCount(); ++i)
+        if (auto* item = dynamic_cast<brls::ListItem*>(lista->getChild(i)))
             if (item->getLabel() == nombre) {
                 item->onClick();
                 return;

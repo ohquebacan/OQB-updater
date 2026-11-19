@@ -344,6 +344,7 @@
         "sec_sysmodules": "Sysmodules y rendimiento",
         "sec_instaladores": "Instaladores y gestores",
         "sec_sistema": "Sistema y utilidades",
+        "sec_ports": "Ports",
         "sec_todas": "Todas las aplicaciones",
         "count": "{} apps",
         "new_version": "Versión nueva",

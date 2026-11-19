@@ -25,6 +25,7 @@ namespace {
         {"apps_sysmodules", "menus/apps/sec_sysmodules"},
         {"apps_instaladores", "menus/apps/sec_instaladores"},
         {"apps_sistema", "menus/apps/sec_sistema"},
+        {"apps_ports", "menus/apps/sec_ports"},
     };
 
     /* Cuantas apps de una lista tienen version nueva. */
