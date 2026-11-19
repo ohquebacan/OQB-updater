@@ -102,6 +102,8 @@ namespace limpiarEmunand {
                     continue;
                 }
                 p.juegos.push_back(id);
+                bool instalado = false;
+                if (R_SUCCEEDED(nsIsAnyApplicationEntityInstalled(id, &instalado)) && instalado) ++p.conArchivos;
                 s32 n = 0;
                 if (R_FAILED(nsCountApplicationContentMeta(id, &n))) n = 0;  // sin contenido: solo queda el registro
                 std::vector<NsApplicationContentMetaStatus> metas(std::max<s32>(n, 0));

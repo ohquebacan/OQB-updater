@@ -302,9 +302,15 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             frame->addStage(new ConfirmPage_Deferred(frame, mensaje));
             brls::Application::pushView(frame);
         };
-        const std::string nexus = plan->nexus ? fmt::format("menus/tools/limpiar_emunand_nexus"_i18n, plan->nexus) : std::string();
-        brls::Dialog* dialogo = new brls::Dialog(fmt::format("menus/tools/limpiar_emunand_resumen"_i18n, plan->juegos.size(), plan->actualizaciones,
-                                                             plan->dlc, plan->partidas.size(), nexus));
+        /* Corto: el diálogo crece con el texto y, con un párrafo más, los
+           botones quedaban fuera de la pantalla. */
+        std::string texto = fmt::format("menus/tools/limpiar_emunand_resumen"_i18n, plan->juegos.size(), plan->partidas.size());
+        if (plan->conArchivos)
+            texto += fmt::format("menus/tools/limpiar_emunand_con_archivos"_i18n, plan->conArchivos);
+        if (plan->nexus)
+            texto += fmt::format("menus/tools/limpiar_emunand_nexus"_i18n, plan->nexus);
+        texto += "menus/tools/limpiar_emunand_elige"_i18n;
+        brls::Dialog* dialogo = new brls::Dialog(texto);
         if (!plan->juegos.empty())
             dialogo->addButton("menus/tools/limpiar_emunand_solo_juegos"_i18n, [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(false); }); });
         if (!plan->partidas.empty())

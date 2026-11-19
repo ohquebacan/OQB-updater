@@ -33,6 +33,7 @@ namespace limpiarEmunand {
         std::vector<FsSaveDataInfo> partidas;  // se borran solo si se elige
         size_t actualizaciones = 0, dlc = 0;
         size_t nexus = 0;                    // juegos del USB de Nexus que se dejan
+        size_t conArchivos = 0;              // juegos que sí tienen su contenido (esos abren)
         std::vector<std::string> identidad;  // para comprobar que nada cambió
         bool error = false;                  // falló una lectura: no se borra nada
     };
