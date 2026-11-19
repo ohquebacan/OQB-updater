@@ -321,15 +321,39 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         if (plan->nexus)
             texto += fmt::format("menus/tools/limpiar_emunand_nexus"_i18n, plan->nexus);
         texto += "menus/tools/limpiar_emunand_elige"_i18n;
-        brls::Dialog* dialogo = new brls::Dialog(texto);
-        // Primero lo seguro: solo los que no abren (lo que deja una emuNAND recién clonada).
+        /* Nunca más de dos botones: con tres, borealis los pone en dos filas y
+           la ventana se sale de la pantalla. Lo seguro va primero; el resto,
+           en «Más opciones». */
+        struct Opcion {
+            std::string texto;
+            Modo modo;
+        };
+        std::vector<Opcion> opciones;
         if (sinArchivos)
-            dialogo->addButton(fmt::format("menus/tools/limpiar_emunand_solo_sin_archivos"_i18n, sinArchivos),
-                               [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(Modo::SinArchivos); }); });
+            opciones.push_back({fmt::format("menus/tools/limpiar_emunand_solo_sin_archivos"_i18n, sinArchivos), Modo::SinArchivos});
         if (!plan->juegos.empty())
-            dialogo->addButton("menus/tools/limpiar_emunand_solo_juegos"_i18n, [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(Modo::Juegos); }); });
+            opciones.push_back({"menus/tools/limpiar_emunand_solo_juegos"_i18n, Modo::Juegos});
         if (!plan->partidas.empty())
-            dialogo->addButton("menus/tools/limpiar_emunand_con_partidas"_i18n, [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(Modo::JuegosYPartidas); }); });
+            opciones.push_back({"menus/tools/limpiar_emunand_con_partidas"_i18n, Modo::JuegosYPartidas});
+        auto boton = [abrir](brls::Dialog* d, const Opcion& o) {
+            const Modo modo = o.modo;
+            d->addButton(o.texto, [d, abrir, modo](brls::View*) { d->close([abrir, modo]() { abrir(modo); }); });
+        };
+        brls::Dialog* dialogo = new brls::Dialog(texto);
+        if (opciones.size() <= 2) {
+            for (const Opcion& o : opciones) boton(dialogo, o);
+        } else {
+            boton(dialogo, opciones[0]);
+            std::vector<Opcion> resto(opciones.begin() + 1, opciones.end());
+            dialogo->addButton("menus/tools/limpiar_emunand_mas_opciones"_i18n, [dialogo, resto, boton](brls::View*) {
+                dialogo->close([resto, boton]() {
+                    brls::Dialog* otro = new brls::Dialog("menus/tools/limpiar_emunand_mas_texto"_i18n);
+                    for (const Opcion& o : resto) boton(otro, o);
+                    otro->setCancelable(true);
+                    otro->open();
+                });
+            });
+        }
         dialogo->setCancelable(true);
         dialogo->open();
     });
