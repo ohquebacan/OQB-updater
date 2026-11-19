@@ -280,20 +280,31 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             util::showDialogBoxInfo("menus/tools/limpiar_emunand_nada"_i18n);
             return;
         }
-        auto abrir = [plan](bool partidas) {
+        using limpiarEmunand::Modo;
+        const size_t sinArchivos = plan->juegos.size() - plan->conArchivos;
+        auto abrir = [plan, sinArchivos](Modo modo) {
             brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
             frame->setTitle("menus/tools/limpiar_emunand"_i18n);
-            frame->addStage(new ConfirmPage(frame, partidas ? fmt::format("menus/tools/limpiar_emunand_confirm_partidas"_i18n, plan->juegos.size(), plan->partidas.size())
-                                                            : fmt::format("menus/tools/limpiar_emunand_confirm_juegos"_i18n, plan->juegos.size())));
+            std::string confirmar;
+            if (modo == Modo::SinArchivos)
+                confirmar = fmt::format("menus/tools/limpiar_emunand_confirm_sin_archivos"_i18n, sinArchivos);
+            else if (modo == Modo::Juegos)
+                confirmar = fmt::format("menus/tools/limpiar_emunand_confirm_juegos"_i18n, plan->juegos.size());
+            else
+                confirmar = fmt::format("menus/tools/limpiar_emunand_confirm_partidas"_i18n, plan->juegos.size(), plan->partidas.size());
+            frame->addStage(new ConfirmPage(frame, confirmar));
             auto mensaje = std::make_shared<std::string>();
-            frame->addStage(new WorkerPage(frame, "menus/tools/limpiar_emunand_trabajando"_i18n, [mensaje, plan, partidas]() {
-                const limpiarEmunand::Resultado r = limpiarEmunand::ejecutar(*plan, partidas);
+            frame->addStage(new WorkerPage(frame, "menus/tools/limpiar_emunand_trabajando"_i18n, [mensaje, plan, modo, sinArchivos]() {
+                const limpiarEmunand::Resultado r = limpiarEmunand::ejecutar(*plan, modo);
                 if (r.cambio && r.juegos == 0 && r.partidas == 0) {
                     *mensaje = "menus/tools/limpiar_emunand_cambio"_i18n;
                 } else {
-                    std::string t = fmt::format("menus/tools/limpiar_emunand_listo_juegos"_i18n, r.juegos, plan->juegos.size());
-                    if (partidas) t += fmt::format("menus/tools/limpiar_emunand_listo_partidas"_i18n, r.partidas, plan->partidas.size());
-                    if (r.quedanJuegos >= 0) t += fmt::format("menus/tools/limpiar_emunand_quedan"_i18n, r.quedanJuegos, r.quedanPartidas);
+                    const size_t objetivo = modo == Modo::SinArchivos ? sinArchivos : plan->juegos.size();
+                    std::string t = fmt::format("menus/tools/limpiar_emunand_listo_juegos"_i18n, r.juegos, objetivo);
+                    if (modo == Modo::JuegosYPartidas) t += fmt::format("menus/tools/limpiar_emunand_listo_partidas"_i18n, r.partidas, plan->partidas.size());
+                    if (r.quedanJuegos >= 0)
+                        t += modo == Modo::SinArchivos ? fmt::format("menus/tools/limpiar_emunand_quedan_sin_archivos"_i18n, r.quedanJuegos)
+                                                       : fmt::format("menus/tools/limpiar_emunand_quedan"_i18n, r.quedanJuegos, r.quedanPartidas);
                     if (r.juegosMal || r.partidasMal || r.cambio) t += "menus/tools/limpiar_emunand_fallos"_i18n;
                     *mensaje = t;
                 }
@@ -306,15 +317,19 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
            botones quedaban fuera de la pantalla. */
         std::string texto = fmt::format("menus/tools/limpiar_emunand_resumen"_i18n, plan->juegos.size(), plan->partidas.size());
         if (plan->conArchivos)
-            texto += fmt::format("menus/tools/limpiar_emunand_con_archivos"_i18n, plan->conArchivos);
+            texto += fmt::format("menus/tools/limpiar_emunand_con_archivos"_i18n, plan->conArchivos, sinArchivos);
         if (plan->nexus)
             texto += fmt::format("menus/tools/limpiar_emunand_nexus"_i18n, plan->nexus);
         texto += "menus/tools/limpiar_emunand_elige"_i18n;
         brls::Dialog* dialogo = new brls::Dialog(texto);
+        // Primero lo seguro: solo los que no abren (lo que deja una emuNAND recién clonada).
+        if (sinArchivos)
+            dialogo->addButton(fmt::format("menus/tools/limpiar_emunand_solo_sin_archivos"_i18n, sinArchivos),
+                               [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(Modo::SinArchivos); }); });
         if (!plan->juegos.empty())
-            dialogo->addButton("menus/tools/limpiar_emunand_solo_juegos"_i18n, [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(false); }); });
+            dialogo->addButton("menus/tools/limpiar_emunand_solo_juegos"_i18n, [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(Modo::Juegos); }); });
         if (!plan->partidas.empty())
-            dialogo->addButton("menus/tools/limpiar_emunand_con_partidas"_i18n, [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(true); }); });
+            dialogo->addButton("menus/tools/limpiar_emunand_con_partidas"_i18n, [dialogo, abrir](brls::View*) { dialogo->close([abrir]() { abrir(Modo::JuegosYPartidas); }); });
         dialogo->setCancelable(true);
         dialogo->open();
     });

@@ -104,6 +104,8 @@ namespace limpiarEmunand {
                 p.juegos.push_back(id);
                 bool instalado = false;
                 if (R_SUCCEEDED(nsIsAnyApplicationEntityInstalled(id, &instalado)) && instalado) ++p.conArchivos;
+                else instalado = false;
+                p.conContenido.push_back(instalado);
                 s32 n = 0;
                 if (R_FAILED(nsCountApplicationContentMeta(id, &n))) n = 0;  // sin contenido: solo queda el registro
                 std::vector<NsApplicationContentMetaStatus> metas(std::max<s32>(n, 0));
@@ -157,12 +159,13 @@ namespace limpiarEmunand {
         return p;
     }
 
-    Resultado ejecutar(const Plan& plan, bool borrarPartidas)
+    Resultado ejecutar(const Plan& plan, Modo modo)
     {
+        const bool borrarPartidas = modo == Modo::JuegosYPartidas;
         Resultado r;
         std::ofstream log(LOG, std::ios::trunc);
-        if (log) log << fmt::format("carpeta={} juegos={} partidas={} borrar_partidas={} nexus={}\n", plan.nintendo, plan.juegos.size(),
-                                    plan.partidas.size(), borrarPartidas ? 1 : 0, plan.nexus);
+        if (log) log << fmt::format("carpeta={} juegos={} con_archivos={} partidas={} modo={} nexus={}\n", plan.nintendo, plan.juegos.size(),
+                                    plan.conArchivos, plan.partidas.size(), static_cast<int>(modo), plan.nexus);
 
         /* Se vuelve a revisar todo justo antes de borrar: si cambió algo desde
            la vista previa (otro juego, otra partida, otro arranque), no se
@@ -203,7 +206,10 @@ namespace limpiarEmunand {
             }
         }
 
-        for (const u64 id : plan.juegos) {
+        for (size_t i = 0; i < plan.juegos.size(); ++i) {
+            const u64 id = plan.juegos[i];
+            // «Solo los que no abren»: los que tienen sus archivos se quedan.
+            if (modo == Modo::SinArchivos && i < plan.conContenido.size() && plan.conContenido[i]) continue;
             if (r.cambio || !sigue()) {
                 r.cambio = true;
                 break;
@@ -229,7 +235,7 @@ namespace limpiarEmunand {
 
         const Plan queda = armar();
         if (queda.donde == Donde::Emunand && !queda.error) {
-            r.quedanJuegos = static_cast<int>(queda.juegos.size());
+            r.quedanJuegos = static_cast<int>(modo == Modo::SinArchivos ? queda.juegos.size() - queda.conArchivos : queda.juegos.size());
             r.quedanPartidas = static_cast<int>(queda.partidas.size());
         }
         if (log) log << fmt::format("quedan juegos={} partidas={}\n", r.quedanJuegos, r.quedanPartidas);

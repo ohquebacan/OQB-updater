@@ -30,6 +30,7 @@ namespace limpiarEmunand {
         Donde donde = Donde::NoSeSabe;
         std::string nintendo;                // carpeta Nintendo de la emuNAND
         std::vector<u64> juegos;             // se quitan
+        std::vector<bool> conContenido;      // por juego: tiene sus archivos (abre)
         std::vector<FsSaveDataInfo> partidas;  // se borran solo si se elige
         size_t actualizaciones = 0, dlc = 0;
         size_t nexus = 0;                    // juegos del USB de Nexus que se dejan
@@ -47,5 +48,11 @@ namespace limpiarEmunand {
         int quedanJuegos = -1, quedanPartidas = -1;  // -1: no se pudo volver a revisar
     };
 
-    Resultado ejecutar(const Plan& plan, bool borrarPartidas);
+    enum class Modo {
+        SinArchivos,      // solo los juegos que no tienen sus archivos (no abren); las partidas se quedan
+        Juegos,           // todos los juegos; las partidas se quedan
+        JuegosYPartidas,  // todo, como HATS
+    };
+
+    Resultado ejecutar(const Plan& plan, Modo modo);
 }
