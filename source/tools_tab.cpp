@@ -420,17 +420,20 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
     language->setHeight(LISTITEM_HEIGHT);
 
-    brls::ListItem* createForwarder = new brls::ListItem("menus/forwarders/create_title"_i18n);
-    createForwarder->getClickEvent()->subscribe([](brls::View* view) {
-        brls::Application::pushView(new ForwarderCreatePage());
+    /* Crear y gestionar accesos directos en una sola opción: así la tarjeta de
+       Juegos y menú HOME no crece. Al abrirla se elige qué hacer. */
+    brls::ListItem* accesos = new brls::ListItem("menus/tools/accesos"_i18n, "", "menus/tools/accesos_sub"_i18n);
+    accesos->getClickEvent()->subscribe([](brls::View* view) {
+        brls::Dialog* dialogo = new brls::Dialog("menus/tools/accesos_pregunta"_i18n);
+        dialogo->addButton("menus/tools/accesos_crear"_i18n, [dialogo](brls::View*) {
+            dialogo->close([]() { brls::Application::pushView(new ForwarderCreatePage()); });
+        });
+        dialogo->addButton("menus/tools/accesos_gestionar"_i18n, [dialogo](brls::View*) {
+            dialogo->close([]() { brls::Application::pushView(new ForwarderManagePage()); });
+        });
+        dialogo->setCancelable(true);
+        dialogo->open();
     });
-    createForwarder->setHeight(LISTITEM_HEIGHT);
-
-    brls::ListItem* manageForwarders = new brls::ListItem("menus/forwarders/manage_title"_i18n);
-    manageForwarders->getClickEvent()->subscribe([](brls::View* view) {
-        brls::Application::pushView(new ForwarderManagePage());
-    });
-    manageForwarders->setHeight(LISTITEM_HEIGHT);
 
     /* Tema de colores (reemplaza a "Pestanas ocultas", que con el rediseno ya no
        servia). Se aplica al instante y queda guardado: la pantalla de carga del
@@ -486,6 +489,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         return !util::getBoolValue(hideStatus, clave);
     };
 
+    /* Cada grupo es una tarjeta y crece con cada opción. Como mucho 4: si hay
+       más, se ven 3 y «Ver más» abre el resto en una ventana. */
     const auto grupo = [this](const std::string& titulo, const std::vector<brls::View*>& entradas) {
         if (entradas.empty())
             return;
@@ -494,8 +499,34 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         cabecera->setHeight(34);
         this->addView(cabecera);
 
-        for (brls::View* entrada : entradas)
-            this->addView(entrada);
+        constexpr size_t MAXIMO = 4;
+        std::vector<brls::ListItem*> resto;
+        for (size_t i = 0; i < entradas.size(); ++i) {
+            auto* item = dynamic_cast<brls::ListItem*>(entradas[i]);
+            if (entradas.size() > MAXIMO && i >= MAXIMO - 1 && item)
+                resto.push_back(item);
+            else
+                this->addView(entradas[i]);
+        }
+        if (resto.empty())
+            return;
+        this->sueltas.insert(this->sueltas.end(), resto.begin(), resto.end());
+        brls::ListItem* verMas = new brls::ListItem(fmt::format("menus/tools/ver_mas"_i18n, resto.size()));
+        verMas->getClickEvent()->subscribe([titulo, resto](brls::View* view) {
+            brls::List* lista = new brls::List();
+            for (brls::ListItem* original : resto) {
+                brls::ListItem* copia = new brls::ListItem(original->getLabel(), "", original->getSubLabel());
+                // Se cierra la ventana y se abre la opción de verdad, como si se hubiera elegido en la tarjeta.
+                copia->getClickEvent()->subscribe([original](brls::View*) {
+                    brls::Application::popView(brls::ViewAnimation::FADE, [original]() { original->onClick(); });
+                });
+                lista->addView(copia);
+            }
+            brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+            frame->setContentView(lista);
+            brls::PopupFrame::open(titulo, frame, "", "");
+        });
+        this->addView(verMas);
     };
 
     const auto siVisible = [&visible](std::vector<brls::View*>& destino, const char* clave, brls::View* vista) {
@@ -546,8 +577,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     siVisible(archivos, "cleanup", homeRotosItem);
     siVisible(archivos, "cleanup", limpia);
 
-    siVisible(inicio, "createforwarder", createForwarder);
-    siVisible(inicio, "manageforwarders", manageForwarders);
+    if (visible("createforwarder") || visible("manageforwarders"))
+        inicio.push_back(accesos);
 
     /* Rediseno: primero lo que mas se usa (dejar la SD en orden), la app al
        final. Cada limpieza dice cuanto hay para liberar. */
@@ -583,4 +614,10 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     grupo("menus/inicio/grupo_juegos_home"_i18n, juegos);
     grupo("menus/inicio/grupo_consola_red"_i18n, consola);
     grupo("menus/tools/grupo_app"_i18n, app);
+}
+
+ToolsTab::~ToolsTab()
+{
+    for (brls::View* v : this->sueltas)
+        delete v;
 }
