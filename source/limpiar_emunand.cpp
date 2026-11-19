@@ -9,6 +9,7 @@
 
 #include "actividad.hpp"
 #include "home_rotos.hpp"
+#include "version_inicio.hpp"
 
 namespace {
     constexpr const char LOG[] = "/config/aio-switch-updater/limpiar_emunand.log";
@@ -216,8 +217,12 @@ namespace limpiarEmunand {
                     if (R_SUCCEEDED(rc2)) rc = 0;
                 }
             }
+            /* La consola recuerda la versión más alta con la que se abrió y la
+               exige al reinstalar: en cero, el juego base vuelve a abrir. */
+            Result rc3 = 0;
+            if (R_SUCCEEDED(rc)) rc3 = versionInicio::poner(id, 0);
             R_SUCCEEDED(rc) ? ++r.juegos : ++r.juegosMal;
-            if (log) log << fmt::format("juego {} completo={:X} registro={:X}\n", hex(id), rc, rc2);
+            if (log) log << fmt::format("juego {} completo={:X} registro={:X} version_inicio={:X}\n", hex(id), rc, rc2, rc3);
         }
 
         const Plan queda = armar();

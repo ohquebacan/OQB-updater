@@ -26,6 +26,7 @@
 #include "limpieza_mac.hpp"
 #include "home_rotos.hpp"
 #include "limpiar_emunand.hpp"
+#include "version_inicio.hpp"
 #include "net_page.hpp"
 #include "ntp.hpp"
 #include "oqb_theme.hpp"
@@ -312,6 +313,30 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         dialogo->open();
     });
 
+    /* Quitar el aviso de actualización obligatoria (como Goldleaf): juegos que
+       piden una versión más nueva que la instalada, por ejemplo al reinstalar
+       solo el juego base. Se les pone la versión que de verdad tienen. */
+    brls::ListItem* versionItem = new brls::ListItem("menus/tools/version_inicio"_i18n, "", "menus/tools/version_inicio_sub"_i18n);
+    versionItem->getClickEvent()->subscribe([](brls::View* view) {
+        const std::vector<versionInicio::Pendiente> lista = versionInicio::buscar();
+        if (lista.empty()) {
+            util::showDialogBoxInfo("menus/tools/version_inicio_nada"_i18n);
+            return;
+        }
+        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+        frame->setTitle("menus/tools/version_inicio"_i18n);
+        frame->addStage(new ConfirmPage(frame, fmt::format("menus/tools/version_inicio_confirm"_i18n, lista.size(), versionInicio::listado(lista))));
+        auto mensaje = std::make_shared<std::string>();
+        frame->addStage(new WorkerPage(frame, "menus/tools/version_inicio_trabajando"_i18n, [mensaje, lista]() {
+            const int bien = versionInicio::arreglar(lista);
+            *mensaje = bien == static_cast<int>(lista.size()) ? fmt::format("menus/tools/version_inicio_listo"_i18n, bien)
+                                                               : fmt::format("menus/tools/version_inicio_parcial"_i18n, bien, lista.size());
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+        }));
+        frame->addStage(new ConfirmPage_Deferred(frame, mensaje));
+        brls::Application::pushView(frame);
+    });
+
     brls::ListItem* homeRotosItem = new brls::ListItem("menus/tools/home_rotos"_i18n, "", "menus/tools/home_rotos_sub"_i18n);
     homeRotosItem->getClickEvent()->subscribe([](brls::View* view) {
         const std::vector<homeRotos::Entrada> rotos = homeRotos::buscar();
@@ -496,6 +521,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     siVisible(juegos, "cheats", cheats);
     siVisible(juegos, "outdatedtitles", outdatedTitles);
     siVisible(juegos, "limpiaremunand", limpiarEmu);
+    siVisible(juegos, "versioninicio", versionItem);
 
     siVisible(consola, "protection", protectionCheck);
     if (erista) siVisible(consola, "rebootpayload", rebootPayload);
