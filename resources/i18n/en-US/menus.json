@@ -1001,7 +1001,7 @@
         "pack_no_probado_corto": "Not tested yet",
         "pack_oc_corto": "Tested · with Horizon-OC",
         "pack_oc_falta_corto": "Needs the Horizon-OC version",
-        "reponer_pregunta": "You had Nexus Bacán and the new pack removed it. Put it back now? That way your USB games keep showing and opening after the reboot.",
+        "reponer_pregunta": "You had Nexus Bacán and the new pack removed it. Put it back now, or would you rather do it later? If you don't, you won't be able to use your USB games until you install Nexus again.",
         "reponer_trabajando": "Putting Nexus Bacán back",
         "reponer_no": "The pack is installed, but this time Nexus Bacán is not put back automatically: {}\n\nYour USB games and their mappings are kept. When there is a Nexus version for this pack, install it from Nexus USB and they will open again.",
         "reponer_fw": "your firmware ({}) is not yet on the Nexus Bacán list.",

@@ -1022,7 +1022,7 @@
         "pack_no_probado_corto": "Todavía no lo probamos",
         "pack_oc_corto": "Probado · con Horizon-OC",
         "pack_oc_falta_corto": "Falta la versión con Horizon-OC",
-        "reponer_pregunta": "Tenías Nexus Bacán y el pack nuevo lo quitó. ¿Lo vuelvo a poner ahora? Así, al reiniciar, tus juegos del USB siguen apareciendo y abriendo.",
+        "reponer_pregunta": "Tenías Nexus Bacán y el pack nuevo lo quitó. ¿Lo vuelvo a poner ahora o prefieres hacerlo más tarde? Si no lo haces, no podrás usar tus juegos del USB hasta que vuelvas a instalar Nexus.",
         "reponer_trabajando": "Volviendo a poner Nexus Bacán",
         "reponer_no": "El pack quedó instalado, pero esta vez Nexus Bacán no se vuelve a poner solo: {}\n\nTus juegos del USB y sus rutas se conservan. Cuando haya una versión de Nexus para este pack, la instalas desde Nexus USB y vuelven a abrir.",
         "reponer_fw": "tu firmware ({}) todavía no está en la lista de Nexus Bacán.",
