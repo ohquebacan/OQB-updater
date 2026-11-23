@@ -14,6 +14,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <regex>
 #include <sstream>
 #include <thread>
 #include <vector>
@@ -500,6 +501,83 @@ namespace {
         return rc;
     }
 
+    /* Extrae el zip de Nexus ya descargado y deja todo listo: respaldo del pack
+       (si Nexus no estaba), OC, system_settings.ini, hekate_ipl.ini y registro.
+       Lo usan la instalacion de la seccion Nexus USB y la de despues de un pack. */
+    void extraerNexus(const std::string& url, const std::string& fecha, std::shared_ptr<std::string> sinAcceso)
+    {
+        if (!util::isArchive(CUSTOM_FILENAME)) {
+            ProgressEvent::instance().setStatusCode(STATUS_INCOMPLETE_DOWNLOAD);
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            return;
+        }
+        if (!extract::hayEspacioPara(CUSTOM_FILENAME)) {
+            ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            return;
+        }
+        nlohmann::ordered_json reg = registro();
+        /* El respaldo es del pack normal: si Nexus ya estaba (una version
+           nueva encima, o puesto a mano), los archivos de ahora son de
+           Nexus y no se respaldan. Sin respaldo, volver al pack normal lo
+           reinstala desde Packs y firmwares. */
+        const bool yaEstaba = iniTieneUsb();
+        if (!yaEstaba) {
+            fs::removeDir(RESPALDO);
+            fs::createTree(std::string(RESPALDO) + "atmosphere/");
+            fs::createTree(std::string(RESPALDO) + "bootloader/payloads/");
+            fs::createTree(std::string(RESPALDO) + "atmosphere/kips/");
+            nlohmann::ordered_json habia = nlohmann::ordered_json::object();
+            for (const char* p : PISADOS) {
+                const bool hay = existe(p);
+                habia[p] = hay;
+                if (hay) fs::copyFile(p, std::string(RESPALDO) + (p + 1));
+            }
+            reg["respaldo"] = habia;
+            reg["pack_base"] = packVersion::current();
+        }
+        const bool habiaFusee = existe(FUSEE);
+        /* Si el zip nuevo no trae el loader de Nexus (una versión anterior a
+           la 1.4.0), no debe quedar el de antes ni su línea en hekate. */
+        std::filesystem::remove(KIP_NEXUS);
+        extract::extract(CUSTOM_FILENAME, ROOT_PATH, false);
+        /* El zip trae fusee.bin para que coincida con el package3 nuevo,
+           pero solo se deja si el pack normal lo tenia (si no, sobra). */
+        if (!habiaFusee && !(reg["respaldo"].is_object() && reg["respaldo"].value(FUSEE, false)))
+            std::filesystem::remove(FUSEE);
+        /* Pack de overclock: el hoc.kip y el exosphere.bin de Nexus (HOC 2.6.0
+           + USB) reemplazan a los del pack. Con el pack normal no se usan. */
+        const std::string kipOc = std::string(ZIP_OC) + "atmosphere/kips/hoc.kip";
+        const std::string exoOc = std::string(ZIP_OC) + "atmosphere/exosphere.bin";
+        reg["oc"] = false;
+        if (packConOverclock() && existe(kipOc) && existe(exoOc)) {
+            fs::createTree("/atmosphere/kips/");
+            if (existe(HOC_KIP)) reg["oc_ajustes"] = pasarAjustesHoc(HOC_KIP, kipOc);
+            fs::copyFile(kipOc, HOC_KIP);
+            fs::copyFile(exoOc, EXOSPHERE);
+            reg["oc"] = true;
+        }
+        fs::removeDir(ZIP_OC);
+        if (!ponerUsbEnIni(true) || !ponerLoaderEnHekate(existe(KIP_NEXUS))) {
+            ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            return;
+        }
+        reg["version"] = fecha;
+        reg["clave"] = claveDe(url);
+        fs::writeJsonToFile(reg, REGISTRO);
+        std::filesystem::remove(CUSTOM_FILENAME);
+        if (existe(NRO) && !fwd::exists(NRO)) *sinAcceso = NRO;
+        /* Si ya tenía acceso, se rehace: el ícono y el nombre se copian al
+           crearlo, así que con una versión nueva de la app el acceso viejo
+           seguía mostrando el ícono anterior. */
+        else if (existe(NRO) && fwd::exists(NRO)) {
+            const Result r = crearAcceso();
+            if (R_FAILED(r)) { nlohmann::ordered_json reg2 = registro(); reg2["acceso_error"] = fwd::resultToString(r); fs::writeJsonToFile(reg2, REGISTRO); }
+        }
+        ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+    }
+
     void instalar(const std::string& url, const std::string& fecha, bool erista, const std::string& zipLocal = "")
     {
         brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
@@ -519,76 +597,7 @@ namespace {
         auto sinAcceso = std::make_shared<std::string>();  // la ruta del .nro si falta su acceso directo
         auto crear = std::make_shared<bool>(false);
         frame->addStage(new WorkerPage(frame, "menus/common/extracting"_i18n, [url, fecha, sinAcceso]() {
-            if (!util::isArchive(CUSTOM_FILENAME)) {
-                ProgressEvent::instance().setStatusCode(STATUS_INCOMPLETE_DOWNLOAD);
-                ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
-                return;
-            }
-            if (!extract::hayEspacioPara(CUSTOM_FILENAME)) {
-                ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
-                ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
-                return;
-            }
-            nlohmann::ordered_json reg = registro();
-            /* El respaldo es del pack normal: si Nexus ya estaba (una version
-               nueva encima, o puesto a mano), los archivos de ahora son de
-               Nexus y no se respaldan. Sin respaldo, volver al pack normal lo
-               reinstala desde Packs y firmwares. */
-            const bool yaEstaba = iniTieneUsb();
-            if (!yaEstaba) {
-                fs::removeDir(RESPALDO);
-                fs::createTree(std::string(RESPALDO) + "atmosphere/");
-                fs::createTree(std::string(RESPALDO) + "bootloader/payloads/");
-                fs::createTree(std::string(RESPALDO) + "atmosphere/kips/");
-                nlohmann::ordered_json habia = nlohmann::ordered_json::object();
-                for (const char* p : PISADOS) {
-                    const bool hay = existe(p);
-                    habia[p] = hay;
-                    if (hay) fs::copyFile(p, std::string(RESPALDO) + (p + 1));
-                }
-                reg["respaldo"] = habia;
-                reg["pack_base"] = packVersion::current();
-            }
-            const bool habiaFusee = existe(FUSEE);
-            /* Si el zip nuevo no trae el loader de Nexus (una versión anterior a
-               la 1.4.0), no debe quedar el de antes ni su línea en hekate. */
-            std::filesystem::remove(KIP_NEXUS);
-            extract::extract(CUSTOM_FILENAME, ROOT_PATH, false);
-            /* El zip trae fusee.bin para que coincida con el package3 nuevo,
-               pero solo se deja si el pack normal lo tenia (si no, sobra). */
-            if (!habiaFusee && !(reg["respaldo"].is_object() && reg["respaldo"].value(FUSEE, false)))
-                std::filesystem::remove(FUSEE);
-            /* Pack de overclock: el hoc.kip y el exosphere.bin de Nexus (HOC 2.6.0
-               + USB) reemplazan a los del pack. Con el pack normal no se usan. */
-            const std::string kipOc = std::string(ZIP_OC) + "atmosphere/kips/hoc.kip";
-            const std::string exoOc = std::string(ZIP_OC) + "atmosphere/exosphere.bin";
-            reg["oc"] = false;
-            if (packConOverclock() && existe(kipOc) && existe(exoOc)) {
-                fs::createTree("/atmosphere/kips/");
-                if (existe(HOC_KIP)) reg["oc_ajustes"] = pasarAjustesHoc(HOC_KIP, kipOc);
-                fs::copyFile(kipOc, HOC_KIP);
-                fs::copyFile(exoOc, EXOSPHERE);
-                reg["oc"] = true;
-            }
-            fs::removeDir(ZIP_OC);
-            if (!ponerUsbEnIni(true) || !ponerLoaderEnHekate(existe(KIP_NEXUS))) {
-                ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
-                ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
-                return;
-            }
-            reg["version"] = fecha;
-            reg["clave"] = claveDe(url);
-            fs::writeJsonToFile(reg, REGISTRO);
-            std::filesystem::remove(CUSTOM_FILENAME);
-            if (existe(NRO) && !fwd::exists(NRO)) *sinAcceso = NRO;
-            /* Si ya tenía acceso, se rehace: el ícono y el nombre se copian al
-               crearlo, así que con una versión nueva de la app el acceso viejo
-               seguía mostrando el ícono anterior. */
-            else if (existe(NRO) && fwd::exists(NRO)) {
-                const Result r = crearAcceso();
-                if (R_FAILED(r)) { nlohmann::ordered_json reg2 = registro(); reg2["acceso_error"] = fwd::resultToString(r); fs::writeJsonToFile(reg2, REGISTRO); }
-            }
-            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            extraerNexus(url, fecha, sinAcceso);
         }));
         // Si ya tiene acceso directo, la pregunta se saltea sola.
         frame->addStage(new DialoguePage_optional(frame, "menus/nexus/acceso_pregunta"_i18n, crear, sinAcceso));
@@ -1436,6 +1445,59 @@ namespace {
     }
 
 }  // namespace
+
+NexusTab::Reponer NexusTab::planReponer(const nlohmann::ordered_json& nxlinks, const nlohmann::ordered_json& packVersions,
+                                        const std::string& packName, const std::string& packKey)
+{
+    Reponer plan;
+    /* Tenia Nexus: su registro sigue en /config (el pack no lo borra) con una
+       version. Si se quito desde «Volver al pack normal», el registro no esta. */
+    plan.tenia = existe(REGISTRO) && !texto(registro(), "version").empty();
+    if (!plan.tenia) return plan;
+
+    const char* clave = nxlinks.is_object() && nxlinks.contains("nexus_bacan_2") && nxlinks["nexus_bacan_2"].is_object() ? "nexus_bacan_2" : "nexus_bacan";
+    const nlohmann::ordered_json datos = nxlinks.is_object() && nxlinks.contains(clave) ? nxlinks[clave] : nlohmann::ordered_json::object();
+    plan.url = texto(datos, "url");
+    plan.fecha = packVersion::published(packVersions, claveDe(plan.url)).date;
+    if (plan.url.empty() || plan.fecha.empty()) {
+        plan.motivo = "menus/nexus/reponer_sin_catalogo"_i18n;
+        return plan;
+    }
+    // 1) El firmware de la consola tiene que estar en la lista de Nexus.
+    if (!firmwareCompatible(datos, firmware())) {
+        plan.motivo = fmt::format("menus/nexus/reponer_fw"_i18n, firmware());
+        return plan;
+    }
+    /* 2) El Atmosphère del pack nuevo tiene que ser el mismo con el que se armo
+       Nexus: el zip trae su propio package3, y uno de otra version encima de un
+       pack para un firmware nuevo podria dejar la consola sin arrancar. El del
+       pack sale de su nombre en el catalogo («... · AMS 1.12.2»). */
+    std::string amsPack;
+    {
+        std::smatch m;
+        static const std::regex re(R"(AMS\s*([0-9]+(?:\.[0-9]+)+))", std::regex::icase);
+        if (std::regex_search(packName, m, re)) amsPack = m[1].str();
+    }
+    const std::string amsNexus = texto(datos, "atmosphere");
+    if (amsPack.empty() || amsNexus.empty() || amsPack != amsNexus) {
+        plan.motivo = fmt::format("menus/nexus/reponer_ams"_i18n, amsPack.empty() ? "?" : amsPack, amsNexus.empty() ? "?" : amsNexus);
+        return plan;
+    }
+    // 3) Si el catalogo limita los packs probados, el nuevo tiene que estar.
+    if (!packProbado(datos, packKey)) {
+        plan.motivo = "menus/nexus/pack_no_probado"_i18n;
+        return plan;
+    }
+    plan.puede = true;
+    return plan;
+}
+
+void NexusTab::reponer(const Reponer& plan)
+{
+    util::downloadArchive(plan.url, contentType::custom);
+    if (ProgressEvent::instance().getStatusCode() > 399) return;
+    extraerNexus(plan.url, plan.fecha, std::make_shared<std::string>());
+}
 
 void NexusTab::aplicarPrueba(nlohmann::ordered_json& nxlinks)
 {

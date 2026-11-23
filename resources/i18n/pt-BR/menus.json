@@ -1021,7 +1021,13 @@
     "quitar_pie": "Cancelar  ·  Se deixá-los no USB, eles voltam a abrir quando você reinstalar o Nexus Bacán.",
     "pack_no_probado_corto": "Ainda não testamos",
     "pack_oc_corto": "Testado · com Horizon-OC",
-    "pack_oc_falta_corto": "Falta a versão com Horizon-OC"
+    "pack_oc_falta_corto": "Falta a versão com Horizon-OC",
+    "reponer_pregunta": "Você tinha o Nexus Bacán e o pack novo o removeu. Colocar de volta agora? Assim, ao reiniciar, seus jogos do USB continuam aparecendo e abrindo.",
+    "reponer_trabajando": "Colocando o Nexus Bacán de volta",
+    "reponer_no": "O pack foi instalado, mas desta vez o Nexus Bacán não volta sozinho: {}\n\nSeus jogos do USB e suas rotas são mantidos. Quando houver uma versão do Nexus para este pack, instale em Nexus USB e eles voltam a abrir.",
+    "reponer_fw": "seu firmware ({}) ainda não está na lista do Nexus Bacán.",
+    "reponer_ams": "o pack traz o Atmosphère {} e o Nexus Bacán é feito para o {}. Colocá-lo por cima poderia impedir o console de iniciar.",
+    "reponer_sin_catalogo": "não foi possível ler a versão do Nexus Bacán no catálogo (sem internet?)."
   },
   "soporte": {
     "titulo": "ENVIAR AO SUPORTE",

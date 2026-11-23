@@ -34,6 +34,21 @@ public:
 
     static bool available(const nlohmann::ordered_json& nxlinks);
 
+    /* Al actualizar el pack, Nexus se quita. Si estaba, se puede volver a poner
+       en la misma instalacion, pero solo si el firmware esta en la lista de
+       Nexus y el Atmosphère del pack nuevo es el mismo con el que se armo
+       Nexus (clave "atmosphere" del catalogo). */
+    struct Reponer {
+        bool tenia = false;   // habia Nexus antes del pack
+        bool puede = false;   // se cumplen las condiciones
+        std::string motivo;   // por que no, si no se puede
+        std::string url, fecha;
+    };
+    static Reponer planReponer(const nlohmann::ordered_json& nxlinks, const nlohmann::ordered_json& packVersions,
+                               const std::string& packName, const std::string& packKey);
+    // Descarga e instala (se llama desde un WorkerPage).
+    static void reponer(const Reponer& plan);
+
     /* Prueba sin publicar: si existe /config/aio-switch-updater/nexus_bacan_prueba.json,
        reemplaza la entrada "nexus_bacan" del catalogo. Puede traer "zip_local"
        (ruta en la SD) para instalar sin descargar. */

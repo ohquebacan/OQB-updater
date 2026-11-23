@@ -1,5 +1,7 @@
 #include <algorithm>
 #include "ams_tab.hpp"
+#include <memory>
+#include "nexus_tab.hpp"
 
 #include <filesystem>
 #include <iostream>
@@ -153,12 +155,13 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
                 }
             }
 
-            auto instalar = [this, text, text_hekate, url, hekate_url, hekate, pack, ams, packKey, packDate]() {
+            const std::string nombreCatalogo = link.first;
+            auto instalar = [this, text, text_hekate, url, hekate_url, hekate, pack, ams, packKey, packDate, nombreCatalogo]() {
                 if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
                     util::showDialogBoxInfo("menus/errors/mariko_payload_missing"_i18n);
                 }
                 else {
-                    CreateStagedFrames(text, url, erista, ams, hekate && !pack, text_hekate, hekate_url, packKey, packDate);
+                    CreateStagedFrames(text, url, erista, ams, hekate && !pack, text_hekate, hekate_url, packKey, packDate, nombreCatalogo);
                 }
             };
             listItem->getClickEvent()->subscribe([instalar](brls::View* view) { instalar(); });
@@ -192,7 +195,7 @@ bool AmsTab::instalarPorClave(const std::string& clave)
     return true;
 }
 
-void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams, bool hekate, const std::string& text_hekate, const std::string& hekate_url, const std::string& packKey, const std::string& packDate)
+void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams, bool hekate, const std::string& text_hekate, const std::string& hekate_url, const std::string& packKey, const std::string& packDate, const std::string& packName)
 {
     brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
     stagedFrame->setTitle(this->type == contentType::ams_cfw ? "menus/ams_update/getting_ams"_i18n : "menus/ams_update/custom_download"_i18n);
@@ -215,8 +218,10 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
             deep_clean::logPaso("=== inicio instalacion pack");
             util::downloadArchive(url, this->type);
         }));
+    // Si el pack sale bien, despues se puede volver a poner Nexus (ver mas abajo).
+    auto packBien = std::make_shared<bool>(false);
     stagedFrame->addStage(
-        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, packKey, packDate]() {
+        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, packKey, packDate, packBien]() {
             util::setConservarTema(true);
             util::extractArchive(this->type);
             /* Se anota la fecha que estaba publicada al empezar, no la de hoy:
@@ -226,8 +231,27 @@ void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url,
                 packVersion::recordInstalled(packKey, packDate);
                 /* El pack trae hekate en inglés: se pone en el idioma de la consola. */
                 if (this->type == contentType::ams_cfw && !packKey.empty()) hekateIdioma::trasInstalarPack();
+                *packBien = true;
             }
         }));
+    /* Nexus Bacán: el pack lo quita (cambia package3 y system_settings.ini). Si
+       estaba, se ofrece volver a ponerlo aqui mismo, antes del reinicio, para
+       que los juegos del USB sigan abriendo. Solo si el firmware esta en la
+       lista de Nexus y el Atmosphère del pack es el mismo de Nexus; si no, se
+       explica por que y no se toca nada. */
+    if (this->type == contentType::ams_cfw && !packKey.empty()) {
+        const NexusTab::Reponer plan = NexusTab::planReponer(this->nxlinks, this->getPackVersions(), packName, packKey);
+        if (plan.tenia && plan.puede) {
+            auto si = std::make_shared<bool>(false);
+            stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/nexus/reponer_pregunta"_i18n, si));
+            stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/nexus/reponer_trabajando"_i18n, [si, packBien, plan]() {
+                if (*si && *packBien) NexusTab::reponer(plan);
+                ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            }));
+        }
+        else if (plan.tenia)
+            stagedFrame->addStage(new ConfirmPage(stagedFrame, fmt::format("menus/nexus/reponer_no"_i18n, plan.motivo)));
+    }
     if (hekate) {
         stagedFrame->addStage(
             new DialoguePage_ams(stagedFrame, text_hekate, erista));

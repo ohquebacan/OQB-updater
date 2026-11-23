@@ -1000,7 +1000,13 @@
         "quitar_pie": "Cancel  ·  If you leave them on the USB, they open again when you reinstall Nexus Bacán.",
         "pack_no_probado_corto": "Not tested yet",
         "pack_oc_corto": "Tested · with Horizon-OC",
-        "pack_oc_falta_corto": "Needs the Horizon-OC version"
+        "pack_oc_falta_corto": "Needs the Horizon-OC version",
+        "reponer_pregunta": "You had Nexus Bacán and the new pack removed it. Put it back now? That way your USB games keep showing and opening after the reboot.",
+        "reponer_trabajando": "Putting Nexus Bacán back",
+        "reponer_no": "The pack is installed, but this time Nexus Bacán is not put back automatically: {}\n\nYour USB games and their mappings are kept. When there is a Nexus version for this pack, install it from Nexus USB and they will open again.",
+        "reponer_fw": "your firmware ({}) is not yet on the Nexus Bacán list.",
+        "reponer_ams": "the pack has Atmosphère {} and Nexus Bacán is made for {}. Putting it on top could leave the console unable to boot.",
+        "reponer_sin_catalogo": "the Nexus Bacán version could not be read from the catalog (no internet?)."
     },
     "soporte": {
         "titulo": "SEND TO SUPPORT",
