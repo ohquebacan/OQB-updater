@@ -4,6 +4,7 @@
 #include <string>
 
 #include "fs.hpp"
+#include "github_auth.hpp"
 #include "installed_updates.hpp"
 
 namespace updates {
@@ -12,7 +13,9 @@ namespace updates {
         constexpr const char CATALOG_PATH[] = "/config/aio-switch-updater/updates_catalog.json";
         constexpr const char CACHE_PATH[] = "/config/aio-switch-updater/updates_cache.json";
         constexpr const char CACHE_DIR[] = "/config/aio-switch-updater/";
-        constexpr long CACHE_SECONDS = 6 * 3600;
+        constexpr long CACHE_SECONDS_LOGGED_IN = 6 * 3600;
+        constexpr long CACHE_SECONDS_ANONYMOUS = 24 * 3600;
+        bool g_rateLimited = false;
         constexpr int MAX_REQUESTS = 25;
 
         using json = nlohmann::ordered_json;
@@ -29,8 +32,14 @@ namespace updates {
         return mergeCatalogs(builtinCatalog(), entriesFromJson(fs::parseJsonFile(CATALOG_PATH)));
     }
 
+    bool rateLimited()
+    {
+        return g_rateLimited;
+    }
+
     std::vector<Item> scan(bool allowNetwork)
     {
+        const long cacheSeconds = ghauth::isLoggedIn() ? CACHE_SECONDS_LOGGED_IN : CACHE_SECONDS_ANONYMOUS;
         std::vector<Item> items;
         for (const auto& e : loadCatalog()) {
             for (const auto& p : e.detect) {
@@ -63,7 +72,7 @@ namespace updates {
             auto c = cache.find(it.entry.repo);
             if (c != cache.end() && c->is_object() && c->contains("tag") && c->contains("time")) {
                 const long age = now - c->at("time").get<long>();
-                if (age >= 0 && age < CACHE_SECONDS) it.latest = c->at("tag").get<std::string>();
+                if (age >= 0 && age < cacheSeconds) it.latest = c->at("tag").get<std::string>();
             }
             if (it.latest.empty() && allowNetwork && !offline && requests < MAX_REQUESTS) {
                 requests++;
@@ -76,6 +85,7 @@ namespace updates {
                 }
                 else if (error == "network" || error == "rate_limit") {
                     offline = true;  // stop asking: nothing will come back
+                    if (error == "rate_limit") g_rateLimited = true;
                 }
             }
             it.status = computeStatus(it.installed, it.latest);

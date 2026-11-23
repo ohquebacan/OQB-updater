@@ -7,5 +7,18 @@
     "section_current": "Aktuell",
     "notify": "{} Update(s) für installierte Apps verfügbar",
     "no_info": "keine Info",
-    "latest": "neueste: {}"
+    "latest": "neueste: {}",
+    "login": "GitHub-Anmeldung",
+    "logged_in": "angemeldet",
+    "logged_out": "nicht angemeldet",
+    "login_code": "Öffne auf Handy oder PC:\n{}\n\nund gib diesen Code ein:\n{}\n\nBestätige dort und tippe dann auf „Fertig“.",
+    "login_done": "Fertig",
+    "login_cancel": "Abbrechen",
+    "login_pending": "Noch nicht bestätigt. Bestätige den Code im Browser.",
+    "login_ok": "Bei GitHub angemeldet",
+    "login_failed": "Anmeldung fehlgeschlagen oder abgelaufen.",
+    "login_err_net": "Keine Verbindung zu GitHub.",
+    "logout_confirm": "Von GitHub abmelden?",
+    "check_now": "Jetzt nach Updates suchen",
+    "rate_limit_hint": "GitHub-Limit erreicht (60 Abfragen pro Stunde ohne Anmeldung). Melde dich an, dann sind es 5000 pro Stunde, oder versuche es später erneut."
 }

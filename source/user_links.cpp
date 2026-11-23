@@ -4,6 +4,7 @@
 
 #include "download.hpp"
 #include "fs.hpp"
+#include "github_auth.hpp"
 #include "user_links.hpp"
 
 namespace userlinks {
@@ -12,14 +13,14 @@ namespace userlinks {
         constexpr const char USER_LINKS_PATH[] = "/config/aio-switch-updater/user_links.json";
         constexpr const char USER_LINKS_DIR[] = "/config/aio-switch-updater/";
         constexpr const char INSTALLED_TAGS_PATH[] = "/config/aio-switch-updater/installed_tags.json";
-        constexpr int MAX_UPDATE_CHECKS = 15;
+        constexpr int MAX_UPDATE_CHECKS_LOGGED_IN = 40;
+        constexpr int MAX_UPDATE_CHECKS_ANONYMOUS = 5;  // GitHub allows only 60 requests/hour without sign-in
 
         using json = nlohmann::ordered_json;
 
-        const std::vector<std::string>& githubHeaders()
+        std::vector<std::string> githubHeaders()
         {
-            static const std::vector<std::string> headers = {"accept: application/vnd.github.v3+json"};
-            return headers;
+            return ghauth::apiHeaders();
         }
 
         // newest tag per link url, filled once per app start
@@ -41,7 +42,12 @@ namespace userlinks {
             const std::string url = ref.tag.empty() ? base + "releases/latest" : base + "releases/tags/" + ref.tag;
 
             release = json::object();
-            const long code = download::getRequest(url, release, githubHeaders());
+            long code = download::getRequest(url, release, githubHeaders());
+            if (code == 401 && ghauth::isLoggedIn()) {
+                // token was revoked or expired: continue without it
+                ghauth::logout();
+                code = download::getRequest(url, release, githubHeaders());
+            }
             if (hasTag(release)) return true;
 
             if (ref.tag.empty() && code != 403 && code != 429 && code != 0) {
@@ -158,11 +164,12 @@ namespace userlinks {
         if (!checked) {
             checked = true;
             int requests = 0;
+            const int maxChecks = ghauth::isLoggedIn() ? MAX_UPDATE_CHECKS_LOGGED_IN : MAX_UPDATE_CHECKS_ANONYMOUS;
             for (const auto& link : links) {
                 if (link.kind == Kind::cfw) continue;  // packs are listed with all their releases instead
                 GithubRef ref;
                 if (!parseGithubUrl(link.url, ref) || ref.directAsset || !ref.tag.empty()) continue;
-                if (++requests > MAX_UPDATE_CHECKS) break;
+                if (++requests > maxChecks) break;
 
                 json release;
                 std::string error;

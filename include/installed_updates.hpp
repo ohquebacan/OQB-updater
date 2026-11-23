@@ -61,7 +61,9 @@ namespace updates {
     // ------------------------------------------------------------ SD + network
     std::vector<Entry> loadCatalog();
     // Scans the SD card; queries GitHub for entries whose cached answer is older than
-    // 6 hours (max. 25 requests per call). Returns the installed entries.
+    // 6 hours when signed in to GitHub, 24 hours otherwise (max. 25 requests per call). Returns the installed entries.
     std::vector<Item> scan(bool allowNetwork);
+    // true if the last scan() was stopped by the GitHub request limit
+    bool rateLimited();
 
 }  // namespace updates

@@ -1,3 +1,4 @@
+#include "github_auth.hpp"
 #include "user_links.hpp"
 #include "ams_tab.hpp"
 
@@ -85,7 +86,7 @@ nlohmann::ordered_json AmsTab::FetchGithubReleasePacks()
     fetched = true;
 
     nlohmann::ordered_json releases;
-    download::getRequest(RELEASES_API_URL, releases, {"accept: application/vnd.github.v3+json"});
+    download::getRequest(RELEASES_API_URL, releases, ghauth::apiHeaders());
     if (!releases.is_array()) releases = nlohmann::ordered_json::array();
 
     const auto str = [](const nlohmann::ordered_json& j, const char* key) -> std::string {

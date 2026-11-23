@@ -7,5 +7,18 @@
     "section_current": "Up to date",
     "notify": "{} update(s) available for installed apps",
     "no_info": "no info",
-    "latest": "latest: {}"
+    "latest": "latest: {}",
+    "login": "GitHub sign-in",
+    "logged_in": "signed in",
+    "logged_out": "not signed in",
+    "login_code": "Open on your phone or PC:\n{}\n\nand enter this code:\n{}\n\nConfirm there, then tap \"Done\".",
+    "login_done": "Done",
+    "login_cancel": "Cancel",
+    "login_pending": "Not confirmed yet. Confirm the code in the browser.",
+    "login_ok": "Signed in to GitHub",
+    "login_failed": "Sign-in failed or expired.",
+    "login_err_net": "Cannot reach GitHub.",
+    "logout_confirm": "Sign out of GitHub?",
+    "check_now": "Check for updates now",
+    "rate_limit_hint": "GitHub limit reached (60 requests per hour without signing in). Sign in for 5000 per hour, or try again later."
 }
