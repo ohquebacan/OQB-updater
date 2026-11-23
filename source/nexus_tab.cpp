@@ -74,6 +74,12 @@ namespace {
     // Lo escribe Nexus Bacán tras cada escaneo del USB (usb_resumen.cpp).
     constexpr const char RESUMEN_USB[] = "/config/nexusmanager/usb-juegos.json";
     constexpr const char* PISADOS[] = {"/atmosphere/package3", "/atmosphere/stratosphere.romfs", FUSEE, HOC_KIP, EXOSPHERE};
+    /* Nexus 1.4.0+: el USB vive en un loader aparte (como en Nexus HS3R1/RF2),
+       así el pack de overclock usa el hoc.kip de HOC sin cambios. Hekate lo
+       carga solo con una línea kip1= en cada entrada; sin ella la consola
+       arranca igual, pero los juegos del USB no abren. */
+    constexpr const char KIP_NEXUS[] = "/atmosphere/kips/nexus-loader.kip";
+    constexpr const char LINEA_KIP_NEXUS[] = "kip1=atmosphere/kips/nexus-loader.kip";
 
     bool existe(const std::string& ruta)
     {
@@ -202,6 +208,80 @@ namespace {
         std::error_code ec;
         std::filesystem::remove(INI, ec);
         std::filesystem::rename(tmp, INI, ec);
+        return !ec;
+    }
+
+    // --- hekate_ipl.ini: el loader de Nexus ------------------------------------
+    /* Agrega (o quita) la línea del loader de Nexus debajo de fss0= en cada
+       entrada de arranque con CFW. No toca nada más: las entradas propias del
+       usuario, el overclock (kip1 de hoc.kip, secmon) y [config] quedan igual.
+       Las entradas STOCK no cargan kips, así que se dejan. Si una entrada ya
+       carga toda la carpeta (kip1=atmosphere/kips/*), no hace falta. */
+    bool ponerLoaderEnHekate(bool poner)
+    {
+        std::ifstream f(HEKATE_IPL_PATH, std::ios::binary);
+        if (!f) return !poner;  // sin hekate_ipl.ini no hay nada que tocar
+        std::stringstream ss;
+        ss << f.rdbuf();
+        f.close();
+        const std::string todo = ss.str();
+        const std::string nl = todo.find("\r\n") != std::string::npos ? "\r\n" : "\n";
+
+        // Separar en entradas: [nombre] ... hasta la siguiente.
+        std::vector<std::string> lineas;
+        {
+            std::istringstream in(todo);
+            std::string l;
+            while (std::getline(in, l)) {
+                if (!l.empty() && l.back() == '\r') l.pop_back();
+                lineas.push_back(l);
+            }
+        }
+        auto esLinea = [](const std::string& l) { return recortar(l) == LINEA_KIP_NEXUS; };
+        std::vector<std::string> out;
+        bool cambio = false;
+        for (size_t i = 0; i < lineas.size(); ++i) {
+            const std::string t = recortar(lineas[i]);
+            if (esLinea(lineas[i])) {
+                if (!poner) { cambio = true; continue; }
+                out.push_back(lineas[i]);
+                continue;
+            }
+            out.push_back(lineas[i]);
+            if (!poner || t.rfind("fss0=", 0) != 0) continue;
+            // Mirar el resto de esta entrada.
+            bool stock = false, yaEsta = false, todaLaCarpeta = false;
+            for (size_t j = i + 1; j < lineas.size(); ++j) {
+                const std::string u = recortar(lineas[j]);
+                if (!u.empty() && u[0] == '[') break;
+                if (u == "stock=1") stock = true;
+                if (esLinea(lineas[j])) yaEsta = true;
+                if (u == "kip1=atmosphere/kips/*") todaLaCarpeta = true;
+            }
+            // También hacia atrás hasta el encabezado (por si fss0 no es la primera línea).
+            for (size_t j = i; j-- > 0;) {
+                const std::string u = recortar(lineas[j]);
+                if (!u.empty() && u[0] == '[') break;
+                if (u == "stock=1") stock = true;
+                if (esLinea(lineas[j])) yaEsta = true;
+                if (u == "kip1=atmosphere/kips/*") todaLaCarpeta = true;
+            }
+            if (!stock && !yaEsta && !todaLaCarpeta) {
+                out.push_back(LINEA_KIP_NEXUS);
+                cambio = true;
+            }
+        }
+        if (!cambio) return true;
+        const std::string tmp = std::string(HEKATE_IPL_PATH) + ".tmp";
+        {
+            std::ofstream o(tmp, std::ios::binary | std::ios::trunc);
+            if (!o) return false;
+            for (size_t i = 0; i < out.size(); ++i) o << out[i] << ((i + 1 < out.size() || !todo.empty()) ? nl : "");
+            if (!o) return false;
+        }
+        std::error_code ec;
+        std::filesystem::remove(HEKATE_IPL_PATH, ec);
+        std::filesystem::rename(tmp, HEKATE_IPL_PATH, ec);
         return !ec;
     }
 
@@ -470,6 +550,9 @@ namespace {
                 reg["pack_base"] = packVersion::current();
             }
             const bool habiaFusee = existe(FUSEE);
+            /* Si el zip nuevo no trae el loader de Nexus (una versión anterior a
+               la 1.4.0), no debe quedar el de antes ni su línea en hekate. */
+            std::filesystem::remove(KIP_NEXUS);
             extract::extract(CUSTOM_FILENAME, ROOT_PATH, false);
             /* El zip trae fusee.bin para que coincida con el package3 nuevo,
                pero solo se deja si el pack normal lo tenia (si no, sobra). */
@@ -488,7 +571,7 @@ namespace {
                 reg["oc"] = true;
             }
             fs::removeDir(ZIP_OC);
-            if (!ponerUsbEnIni(true)) {
+            if (!ponerUsbEnIni(true) || !ponerLoaderEnHekate(existe(KIP_NEXUS))) {
                 ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
                 ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
                 return;
@@ -533,6 +616,8 @@ namespace {
             /* Sin respaldo (se borro a mano, o se instalo con otra version): se
                apaga el USB y se reinstala el pack, que trae su propio Atmosphère. */
             ponerUsbEnIni(false);
+            ponerLoaderEnHekate(false);
+            std::filesystem::remove(KIP_NEXUS);
             std::filesystem::remove(REGISTRO);
             const std::string base = packVersion::current();
             if (reinstalarPack && !base.empty() && reinstalarPack(base)) return;
@@ -551,6 +636,8 @@ namespace {
                 else if (!reg["respaldo"].value(p, true)) std::filesystem::remove(p);
             }
             ponerUsbEnIni(false);
+            ponerLoaderEnHekate(false);
+            std::filesystem::remove(KIP_NEXUS);
             /* La app y el overlay sin el Atmosphère de Nexus no sirven. Las
                rutas de los juegos (/atmosphere/usb_content) se quedan: al
                reinstalar Nexus, esos juegos vuelven a abrir desde el USB. */
@@ -1352,6 +1439,12 @@ namespace {
 
 void NexusTab::aplicarPrueba(nlohmann::ordered_json& nxlinks)
 {
+    /* Nexus 1.4.0+ se publica en otra entrada del catálogo («nexus_bacan_2»):
+       las versiones viejas de esta app no saben poner el loader de Nexus en
+       hekate_ipl.ini y siguen viendo la 1.3.0 en «nexus_bacan». */
+    if (nxlinks.is_object() && nxlinks.contains("nexus_bacan_2") && nxlinks["nexus_bacan_2"].is_object() &&
+        !texto(nxlinks["nexus_bacan_2"], "url").empty())
+        nxlinks["nexus_bacan"] = nxlinks["nexus_bacan_2"];
     constexpr const char PRUEBA[] = "/config/aio-switch-updater/nexus_bacan_prueba.json";
     if (!existe(PRUEBA)) return;
     const nlohmann::ordered_json j = fs::parseJsonFile(PRUEBA);
