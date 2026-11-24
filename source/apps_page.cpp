@@ -4,10 +4,13 @@
 #include <cmath>
 
 #include "app_updates.hpp"
+#include "confirm_page.hpp"
+#include "led.hpp"
 #include "list_download_tab.hpp"
 #include "oqb_theme.hpp"
 #include "ports_page.hpp"
 #include "utils.hpp"
+#include "worker_page.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -52,7 +55,7 @@ namespace {
 
 }  // namespace
 
-AppsPage::AppsPage(const nlohmann::ordered_json& nxlinks) : nxlinks(nxlinks)
+AppsPage::AppsPage(const nlohmann::ordered_json& nxlinks, const nlohmann::ordered_json& manifiesto) : nxlinks(nxlinks), manifiestoPack(manifiesto)
 {
     // Categoria de cada app: la primera seccion que la nombra.
     std::map<std::string, std::string> categoriaDe;
@@ -94,7 +97,28 @@ AppsPage::AppsPage(const nlohmann::ordered_json& nxlinks) : nxlinks(nxlinks)
             this->apps.push_back(a);
         }
     }
-    this->releer();
+    /* Las apps del pack que hay en la SD: solo en su chip, nunca en «Todas»
+       (ahí ya está cada app del catálogo con su propia versión). */
+    this->delPack = appsPack::delPackActual(this->manifiestoPack);
+    for (int i = 0; i < (int)this->delPack.size(); ++i) {
+        const auto& p = this->delPack[i];
+        App a;
+        a.nombre = p.nombre;
+        a.url = p.catalogo;  // para el ícono, si la app está en el catálogo
+        a.categoria = p.tipo;
+        a.soloEn = "_pack";
+        a.pack = i;
+        this->apps.push_back(a);
+    }
+    this->releer(false);
+
+    this->registerAction("menus/apps_pack/todas_accion"_i18n, brls::Key::Y, [this] {
+        if (!this->chips.empty() && this->chips[this->chip].clave == "_pack") {
+            const auto lista = this->packPendientes();
+            if (!lista.empty()) this->instalarDelPack(lista);
+        }
+        return true;
+    }, true);
 
     this->registerAction("", brls::Key::DUP, [this] {
         this->elegida = std::max(0, this->elegida - 1);
@@ -138,12 +162,22 @@ AppsPage::~AppsPage()
 }
 
 // Estado de cada app y los chips (el de "Con actualizacion" solo si hay alguna).
-void AppsPage::releer()
+void AppsPage::releer(bool conPack)
 {
     this->genInstalaciones = appUpdates::generacionInstalaciones();
     const nlohmann::ordered_json instaladas = appUpdates::installed();
     int nuevas = 0;
+    int pendientes = 0;
     for (auto& a : this->apps) {
+        if (a.pack >= 0) {
+            appsPack::App& p = this->delPack[a.pack];
+            if (conPack) appsPack::releerEstado(p);
+            a.estado = p.estado == appsPack::AlDia ? 1 : (p.estado == appsPack::SinInstalar ? 0 : 2);
+            a.tengo = p.tengo;
+            a.nueva = p.version;
+            if (a.estado == 2) ++pendientes;
+            continue;
+        }
         a.estado = appUpdates::hasUpdate(this->nxlinks, instaladas, a.url) ? 2 : (appUpdates::isInstalled(this->nxlinks, a.url) ? 1 : 0);
         a.tengo = appUpdates::installedVersion(a.url);
         a.nueva = appUpdates::publishedVersion(this->nxlinks, a.url);
@@ -152,6 +186,8 @@ void AppsPage::releer()
     const std::string antes = this->chips.empty() ? "" : this->chips[this->chip].clave;
     this->chips.clear();
     if (nuevas) this->chips.push_back({fmt::format("menus/inicio/apps_chip_nuevas"_i18n, nuevas), "_nuevas"});
+    if (!this->delPack.empty())
+        this->chips.push_back({pendientes ? fmt::format("menus/apps_pack/chip"_i18n, pendientes) : "menus/apps_pack/chip_sin"_i18n, "_pack"});
     this->chips.push_back({"menus/inicio/apps_chip_todas"_i18n, ""});
     for (const auto& s : SECCIONES)
         if (this->porSeccion.count(s.clave)) this->chips.push_back({i18n::getStr(s.etiqueta), s.clave});
@@ -167,7 +203,8 @@ std::vector<int> AppsPage::visibles() const
     const std::string& clave = this->chips[this->chip].clave;
     for (int i = 0; i < (int)this->apps.size(); ++i) {
         const App& a = this->apps[i];
-        if (clave == "_nuevas" ? a.estado == 2
+        if (clave == "_pack" ? a.pack >= 0
+                             : clave == "_nuevas" ? a.estado == 2 && a.pack < 0
                                : clave.empty() ? a.soloEn.empty()
                                : (a.soloEn.empty() || a.soloEn == clave) && (this->porSeccion.count(clave) &&
                                                    std::find(this->porSeccion.at(clave).begin(), this->porSeccion.at(clave).end(), a.nombre) != this->porSeccion.at(clave).end()))
@@ -182,6 +219,10 @@ void AppsPage::instalar()
 {
     const auto v = this->visibles();
     if (this->elegida < 0 || this->elegida >= (int)v.size()) return;
+    if (this->apps[v[this->elegida]].pack >= 0) {
+        this->instalarDelPack({this->delPack[this->apps[v[this->elegida]].pack]});
+        return;
+    }
     const std::string& nombre = this->apps[v[this->elegida]].nombre;
     const std::string& soloEn = this->apps[v[this->elegida]].soloEn;
     ListDownloadTab*& lista = soloEn.empty() ? this->oculto : this->ocultosSeccion[soloEn];
@@ -197,10 +238,65 @@ void AppsPage::instalar()
             }
 }
 
+std::vector<appsPack::App> AppsPage::packPendientes() const
+{
+    std::vector<appsPack::App> out;
+    for (const auto& p : this->delPack)
+        if (p.estado == appsPack::Nueva || p.estado == appsPack::Incompleta) out.push_back(p);
+    return out;
+}
+
+void AppsPage::instalarDelPack(const std::vector<appsPack::App>& lista)
+{
+    std::string filas;
+    int mostradas = 0;
+    for (const auto& a : lista) {
+        if (++mostradas > 10) {
+            filas += fmt::format("… +{}\n", lista.size() - 10);
+            break;
+        }
+        std::string v = a.version;
+        if (!a.tengo.empty() && !a.version.empty() && a.tengo != a.version) v = a.tengo + " → " + a.version;
+        filas += a.nombre + (v.empty() ? "" : "   " + v) + "\n";
+    }
+    brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+    frame->setTitle("menus/apps_pack/titulo"_i18n);
+    frame->addStage(new ConfirmPage(frame, fmt::format("menus/apps_pack/confirmar"_i18n, filas)));
+    auto mensaje = std::make_shared<std::string>();
+    const nlohmann::ordered_json manifiesto = this->manifiestoPack;
+    frame->addStage(new WorkerPage(frame, "menus/apps_pack/instalando"_i18n, [lista, manifiesto, mensaje]() {
+        const appsPack::Resultado r = appsPack::instalar(manifiesto, lista);
+        std::string t = r.bien ? fmt::format("menus/apps_pack/listo"_i18n, r.bien) : "";
+        if (r.mal) {
+            std::string nombres;
+            for (const auto& n : r.fallaron) nombres += (nombres.empty() ? "" : ", ") + n;
+            t += (t.empty() ? "" : "\n\n") + fmt::format("menus/apps_pack/fallaron"_i18n, nombres);
+        }
+        if (r.reiniciar) {
+            t += "\n\n" + "menus/apps_pack/reiniciar"_i18n;
+            led::reinicio();
+        }
+        *mensaje = t;
+    }));
+    frame->addStage((new ConfirmPage_Deferred(frame, mensaje))->returnToList());
+    brls::Application::pushView(frame);
+}
+
 int AppsPage::icono(NVGcontext* vg, App& app)
 {
     if (app.imagen >= 0) return app.imagen;
     app.imagen = 0;
+    // Del pack sin ícono del catálogo: el de su .nro, si está en la SD.
+    if (app.pack >= 0 && (app.url.empty() || appUpdates::rutaIcono(this->nxlinks, app.url).empty())) {
+        const std::string& principal = this->delPack[app.pack].principal;
+        if (principal.size() > 4 && principal.substr(principal.size() - 4) == ".nro") {
+            std::vector<uint8_t> propio = appUpdates::iconoDeNro("/" + principal);
+            if (!propio.empty()) app.imagen = nvgCreateImageMem(vg, 0, propio.data(), propio.size());
+            if (app.imagen < 0) app.imagen = 0;
+            if (app.imagen > 0 || app.url.empty()) return app.imagen;
+        }
+    }
+    if (app.url.empty()) return 0;
     const std::string ruta = appUpdates::rutaIcono(this->nxlinks, app.url);
     if (!ruta.empty())
         app.imagen = nvgCreateImage(vg, ruta.c_str(), 0);
@@ -255,7 +351,7 @@ void AppsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heigh
         nvgFontSize(vg, 16.0f);
         nvgFillColor(vg, tenue);
         nvgBeginPath(vg);
-        nvgText(vg, bx + 16.0f, ly + 22.0f, fmt::format("menus/inicio/apps_buscar_en"_i18n, this->apps.size()).c_str(), nullptr);
+        nvgText(vg, bx + 16.0f, ly + 22.0f, fmt::format("menus/inicio/apps_buscar_en"_i18n, this->apps.size() - this->delPack.size()).c_str(), nullptr);
     }
     ly += 60.0f;
 
@@ -336,7 +432,8 @@ void AppsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heigh
             nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
         }
         // Estado a la derecha.
-        const std::string est = a.estado == 2 ? "menus/apps/new_version"_i18n : (a.estado == 1 ? "menus/apps/installed"_i18n : "menus/inicio/apps_sin_instalar"_i18n);
+        const bool incompleta = a.pack >= 0 && this->delPack[a.pack].estado == appsPack::Incompleta;
+        const std::string est = incompleta ? "menus/apps_pack/incompleta"_i18n : a.estado == 2 ? "menus/apps/new_version"_i18n : (a.estado == 1 ? "menus/apps/installed"_i18n : "menus/inicio/apps_sin_instalar"_i18n);
         nvgFontSize(vg, 13.0f);
         const float ew = nvgTextBounds(vg, 0, 0, est.c_str(), nullptr, nullptr) + 20.0f;
         const float ex = lx + lw - 14.0f - ew;
@@ -402,14 +499,16 @@ void AppsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heigh
         nvgBeginPath(vg);
         nvgText(vg, px, py, cortar(vg, a.categoria, pw).c_str(), nullptr);
         py += 30.0f;
-        if (!a.desc.empty()) {
+        const appsPack::App* p = a.pack >= 0 ? &this->delPack[a.pack] : nullptr;
+        const std::string desc = p ? "menus/apps_pack/desc"_i18n + (p->reinicio ? " " + "menus/apps_pack/desc_reinicio"_i18n : "") : a.desc;
+        if (!desc.empty()) {
             nvgFontSize(vg, 16.0f);
             nvgTextLineHeight(vg, 1.35f);
             nvgFillColor(vg, this->a(ctx->theme->textColor));
             float caja[4];
-            nvgTextBoxBounds(vg, px, py, pw, a.desc.c_str(), nullptr, caja);
+            nvgTextBoxBounds(vg, px, py, pw, desc.c_str(), nullptr, caja);
             nvgBeginPath(vg);
-            nvgTextBox(vg, px, py, pw, a.desc.c_str(), nullptr);
+            nvgTextBox(vg, px, py, pw, desc.c_str(), nullptr);
             py = caja[3] + 16.0f;
         }
         auto dato = [&](const std::string& etiqueta, const std::string& valor, NVGcolor color) {
@@ -424,9 +523,32 @@ void AppsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heigh
             py += 26.0f;
         };
         dato("menus/inicio/apps_tienes"_i18n, a.tengo, texto);
-        if (a.estado == 2) dato("menus/inicio/apps_nueva"_i18n, a.nueva, this->a(oqb::verdeTexto()));
+        if (p) {
+            dato("menus/apps_pack/en_pack"_i18n, p->version, this->a(a.estado == 2 ? oqb::verdeTexto() : ctx->theme->textColor));
+            dato("menus/apps_pack/descarga"_i18n, fmt::format("{:.1f} MB", p->bytes / 1e6), texto);
+        }
+        else if (a.estado == 2)
+            dato("menus/inicio/apps_nueva"_i18n, a.nueva, this->a(oqb::verdeTexto()));
         // El boton de la accion, abajo.
         const float bh = 46.0f, by = y + height - 24.0f - bh;
+        // Del pack: «Actualizar las N» con Y, encima del botón de esta app.
+        if (p) {
+            const auto pend = this->packPendientes();
+            if (!pend.empty()) {
+                std::uint64_t total = 0;
+                for (const auto& x : pend) total += x.bytes;
+                const float yb = by - bh - 10.0f;
+                nvgBeginPath(vg);
+                nvgRoundedRect(vg, px, yb, pw, bh, 12.0f);
+                nvgFillColor(vg, this->a(oqb::velo(16)));
+                nvgFill(vg);
+                nvgFontSize(vg, 17.0f);
+                nvgFillColor(vg, texto);
+                nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+                nvgBeginPath(vg);
+                nvgText(vg, px + pw / 2, yb + bh / 2 + 1, fmt::format("menus/apps_pack/todas"_i18n, pend.size(), fmt::format("{:.0f} MB", std::max(1.0, total / 1e6))).c_str(), nullptr);
+            }
+        }
         nvgBeginPath(vg);
         nvgRoundedRect(vg, px, by, pw, bh, 12.0f);
         nvgFillColor(vg, this->a(oqb::esmeralda()));
@@ -435,7 +557,8 @@ void AppsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heigh
         nvgFillColor(vg, this->a(oqb::oscuro() ? nvgRGB(6, 20, 12) : nvgRGB(255, 255, 255)));
         nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
         nvgBeginPath(vg);
-        const std::string accion = a.estado == 2 ? "menus/inicio/apps_boton_actualizar"_i18n : (a.estado == 1 ? "menus/inicio/apps_boton_reinstalar"_i18n : "menus/inicio/apps_boton_instalar"_i18n);
+        const bool falta = p && p->estado == appsPack::Incompleta;
+        const std::string accion = falta ? "menus/apps_pack/boton_completar"_i18n : a.estado == 2 ? "menus/inicio/apps_boton_actualizar"_i18n : (a.estado == 1 ? "menus/inicio/apps_boton_reinstalar"_i18n : "menus/inicio/apps_boton_instalar"_i18n);
         nvgText(vg, px + pw / 2, by + bh / 2 + 1, accion.c_str(), nullptr);
         nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
     }

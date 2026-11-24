@@ -339,6 +339,26 @@ namespace appUpdates {
         return instalaciones.load();
     }
 
+    void avisarInstalacion()
+    {
+        ++instalaciones;
+    }
+
+    std::string versionDeNro(const std::string& path)
+    {
+        return leerNroVersion(path);
+    }
+
+    std::vector<uint8_t> iconoDeNro(const std::string& path)
+    {
+        return util::existeEnSd(path) ? leerIconoNro(path) : std::vector<uint8_t>{};
+    }
+
+    bool esMasNueva(const std::string& a, const std::string& b)
+    {
+        return isNewer(a, b);
+    }
+
     void asegurarIconos(const nlohmann::ordered_json& catalogo)
     {
         if (!catalogo.is_object())

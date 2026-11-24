@@ -1101,5 +1101,24 @@
         "orden_pesados": "Largest",
         "orden_livianos": "Smallest",
         "orden_nombre": "A–Z"
+    },
+    "apps_pack": {
+        "chip": "From your pack · {}",
+        "chip_sin": "From your pack",
+        "desc": "Comes with your pack. Only this app is replaced and your settings stay.",
+        "desc_reinicio": "It's a sysmodule: restart the console after updating it.",
+        "en_pack": "In the pack",
+        "descarga": "Download",
+        "incompleta": "A file is missing",
+        "boton_completar": " Complete",
+        "todas": " Update all {} · {}",
+        "todas_accion": "Update all",
+        "titulo": "Pack apps",
+        "confirmar": "Installing from your pack:\n\n{}\nAtmosphère, hekate and your settings aren't touched.",
+        "instalando": "Installing pack apps",
+        "listo": "Done: {} installed from your pack.",
+        "fallaron": "Couldn't install: {}. The connection probably dropped; try again. What you had stays as it was.",
+        "reiniciar": "Restart the console so the new sysmodules start working.",
+        "nada": "All the apps in your pack are up to date."
     }
 }

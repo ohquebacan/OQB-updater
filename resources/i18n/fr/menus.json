@@ -569,5 +569,24 @@
     "anterior_sub": "Installe la 3.2, avec l'ancien design.",
     "anterior_titulo": "Revenir à la {}",
     "anterior_confirm": "La version {} d'OQB Updater sera installée, avec l'ancien design."
+  },
+  "apps_pack": {
+    "chip": "Du pack · {}",
+    "chip_sin": "Du pack",
+    "desc": "Inclus dans ton pack. Seule cette app est remplacée et tes réglages restent.",
+    "desc_reinicio": "C'est un sysmodule : redémarre la console après la mise à jour.",
+    "en_pack": "Dans le pack",
+    "descarga": "Téléchargement",
+    "incompleta": "Il manque un fichier",
+    "boton_completar": " Compléter",
+    "todas": " Tout mettre à jour ({}) · {}",
+    "todas_accion": "Tout mettre à jour",
+    "titulo": "Apps du pack",
+    "confirmar": "Installation depuis ton pack :\n\n{}\nAtmosphère, hekate et tes réglages ne sont pas touchés.",
+    "instalando": "Installation des apps du pack",
+    "listo": "Terminé : {} installées depuis ton pack.",
+    "fallaron": "Impossible d'installer : {}. La connexion a probablement coupé ; réessaie. Ce que tu avais reste tel quel.",
+    "reiniciar": "Redémarre la console pour que les nouveaux sysmodules fonctionnent.",
+    "nada": "Toutes les apps de ton pack sont à jour."
   }
 }

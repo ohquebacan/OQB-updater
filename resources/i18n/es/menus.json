@@ -1122,5 +1122,24 @@
         "orden_pesados": "Más pesados",
         "orden_livianos": "Más livianos",
         "orden_nombre": "A–Z"
+    },
+    "apps_pack": {
+        "chip": "Del pack · {}",
+        "chip_sin": "Del pack",
+        "desc": "Viene en tu pack. Se reemplaza solo esta app y tus ajustes se quedan.",
+        "desc_reinicio": "Es un sysmodule: después de actualizarlo, reinicia la consola.",
+        "en_pack": "En el pack",
+        "descarga": "Descarga",
+        "incompleta": "Le falta un archivo",
+        "boton_completar": " Completar",
+        "todas": " Actualizar las {} · {}",
+        "todas_accion": "Actualizar todas",
+        "titulo": "Apps del pack",
+        "confirmar": "Se instalan desde tu pack:\n\n{}\nNo toca Atmosphère, hekate ni tus ajustes.",
+        "instalando": "Instalando apps del pack",
+        "listo": "Listo: {} instaladas desde tu pack.",
+        "fallaron": "No se pudieron instalar: {}. Probablemente se cortó la conexión; vuelve a intentarlo. Lo que ya tenías quedó igual.",
+        "reiniciar": "Reinicia la consola para que los sysmodules nuevos empiecen a funcionar.",
+        "nada": "Todas las apps de tu pack están al día."
     }
 }

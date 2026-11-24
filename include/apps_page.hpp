@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "apps_pack.hpp"
+
 class ListDownloadTab;
 
 /* Rediseno de Apps: buscador arriba, categorias como chips (L/R), la lista de
@@ -17,7 +19,7 @@ class ListDownloadTab;
 class AppsPage : public brls::View
 {
 public:
-    explicit AppsPage(const nlohmann::ordered_json& nxlinks);
+    explicit AppsPage(const nlohmann::ordered_json& nxlinks, const nlohmann::ordered_json& manifiesto = nlohmann::ordered_json::object());
     ~AppsPage() override;
 
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
@@ -32,12 +34,15 @@ private:
         std::string soloEn;  // sección propia fuera de «Todas» (los ports): "" si está en todas
         int estado = 0;  // 0 sin instalar, 1 instalada, 2 version nueva
         int imagen = -1;  // textura del icono (-1 sin pedir, 0 sin icono)
+        int pack = -1;    // apps del pack: su lugar en `delPack` (solo en el chip «Del pack»)
     };
     struct Chip {
         std::string texto;
         std::string clave;  // "" todas, "_nuevas" con actualizacion, o la seccion
     };
     nlohmann::ordered_json nxlinks;
+    nlohmann::ordered_json manifiestoPack;
+    std::vector<appsPack::App> delPack;
     std::vector<App> apps;
     std::vector<Chip> chips;
     std::map<std::string, std::vector<std::string>> porSeccion;  // seccion -> nombres
@@ -49,7 +54,9 @@ private:
     std::map<std::string, ListDownloadTab*> ocultosSeccion;  // lo mismo para las secciones que no están en «Todas»
 
     std::vector<int> visibles() const;
-    void releer();
+    void releer(bool conPack = true);
     void instalar();
+    void instalarDelPack(const std::vector<appsPack::App>& lista);
+    std::vector<appsPack::App> packPendientes() const;
     int icono(NVGcontext* vg, App& app);
 };

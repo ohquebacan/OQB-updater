@@ -59,6 +59,15 @@ namespace appUpdates {
     // asi una app recien actualizada deja de figurar como pendiente sin tener
     // que cerrar OQB Updater.
     int generacionInstalaciones();
+    // Para lo que se instala fuera del catalogo (las apps del pack): sube el contador.
+    void avisarInstalacion();
+
+    // La version interna (NACP) de un .nro u .ovl de la SD, o vacia.
+    std::string versionDeNro(const std::string& path);
+    // El icono (JPEG) de un .nro de la SD, o vacio.
+    std::vector<uint8_t> iconoDeNro(const std::string& path);
+    // Si la version `a` es mas nueva que `b` ("v1.2.0" > "1.1.9").
+    bool esMasNueva(const std::string& a, const std::string& b);
 
     // Iconos. El catalogo nombra el de cada app ("icono") y los publica todos en
     // un zip; si falta alguno en la SD, se baja el zip (una sola peticion) y se

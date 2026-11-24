@@ -22,6 +22,7 @@
 #include "pack_version.hpp"
 #include "pagina_oqb.hpp"
 #include "apps_page.hpp"
+#include "apps_pack.hpp"
 #include "trucos_page.hpp"
 #include "arranque.hpp"
 #include "ams_tab.hpp"
@@ -83,6 +84,7 @@ namespace {
     std::string tagGuardado;
     nlohmann::ordered_json nxlinksGuardado;
     nlohmann::ordered_json packsGuardado;  // pack-versions.json, para el aviso de Inicio
+    nlohmann::ordered_json appsPackObtenido;  // apps-pack.json, para Apps › Del pack
 
     /* Las protecciones de la primera ventana, calculadas en segundo plano
        mientras se ve la pantalla de carga. Solo valen para esa ventana: al
@@ -116,6 +118,10 @@ namespace {
             arranque::marca("red: version de trucos lista");
         });
         nlohmann::ordered_json packsObtenidos;
+        std::thread h7([&] {
+            appsPackObtenido = appsPack::bajarManifiesto();
+            arranque::marca("red: apps del pack listas");
+        });
         std::thread h6([&] {
             packsObtenidos = packVersion::fetchPublished();
             arranque::marca("red: packs listos");
@@ -132,6 +138,7 @@ namespace {
         h4.join();
         h5.join();
         h6.join();
+        h7.join();
         packsGuardado = packsObtenidos;
         /* Los iconos de las apps: aqui mismo, con la pantalla de carga a la
            vista y despues de las demas consultas. Sin hilo suelto: uno que
@@ -614,7 +621,7 @@ MainFrame::MainFrame() : TabFrame()
     };
     if (!util::getBoolValue(hideStatus, "apps")) linea();
     if (!util::getBoolValue(hideStatus, "apps")) {
-        this->addTab("menus/main/apps"_i18n, vistaApps = new AppsPage(nxlinks));
+        this->addTab("menus/main/apps"_i18n, vistaApps = new AppsPage(nxlinks, appsPackObtenido));
         this->itemApps = entrada(iconos::Icono::Apps);
         arranque::marca("ventana: pestaña apps");
         this->appsSidebar = this->itemApps;

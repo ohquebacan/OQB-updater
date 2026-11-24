@@ -31,6 +31,8 @@ constexpr const char APP_FILENAME[] = "/config/aio-switch-updater/app.zip";
 
 constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/nx-links.json";
 // Partidas completas de juegos (se restauran con JKSV BACAN). Viaja dentro de nxlinks como "_partidas".
+constexpr const char APPS_PACK_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/apps-pack.json";
+constexpr const char APPS_PACK_LOCAL[] = "/config/aio-switch-updater/apps_pack_local.json";
 constexpr const char PARTIDAS_URL[] = "https://raw.githubusercontent.com/ohquebacan/OQB-HATS-PACK/main/partidas.json";
 
 constexpr const char CUSTOM_FILENAME[] = "/config/aio-switch-updater/custom.zip";

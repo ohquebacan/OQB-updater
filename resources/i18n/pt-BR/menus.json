@@ -1122,5 +1122,24 @@
     "orden_pesados": "Maiores",
     "orden_livianos": "Menores",
     "orden_nombre": "A–Z"
+  },
+  "apps_pack": {
+    "chip": "Do pack · {}",
+    "chip_sin": "Do pack",
+    "desc": "Vem no seu pack. Só este app é substituído e suas configurações ficam.",
+    "desc_reinicio": "É um sysmodule: reinicie o console depois de atualizar.",
+    "en_pack": "No pack",
+    "descarga": "Download",
+    "incompleta": "Falta um arquivo",
+    "boton_completar": " Completar",
+    "todas": " Atualizar os {} · {}",
+    "todas_accion": "Atualizar todos",
+    "titulo": "Apps do pack",
+    "confirmar": "Serão instalados do seu pack:\n\n{}\nNão mexe no Atmosphère, no hekate nem nas suas configurações.",
+    "instalando": "Instalando apps do pack",
+    "listo": "Pronto: {} instalados do seu pack.",
+    "fallaron": "Não foi possível instalar: {}. Provavelmente a conexão caiu; tente de novo. O que você tinha ficou igual.",
+    "reiniciar": "Reinicie o console para os novos sysmodules começarem a funcionar.",
+    "nada": "Todos os apps do seu pack estão em dia."
   }
 }
