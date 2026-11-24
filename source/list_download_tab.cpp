@@ -437,6 +437,17 @@ void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, s
             // quedan dos en el menú HOME y el viejo apunta a un archivo que ya
             // no está, así que da error al abrirlo. Borramos los de las demás
             // ubicaciones posibles de este mismo .nro.
+            /* El HOME guarda el ícono de cada título en caché: un acceso rehecho
+               con el mismo ID (el mismo .nro, como Wind Waker HD de otro origen)
+               seguía con el ícono viejo hasta reiniciar. Igual que en Nexus: que
+               vuelva a leerlos todos (InvalidateAllApplicationControlCache). */
+            if (R_SUCCEEDED(rc)) {
+                Service am{};
+                if (R_SUCCEEDED(nsGetApplicationManagerInterface(&am))) {
+                    (void)serviceDispatch(&am, 405);
+                    serviceClose(&am);
+                }
+            }
             if (R_SUCCEEDED(rc)) {
                 const std::string filename = nroPath->substr(nroPath->rfind('/') + 1);
                 for (const auto& candidate : util::nroCandidatePaths(filename)) {
