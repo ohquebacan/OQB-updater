@@ -141,10 +141,7 @@ namespace {
                 if (clave == actual) item->setValue("menus/limpia/en_tu_sd"_i18n, true);
                 const std::string nombre = link.first;
                 item->getClickEvent()->subscribe([frame, estado, url, clave, fecha, nombre](brls::View* view) {
-                    if (!estado->erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
-                        util::showDialogBoxInfo("menus/errors/mariko_payload_missing"_i18n);
-                        return;
-                    }
+                    // La instalación limpia siempre pone un pack nuestro, que trae payload.bin.
                     estado->url = url;
                     estado->clave = clave;
                     estado->fecha = fecha;
@@ -395,10 +392,6 @@ void instalacionLimpia::abrirCon(const nlohmann::ordered_json& nxlinks, bool eri
     estado->url = url;
     estado->clave = packVersion::keyFromUrl(url);
     estado->fecha = packVersion::published(packVersion::fetchPublished(), estado->clave).date;
-    if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
-        util::showDialogBoxInfo("menus/errors/mariko_payload_missing"_i18n);
-        return;
-    }
     brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
     frame->setTitle("menus/limpia/titulo"_i18n);
     frame->addStage(new Explicacion(frame, fmt::format("menus/limpia/explica"_i18n, nombre)));

@@ -314,7 +314,7 @@
   "errors": {
     "insufficient_storage": "Não há espaço suficiente disponível no seu cartão SD para realizar esta operação.",
     "error_message": "{}\nPor favor, tente novamente em breve. Se o problema persistir, abra uma issue no GitHub.",
-    "mariko_payload_missing": "Para atualizar o Atmosphère em Switches modificados, o seu payload precisa ter o nome de \"payload.bin\" e deve estar na raiz do seu cartão SD.",
+    "mariko_payload_missing": "Seu console é desbloqueado por chip e não há payload.bin na raiz do SD. Provavelmente ele foi apagado ou renomeado: o chip inicia o hekate a partir desse arquivo.\n\nCopie bootloader/update.bin para a raiz do SD com o nome payload.bin, ou instale o nosso pack, que já o traz.",
     "download_failed": "Não foi possível baixar: verifique sua conexão com a internet (modo avião?). Nada foi alterado no seu SD.",
     "incomplete_download": "O download chegou incompleto. Nada foi alterado no seu SD; tente de novo com uma conexão estável.",
     "empty_cheats": "A base de trapaças baixada não tem nenhuma trapaça; provavelmente foi publicada incompleta. Nada foi alterado no seu SD; tente de novo mais tarde.",
@@ -1027,7 +1027,10 @@
     "reponer_no": "O pack foi instalado, mas desta vez o Nexus Bacán não volta sozinho: {}\n\nSeus jogos do USB e suas rotas são mantidos. Quando houver uma versão do Nexus para este pack, instale em Nexus USB e eles voltam a abrir.",
     "reponer_fw": "seu firmware ({}) ainda não está na lista do Nexus Bacán.",
     "reponer_ams": "o pack traz o Atmosphère {} e o Nexus Bacán é feito para o {}. Colocá-lo por cima poderia impedir o console de iniciar.",
-    "reponer_sin_catalogo": "não foi possível ler a versão do Nexus Bacán no catálogo (sem internet?)."
+    "reponer_sin_catalogo": "não foi possível ler a versão do Nexus Bacán no catálogo (sem internet?).",
+    "sin_pack_oqb": "Não encontramos o pack da OQB instalado pelo app. Provavelmente você usa outro pack ou o instalou manualmente.\n\nO Nexus Bacán é testado com o nosso pack; com outro ele pode não funcionar bem, porque não sabemos o que ele traz. O ideal é instalar primeiro o nosso pack em Packs e firmwares.",
+    "sin_pack_atras": "Voltar",
+    "sin_pack_igual": "Instalar mesmo assim"
   },
   "soporte": {
     "titulo": "ENVIAR AO SUPORTE",

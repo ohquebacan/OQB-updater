@@ -314,7 +314,7 @@
     "errors": {
         "insufficient_storage": "There isn't enough space available on your SD card to perform this operation.",
         "error_message": "{}\nPlease try again in a little while. If the problem persists, open an issue on GitHub.",
-        "mariko_payload_missing": "In order to update Atmosphère on patched Switches, your payload needs to be named \"payload.bin\" and should be at the root of your SD card.",
+        "mariko_payload_missing": "Your console is patched (with a modchip) and there is no payload.bin in the root of the SD. It was probably deleted or renamed: the modchip starts hekate from that file.\n\nCopy bootloader/update.bin to the root of the SD as payload.bin, or install our pack, which already includes it.",
         "download_failed": "The download failed: check your internet connection (airplane mode?). Nothing on your SD card was changed.",
         "incomplete_download": "The download arrived incomplete. Nothing on your SD card was changed; try again on a stable connection.",
         "empty_cheats": "The cheat database that was downloaded has no cheats in it; it was probably published incomplete. Nothing on your SD was changed; try again later.",
@@ -1006,7 +1006,10 @@
         "reponer_no": "The pack is installed, but this time Nexus Bacán is not put back automatically: {}\n\nYour USB games and their mappings are kept. When there is a Nexus version for this pack, install it from Nexus USB and they will open again.",
         "reponer_fw": "your firmware ({}) is not yet on the Nexus Bacán list.",
         "reponer_ams": "the pack has Atmosphère {} and Nexus Bacán is made for {}. Putting it on top could leave the console unable to boot.",
-        "reponer_sin_catalogo": "the Nexus Bacán version could not be read from the catalog (no internet?)."
+        "reponer_sin_catalogo": "the Nexus Bacán version could not be read from the catalog (no internet?).",
+        "sin_pack_oqb": "We couldn't find the OQB pack installed from the app. You probably use another pack or set it up by hand.\n\nNexus Bacán is tested with our pack; with another one it may not work well, because we don't know what it includes. Ideally, install our pack first from Packs and firmwares.",
+        "sin_pack_atras": "Back",
+        "sin_pack_igual": "Install anyway"
     },
     "soporte": {
         "titulo": "SEND TO SUPPORT",

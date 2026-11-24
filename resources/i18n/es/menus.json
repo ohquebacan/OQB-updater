@@ -314,7 +314,7 @@
     "errors": {
         "insufficient_storage": "No hay suficiente espacio disponible en tu tarjeta SD para realizar esta operación.",
         "error_message": "{}\nPor favor, vuelve a intentarlo dentro de un rato. Si el problema persiste abre una incidencia en GitHub.",
-        "mariko_payload_missing": "Para actualizar Atmosphère en Switch parcheadas tu payload debe de llamarse \"payload.bin\" y debe de estar en la raíz de tu tarjeta SD.",
+        "mariko_payload_missing": "Tu consola es parcheada (con chip) y no hay payload.bin en la raíz de la SD. Probablemente se borró o se renombró: el chip arranca hekate desde ese archivo.\n\nCopia bootloader/update.bin a la raíz de la SD con el nombre payload.bin, o instala nuestro pack, que ya lo trae.",
         "download_failed": "No se pudo descargar: revisa tu conexión a internet (¿modo avión?). No se cambió nada en tu SD.",
         "incomplete_download": "La descarga llegó incompleta. No se cambió nada en tu SD; vuelve a intentarlo con una conexión estable.",
         "empty_cheats": "La base de trucos que se bajó no trae ningún truco; probablemente la publicaron incompleta. No se cambió nada en tu SD; prueba de nuevo más tarde.",
@@ -1027,7 +1027,10 @@
         "reponer_no": "El pack quedó instalado, pero esta vez Nexus Bacán no se vuelve a poner solo: {}\n\nTus juegos del USB y sus rutas se conservan. Cuando haya una versión de Nexus para este pack, la instalas desde Nexus USB y vuelven a abrir.",
         "reponer_fw": "tu firmware ({}) todavía no está en la lista de Nexus Bacán.",
         "reponer_ams": "el pack trae Atmosphère {} y Nexus Bacán está hecho para {}. Ponerlo encima podría dejar la consola sin arrancar.",
-        "reponer_sin_catalogo": "no se pudo leer la versión de Nexus Bacán en el catálogo (¿sin internet?)."
+        "reponer_sin_catalogo": "no se pudo leer la versión de Nexus Bacán en el catálogo (¿sin internet?).",
+        "sin_pack_oqb": "No encontramos el pack de OQB instalado desde la app. Probablemente usas otro pack o lo pusiste a mano.\n\nNexus Bacán está probado con nuestro pack; con otro puede no funcionar bien, porque no sabemos qué trae. Lo ideal es instalar primero nuestro pack desde Packs y firmwares.",
+        "sin_pack_atras": "Atrás",
+        "sin_pack_igual": "Instalar igual"
     },
     "soporte": {
         "titulo": "ENVIAR A SOPORTE",

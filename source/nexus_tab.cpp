@@ -1594,13 +1594,26 @@ void NexusTab::armar()
         if (!fwOk) return "menus/nexus/fw_no"_i18n;
         if (ocBloquea) return "oc";
         if (!packOk) return "menus/nexus/pack_no_probado"_i18n;
-        if (!erista && !existe(MARIKO_PAYLOAD_PATH)) return "menus/errors/mariko_payload_missing"_i18n;
+        /* Antes se pedía /payload.bin en Mariko (herencia de AIO). Instalar Nexus
+           no lo toca, y sin nuestro pack el aviso de abajo explica lo que importa. */
         return "";
     };
-    auto intentar = [bloqueo, url, publicada, erista, zipLocal, reinstalarPack]() {
+    /* Sin nuestro pack instalado desde la app no sabemos qué trae la SD: se
+       avisa y se deja elegir entre seguir igual o volver a instalarlo primero. */
+    const bool sinPackOqb = clavePack.empty();
+    auto intentar = [bloqueo, url, publicada, erista, zipLocal, reinstalarPack, sinPackOqb]() {
         const std::string b = bloqueo();
         if (b == "oc") ofrecerPackNormal(reinstalarPack);
         else if (!b.empty()) aviso(b);
+        else if (sinPackOqb) {
+            brls::Dialog* d = new brls::Dialog("menus/nexus/sin_pack_oqb"_i18n);
+            d->addButton("menus/nexus/sin_pack_atras"_i18n, [d](brls::View*) { d->close(); });
+            d->addButton("menus/nexus/sin_pack_igual"_i18n, [d, url, publicada, erista, zipLocal](brls::View*) {
+                d->close([url, publicada, erista, zipLocal]() { instalar(url, publicada, erista, zipLocal); });
+            });
+            d->setCancelable(true);
+            d->open();
+        }
         else instalar(url, publicada, erista, zipLocal);
     };
 
