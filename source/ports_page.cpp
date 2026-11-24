@@ -356,11 +356,6 @@ namespace {
                     nvgFillColor(vg, texto);
                     nvgBeginPath(vg);
                     nvgText(vg, rx + 52.0f, cy, fmt::format("menus/ports/parte"_i18n, i + 1).c_str(), nullptr);
-                    nvgFontSize(vg, 14.0f);
-                    nvgFillColor(vg, tenue);
-                    nvgBeginPath(vg);
-                    const std::string archivo = p.url.substr(p.url.rfind('/') + 1);
-                    nvgText(vg, rx + 130.0f, cy, archivo.c_str(), nullptr);
                     nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
                     const std::string der = (p.instalada ? "menus/ports/instalada"_i18n : "menus/ports/falta"_i18n) +
                                             (p.bytes > 0 ? "  ·  " + tamano(p.bytes) : "");
