@@ -560,4 +560,95 @@ namespace download {
         return rc == CURLE_OK ? codigo : 0;
     }
 
+    namespace {
+        size_t alTexto(void* datos, size_t tam, size_t n, void* destino)
+        {
+            static_cast<std::string*>(destino)->append(static_cast<char*>(datos), tam * n);
+            return tam * n;
+        }
+
+        size_t cabecera(char* datos, size_t tam, size_t n, void* destino)
+        {
+            const std::string linea(datos, tam * n);
+            std::string bajo = linea;
+            for (auto& c : bajo) c = std::tolower(static_cast<unsigned char>(c));
+            if (bajo.rfind("content-range:", 0) == 0) {
+                const auto barra = linea.rfind('/');
+                if (barra != std::string::npos) *static_cast<std::uint64_t*>(destino) = std::strtoull(linea.c_str() + barra + 1, nullptr, 10);
+            }
+            return tam * n;
+        }
+
+        struct Vivo {
+            const std::function<bool(const std::uint8_t*, std::size_t)>* recibir;
+            bool cortado = false;
+        };
+
+        size_t alVivo(void* datos, size_t tam, size_t n, void* userp)
+        {
+            Vivo* v = static_cast<Vivo*>(userp);
+            if (ProgressEvent::instance().getInterupt()) return 0;
+            if (!(*v->recibir)(static_cast<const std::uint8_t*>(datos), tam * n)) {
+                v->cortado = true;
+                return 0;
+            }
+            return tam * n;
+        }
+    }  // namespace
+
+    long rango(const std::string& url, std::uint64_t desde, std::uint64_t hasta, std::string& out, std::uint64_t* total)
+    {
+        out.clear();
+        CURL* curl = curl_easy_init();
+        if (!curl) return 0;
+        std::uint64_t tam = 0;
+        const std::string r = std::to_string(desde) + "-" + std::to_string(hasta);
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, API_AGENT);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+        curl_easy_setopt(curl, CURLOPT_RANGE, r.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, alTexto);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &out);
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, cabecera);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, &tam);
+        setTimeouts(curl, API_TIMEOUT_S * 2);
+        long codigo = 0;
+        if (curl_easy_perform(curl) == CURLE_OK) curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &codigo);
+        curl_easy_cleanup(curl);
+        if (total) *total = tam;
+        return codigo;
+    }
+
+    long enVivo(const std::string& url, const std::function<bool(const std::uint8_t*, std::size_t)>& recibir)
+    {
+        CURL* curl = curl_easy_init();
+        if (!curl) return 0;
+        time_old = std::chrono::steady_clock::now();
+        dlold = 0.0f;
+        Vivo v{&recibir};
+        actividad::paso(actividad::texto("descargando", actividad::nombre(url)));
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, API_AGENT);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, alVivo);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &v);
+        // Bloques grandes: menos llamadas y escrituras mas largas en la SD.
+        curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 512L * 1024L);
+        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+        curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, download_progress);
+        setTimeouts(curl, 0);
+        long codigo = 0;
+        const CURLcode rc = curl_easy_perform(curl);
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &codigo);
+        curl_easy_cleanup(curl);
+        if (rc != CURLE_OK || v.cortado) codigo = 0;
+        ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+        return codigo;
+    }
+
 }  // namespace download

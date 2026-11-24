@@ -40,6 +40,7 @@
 #include "language_tab.hpp"
 #include "list_download_tab.hpp"
 #include "nextendo_tab.hpp"
+#include "ports_page.hpp"
 #include "nexus_tab.hpp"
 #include "protection.hpp"
 #include "tools_tab.hpp"
@@ -255,6 +256,12 @@ MainFrame::MainFrame() : TabFrame()
         for (const auto& [nro, url] : nxlinks["iconos_acceso_directo"].items())
             if (url.is_string()) iconos[nro] = url.get<std::string>();
         fwd::recordarIconosPropios(iconos);
+    }
+    if (nxlinks.is_object() && nxlinks.contains("accesos_39bit") && nxlinks["accesos_39bit"].is_array()) {
+        std::set<std::string> nros;
+        for (const auto& n : nxlinks["accesos_39bit"])
+            if (n.is_string()) nros.insert(n.get<std::string>());
+        fwd::recordarAccesos39(nros);
     }
     if (nxlinks.is_object() && nxlinks.contains("enlaces") && nxlinks["enlaces"].is_object()) {
         const auto& enlaces = nxlinks["enlaces"];
@@ -587,6 +594,14 @@ MainFrame::MainFrame() : TabFrame()
         this->appsSidebar = this->itemApps;
         if (datos.appsNuevas)
             this->appsItem = this->appsSidebar;
+    }
+
+    /* Ports (4.6.0): fuera de Apps, en su propia seccion, con los juegos en
+       varias partes ya agrupados. Solo si el catalogo trae "ports". */
+    if (!util::getBoolValue(hideStatus, "apps") && ports::disponible(nxlinks)) {
+        this->addTab("menus/ports/menu"_i18n, new PortsPage(nxlinks));
+        entrada(iconos::Icono::Ports);
+        arranque::marca("ventana: pestaña ports");
     }
 
     /* Bacán Shop. Punto dorado si hay version nueva de la tienda o de los

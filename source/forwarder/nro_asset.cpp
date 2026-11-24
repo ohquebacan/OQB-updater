@@ -2,6 +2,7 @@
 #include <cctype>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <mutex>
 // Lee el asset section de un NRO (icono JPEG + NACP) para armar el forwarder.
 #include <switch.h>
@@ -43,13 +44,15 @@ namespace {
         return std::filesystem::path(path).stem().string();
     }
 
-    // El menú HOME sólo muestra bien un JPEG de 256x256; con cualquier otra
-    // cosa dibuja un mosaico roto. Los NROs pueden traer el icono que quieran,
-    // así que hay que mirarlo antes de meterlo en el NCA de control.
+    // El menú HOME sólo muestra bien un JPEG de 256x256, normal (no progresivo)
+    // y de hasta 128 KB; con cualquier otra cosa dibuja un mosaico roto o se
+    // queda con el ícono cargando para siempre (pasó con el genérico, que era
+    // progresivo, en los ports de varias partes). Los NROs pueden traer el
+    // icono que quieran, así que hay que mirarlo antes de meterlo en el NCA.
     bool isValidHomeMenuIcon(const std::vector<u8>& icon)
     {
         // SOI
-        if (icon.size() < 4 || icon[0] != 0xFF || icon[1] != 0xD8) {
+        if (icon.size() < 4 || icon.size() > 0x20000 || icon[0] != 0xFF || icon[1] != 0xD8) {
             return false;
         }
 
@@ -61,8 +64,10 @@ namespace {
             const u16 len = (icon[i + 2] << 8) | icon[i + 3];
             if (len < 2) return false;
 
-            // SOF0/1/2: acá vienen alto y ancho.
-            if (marker == 0xC0 || marker == 0xC1 || marker == 0xC2) {
+            // SOF2 es progresivo: el menú HOME no lo dibuja.
+            if (marker == 0xC2) return false;
+            // SOF0/1: acá vienen alto y ancho.
+            if (marker == 0xC0 || marker == 0xC1) {
                 const u16 h = (icon[i + 5] << 8) | icon[i + 6];
                 const u16 w = (icon[i + 7] << 8) | icon[i + 8];
                 return w == 256 && h == 256;
@@ -117,6 +122,7 @@ std::string nameFromNro(const std::string& nro_path)
 namespace {
     std::mutex iconosMutex;
     std::map<std::string, std::string> iconosPropios;  // nombre del .nro en minusculas -> URL
+    std::set<std::string> accesos39;                    // nombres de .nro en minusculas
 
     std::string minusculas(std::string t)
     {
@@ -132,22 +138,36 @@ void recordarIconosPropios(const std::map<std::string, std::string>& porNro)
     for (const auto& [nro, url] : porNro) iconosPropios[minusculas(nro)] = url;
 }
 
+void recordarAccesos39(const std::set<std::string>& nros)
+{
+    std::lock_guard<std::mutex> lock(iconosMutex);
+    accesos39.clear();
+    for (const auto& n : nros) accesos39.insert(minusculas(n));
+}
+
+void agregarIconoPropio(const std::string& nro, const std::string& url)
+{
+    std::lock_guard<std::mutex> lock(iconosMutex);
+    iconosPropios[minusculas(nro)] = url;
+}
+
 void aplicarIconoPropio(Config& config)
 {
     std::string url;
     {
         std::lock_guard<std::mutex> lock(iconosMutex);
         const std::string nro = minusculas(config.nro_path.substr(config.nro_path.rfind('/') + 1));
+        if (accesos39.count(nro)) config.espacio39 = true;
         const auto it = iconosPropios.find(nro);
         if (it == iconosPropios.end()) return;
         url = it->second;
     }
     std::string jpeg;
     // Un JPEG de 256x256 pesa unas decenas de KB; el menu HOME no acepta mas de 128 KB.
-    if (download::textoCorto(url, jpeg, 20, 0x20000) != 200 || jpeg.size() < 4 ||
-        static_cast<u8>(jpeg[0]) != 0xFF || static_cast<u8>(jpeg[1]) != 0xD8)
-        return;
-    config.icon.assign(jpeg.begin(), jpeg.end());
+    if (download::textoCorto(url, jpeg, 20, 0x20000) != 200) return;
+    std::vector<u8> icono(jpeg.begin(), jpeg.end());
+    if (!isValidHomeMenuIcon(icono)) return;
+    config.icon = std::move(icono);
 }
 
 Result configFromNro(const std::string& nro_path, Config& out)

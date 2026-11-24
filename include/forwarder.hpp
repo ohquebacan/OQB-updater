@@ -13,6 +13,7 @@
 
 #include <functional>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,7 @@ struct Config
     std::string author;
     NacpStruct nacp{};
     std::vector<u8> icon;  // JPEG, tal como lo guarda el NRO
+    bool espacio39 = false;  // espacio de direcciones de 39 bits (Chromium NX lo pide); si no, 36
 };
 
 // Rellena `out` leyendo el asset section del NRO (icono + NACP).
@@ -43,6 +45,13 @@ void recordarIconosPropios(const std::map<std::string, std::string>& porNro);
 // Si el .nro de `config` tiene icono propio, lo baja y reemplaza el suyo. Si
 // falla la descarga, queda el del .nro.
 void aplicarIconoPropio(Config& config);
+
+// Los .nro que necesitan un acceso directo de 39 bits, del catalogo
+// ("accesos_39bit": nombres de .nro). aplicarIconoPropio lo marca en el Config.
+void recordarAccesos39(const std::set<std::string>& nros);
+
+// Agrega uno sin borrar los demás (los ports traen el suyo desde el catálogo).
+void agregarIconoPropio(const std::string& nro, const std::string& url);
 
 // Sólo el nombre que declara el NRO, sin leer el icono. Para listar muchos
 // NROs sin cargar cientos de KB de imágenes que no se van a usar.

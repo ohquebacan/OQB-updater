@@ -6,6 +6,7 @@
 #include "app_updates.hpp"
 #include "list_download_tab.hpp"
 #include "oqb_theme.hpp"
+#include "ports_page.hpp"
 #include "utils.hpp"
 
 namespace i18n = brls::i18n;
@@ -55,7 +56,10 @@ AppsPage::AppsPage(const nlohmann::ordered_json& nxlinks) : nxlinks(nxlinks)
 {
     // Categoria de cada app: la primera seccion que la nombra.
     std::map<std::string, std::string> categoriaDe;
+    /* Con la pestana Ports, los ports ya no van en Apps. */
+    const bool conPestanaPorts = ports::disponible(nxlinks);
     for (const auto& s : SECCIONES) {
+        if (conPestanaPorts && std::string(s.clave) == "apps_ports") continue;
         const auto sec = nxlinks.find(s.clave);
         if (sec == nxlinks.end() || !sec->is_object()) continue;
         for (const auto& [nombre, url] : sec->items()) {
@@ -77,6 +81,7 @@ AppsPage::AppsPage(const nlohmann::ordered_json& nxlinks) : nxlinks(nxlinks)
         }
     }
     for (const char* clave : SOLO_EN_SU_SECCION) {
+        if (conPestanaPorts && std::string(clave) == "apps_ports") continue;
         const auto sec = nxlinks.find(clave);
         if (sec == nxlinks.end() || !sec->is_object()) continue;
         for (const auto& [nombre, url] : sec->items()) {

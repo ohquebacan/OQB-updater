@@ -158,6 +158,7 @@ namespace {
         char title_name[0x10]{"Application"};
         char product_code[0x10]{};
         u64 tid;
+        bool espacio39 = false;
     };
 
     struct NacpPatch
@@ -468,6 +469,7 @@ namespace {
         constexpr u8 ADDRESS_SPACE_SHIFT = 1;
         constexpr u8 ADDRESS_SPACE_MASK = 0x7 << ADDRESS_SPACE_SHIFT;
         constexpr u8 ADDRESS_SPACE_36BIT = 1;
+        constexpr u8 ADDRESS_SPACE_39BIT = 3;
 
         npdm::Meta meta{};
         npdm::Aci0 aci0{};
@@ -478,7 +480,7 @@ namespace {
 
         std::memcpy(meta.title_name, &patch.title_name, sizeof(meta.title_name));
         std::memcpy(meta.product_code, &patch.product_code, sizeof(patch.product_code));
-        meta.flags = (meta.flags & ~ADDRESS_SPACE_MASK) | (ADDRESS_SPACE_36BIT << ADDRESS_SPACE_SHIFT);
+        meta.flags = (meta.flags & ~ADDRESS_SPACE_MASK) | ((patch.espacio39 ? ADDRESS_SPACE_39BIT : ADDRESS_SPACE_36BIT) << ADDRESS_SPACE_SHIFT);
         aci0.program_id = patch.tid;
         acid.program_id_min = patch.tid;
         acid.program_id_max = patch.tid;
@@ -1025,6 +1027,7 @@ Result install(Config& config, const ProgressFn& progress, NcmStorageId storage_
 
         NpdmPatch npdm_patch;
         npdm_patch.tid = tid;
+        npdm_patch.espacio39 = config.espacio39;
         if (!patch_npdm(exefs[1].data, npdm_patch)) {
             return Result_NpdmPatchFailed;
         }

@@ -7,7 +7,7 @@
 // `lado`, con trazo del color dado.
 namespace iconos {
 
-    enum class Icono { Inicio, Packs, Apps, Shop, Nextendo, Herramientas, Trucos, Partidas, Escudo, Descarga, Usb };
+    enum class Icono { Inicio, Packs, Apps, Shop, Nextendo, Herramientas, Trucos, Partidas, Escudo, Descarga, Usb, Ports };
 
     inline void dibujar(NVGcontext* vg, Icono icono, float cx, float cy, float lado, NVGcolor color)
     {
@@ -73,6 +73,14 @@ namespace iconos {
                 nvgMoveTo(vg, X(5), Y(4)); nvgLineTo(vg, X(5), Y(20)); nvgLineTo(vg, X(19), Y(20)); nvgLineTo(vg, X(19), Y(4));
                 nvgRect(vg, X(9), Y(9), 2.0f * s, 4.0f * s);
                 nvgRect(vg, X(13), Y(9), 2.0f * s, 4.0f * s);
+                break;
+            case Icono::Ports:
+                // Un control: la cruz a la izquierda y dos botones a la derecha.
+                nvgRoundedRect(vg, X(2.5f), Y(7), 19 * s, 11 * s, 5.5f * s);
+                nvgMoveTo(vg, X(7.5f), Y(10.5f)); nvgLineTo(vg, X(7.5f), Y(14.5f));
+                nvgMoveTo(vg, X(5.5f), Y(12.5f)); nvgLineTo(vg, X(9.5f), Y(12.5f));
+                nvgCircle(vg, X(15.5f), Y(11.5f), 0.9f * s);
+                nvgCircle(vg, X(17.8f), Y(13.8f), 0.9f * s);
                 break;
         }
         nvgStroke(vg);
