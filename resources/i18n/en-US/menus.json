@@ -1090,6 +1090,12 @@
         "bajando_una": "Downloading and installing",
         "descomprimiendo_una": "Extracting",
         "acceso_directo": "Shortcut",
-        "acceso_directo_nota": "Press Y to create its HOME menu shortcut again. If the icon got stuck loading, this fixes it."
+        "acceso_directo_nota": "Press Y to create its HOME menu shortcut again. If the icon got stuck loading, this fixes it.",
+        "hint_orden": "Sort",
+        "orden": "Sort: {}",
+        "orden_recientes": "Newest",
+        "orden_pesados": "Largest",
+        "orden_livianos": "Smallest",
+        "orden_nombre": "A–Z"
     }
 }

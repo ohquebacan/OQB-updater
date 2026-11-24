@@ -1111,6 +1111,12 @@
         "bajando_una": "Bajando e instalando",
         "descomprimiendo_una": "Descomprimiendo",
         "acceso_directo": "Acceso directo",
-        "acceso_directo_nota": "Con Y vuelves a crear su acceso directo en el menú HOME. Si el ícono se quedó cargando, esto lo arregla."
+        "acceso_directo_nota": "Con Y vuelves a crear su acceso directo en el menú HOME. Si el ícono se quedó cargando, esto lo arregla.",
+        "hint_orden": "Orden",
+        "orden": "Orden: {}",
+        "orden_recientes": "Recientes",
+        "orden_pesados": "Más pesados",
+        "orden_livianos": "Más livianos",
+        "orden_nombre": "A–Z"
     }
 }

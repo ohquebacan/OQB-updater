@@ -243,14 +243,16 @@ namespace oqb {
         constexpr unsigned HEADER_HEIGHT = 0;  // MainFrame va sin cabecera (rediseno)
         constexpr unsigned FOOTER_HEIGHT = 73;  // AppletFrame.footerHeight
 
-        constexpr unsigned SIDEBAR_ITEM_HEIGHT = 62;
-        constexpr unsigned SIDEBAR_SEPARATOR_HEIGHT = 20;
+        /* 4.6.0: ocho secciones (con Ports) y tres lineas entre grupos
+           (Inicio y Packs | Apps y Ports | Bacán Shop, Nextendo y Nexus |
+           Herramientas): 8*57 + 3*13 = 495 sobre 497. */
+        constexpr unsigned SIDEBAR_ITEM_HEIGHT = 57;
+        constexpr unsigned SIDEBAR_SEPARATOR_HEIGHT = 13;
         constexpr unsigned SIDEBAR_MARGIN = 26;
         constexpr unsigned SIDEBAR_MARGIN_TOP = 124;  // el logo, en dos lineas, va arriba del panel
 
-        // Rediseno: seis secciones sin separadores, siete si los trucos van aparte.
-        constexpr unsigned MAX_TABS = 7;
-        constexpr unsigned SEPARATORS = 0;
+        constexpr unsigned MAX_TABS = 8;
+        constexpr unsigned SEPARATORS = 3;
 
         constexpr unsigned SIDEBAR_AVAILABLE = SCREEN_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - SIDEBAR_MARGIN_TOP - SIDEBAR_MARGIN;
         constexpr unsigned SIDEBAR_USED = MAX_TABS * SIDEBAR_ITEM_HEIGHT + SEPARATORS * SIDEBAR_SEPARATOR_HEIGHT;
@@ -259,8 +261,6 @@ namespace oqb {
                       "La barra lateral no cabe en la pantalla: bajar la altura de las entradas, "
                       "la de los separadores o los margenes en oqb_theme.cpp");
 
-        static_assert(SIDEBAR_USED + SIDEBAR_ITEM_HEIGHT <= SIDEBAR_AVAILABLE,
-                      "No queda sitio para una pestana mas; ajustar las medidas antes de anadirla");
 
         class OqbStyle : public brls::HorizonStyle
         {

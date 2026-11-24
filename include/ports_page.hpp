@@ -25,6 +25,7 @@ namespace ports {
         bool actualizacion = false;  // solo una actualizacion de otro port
         std::string nro;             // el .nro en la SD, si esta instalado (para el acceso directo)
         int imagen = -1;             // textura de la portada (-1 sin pedir, 0 sin icono)
+        std::string fecha;           // la subida mas nueva de sus partes (ISO 8601), para «Recientes»
 
         long long total() const;
         int instaladas() const;
@@ -53,6 +54,7 @@ private:
     nlohmann::ordered_json nxlinks;
     std::vector<ports::Port> todos;
     int chip = 0, elegido = 0, primeraFila = 0, columnas = 6;
+    int orden = 0;  // 0 recientes, 1 mas pesados, 2 mas livianos, 3 A-Z (Y lo cambia)
     int genInstalaciones = -1;
     int fuente = -1;
     bool fuenteIntentada = false;

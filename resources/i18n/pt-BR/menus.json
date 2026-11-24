@@ -1111,6 +1111,12 @@
     "bajando_una": "Baixando e instalando",
     "descomprimiendo_una": "Descompactando",
     "acceso_directo": "Atalho",
-    "acceso_directo_nota": "Com Y você cria de novo o atalho no menu HOME. Se o ícone ficou carregando, isso resolve."
+    "acceso_directo_nota": "Com Y você cria de novo o atalho no menu HOME. Se o ícone ficou carregando, isso resolve.",
+    "hint_orden": "Ordem",
+    "orden": "Ordem: {}",
+    "orden_recientes": "Recentes",
+    "orden_pesados": "Maiores",
+    "orden_livianos": "Menores",
+    "orden_nombre": "A–Z"
   }
 }

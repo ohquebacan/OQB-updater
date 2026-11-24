@@ -51,6 +51,27 @@ using namespace i18n::literals;
 using json = nlohmann::ordered_json;
 
 namespace {
+
+    /* Una linea fina entre grupos del menu (Inicio y Packs | Apps y Ports |
+       Bacán Shop, Nextendo y Nexus | Herramientas). Su alto es el de
+       Sidebar.Separator (oqb_theme.cpp), que cuenta en el presupuesto del menu. */
+    class LineaMenu : public brls::View
+    {
+    public:
+        LineaMenu() { this->setHeight(brls::Application::getStyle()->Sidebar.Separator.height); }
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override
+        {
+            // Sutil: la mitad de opaca que el separador de borealis.
+            NVGcolor color = ctx->theme->sidebarSeparatorColor;
+            color.a *= 0.5f;
+            nvgFillColor(vg, this->a(color));
+            nvgBeginPath(vg);
+            nvgRect(vg, x + 18, y + height / 2, width - 36, 1);
+            nvgFill(vg);
+        }
+        void layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash) override {}
+    };
+
     constexpr const char AppTitle[] = APP_TITLE;
     constexpr const char AppVersion[] = APP_VERSION;
 
@@ -587,6 +608,11 @@ MainFrame::MainFrame() : TabFrame()
         arranque::marca("ventana: pestaña trucos");
     }
 
+    // Una linea antes de cada grupo, solo si ya hay algo arriba.
+    auto linea = [this] {
+        if (this->sidebar->getViewsCount() > 0) this->sidebar->addView(new LineaMenu());
+    };
+    if (!util::getBoolValue(hideStatus, "apps")) linea();
     if (!util::getBoolValue(hideStatus, "apps")) {
         this->addTab("menus/main/apps"_i18n, vistaApps = new AppsPage(nxlinks));
         this->itemApps = entrada(iconos::Icono::Apps);
@@ -603,6 +629,8 @@ MainFrame::MainFrame() : TabFrame()
         entrada(iconos::Icono::Ports);
         arranque::marca("ventana: pestaña ports");
     }
+
+    if (conBacan || conNextendo || NexusTab::available(nxlinks)) linea();
 
     /* Bacán Shop. Punto dorado si hay version nueva de la tienda o de los
        trucos, o si no esta instalada y nunca se abrio. */
@@ -652,6 +680,7 @@ MainFrame::MainFrame() : TabFrame()
     (void)vistaNextendo;
 
     if (!util::getBoolValue(hideStatus, "tools")) {
+        linea();
         PaginaOqb::Opciones op;
         op.forma = PaginaOqb::Forma::Grupos;
         this->addTab("menus/main/tools"_i18n, new PaginaOqb("menus/inicio/titulo_tools"_i18n, "menus/inicio/sub_tools"_i18n,

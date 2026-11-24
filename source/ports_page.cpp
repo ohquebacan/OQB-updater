@@ -204,6 +204,10 @@ namespace {
                     if (d != e->end() && d->is_number_integer()) parte.descomprimido = d->get<long long>();
                 }
                 parte.instalada = !pendientes.count(parte.url) && appUpdates::isInstalled(nxlinks, parte.url);
+                if (const auto* e = versionDe(nxlinks, parte.url)) {
+                    const auto f = e->find("fecha");
+                    if (f != e->end() && f->is_string() && f->get<std::string>() > p.fecha) p.fecha = f->get<std::string>();
+                }
                 /* El .nro y, si el catalogo lo trae, el icono del acceso directo
                    (la portada del port en JPEG de 256, el que acepta el HOME). */
                 const std::string nro = nroDe(nxlinks, parte.url);
@@ -586,6 +590,11 @@ PortsPage::PortsPage(const nlohmann::ordered_json& nxlinks) : nxlinks(nxlinks)
         this->elegido = this->primeraFila = 0;
         return true;
     });
+    this->registerAction("menus/ports/hint_orden"_i18n, brls::Key::Y, [this] {
+        this->orden = (this->orden + 1) % 4;
+        this->elegido = this->primeraFila = 0;
+        return true;
+    });
     this->registerAction("menus/ports/hint_ver"_i18n, brls::Key::A, [this] {
         const auto v = this->visibles();
         if (this->elegido >= 0 && this->elegido < (int)v.size()) ports::abrir(this->nxlinks, this->todos[v[this->elegido]]);
@@ -631,7 +640,22 @@ std::vector<int> PortsPage::visibles() const
         out.push_back(i);
     }
     // Lo que quedo a medias primero: es lo que hay que terminar.
-    std::stable_sort(out.begin(), out.end(), [this](int a, int b) { return (this->todos[a].estado() == 2) > (this->todos[b].estado() == 2); });
+    /* El orden elegido con Y, en cualquier filtro. Sin tamano o fecha conocidos
+       van al final, en el orden del catalogo. */
+    std::stable_sort(out.begin(), out.end(), [this](int a, int b) {
+        const ports::Port& x = this->todos[a];
+        const ports::Port& y = this->todos[b];
+        switch (this->orden) {
+            case 1:
+            case 2: {
+                const long long tx = x.total(), ty = y.total();
+                if ((tx > 0) != (ty > 0)) return tx > 0;
+                return this->orden == 1 ? tx > ty : tx < ty;
+            }
+            case 3: return minusculas(x.nombre) < minusculas(y.nombre);
+            default: return x.fecha > y.fecha;
+        }
+    });
     return out;
 }
 
@@ -680,7 +704,23 @@ void PortsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
     nvgFontSize(vg, 16.0f);
     nvgFillColor(vg, tenue);
     nvgBeginPath(vg);
-    nvgText(vg, lx, ly + 58.0f, cortar(vg, fmt::format("menus/ports/sub"_i18n, this->todos.size()), lw).c_str(), nullptr);
+    // A la derecha del subtitulo, el orden en uso (Y lo cambia).
+    {
+        const char* claves[4] = {"menus/ports/orden_recientes", "menus/ports/orden_pesados", "menus/ports/orden_livianos", "menus/ports/orden_nombre"};
+        const std::string orden = fmt::format("menus/ports/orden"_i18n, i18n::getStr(claves[this->orden]));
+        nvgFontSize(vg, 15.0f);
+        const float ow = nvgTextBounds(vg, 0, 0, orden.c_str(), nullptr, nullptr);
+        nvgFontSize(vg, 16.0f);
+        nvgFillColor(vg, tenue);
+        nvgBeginPath(vg);
+        nvgText(vg, lx, ly + 58.0f, cortar(vg, fmt::format("menus/ports/sub"_i18n, this->todos.size()), lw - ow - 40.0f).c_str(), nullptr);
+        nvgFontSize(vg, 15.0f);
+        nvgFillColor(vg, texto);
+        nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
+        nvgBeginPath(vg);
+        nvgText(vg, lx + lw, ly + 58.0f, orden.c_str(), nullptr);
+        nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+    }
     ly += 84.0f;
 
     // Buscador y chips en una fila.
