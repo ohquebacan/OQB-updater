@@ -314,7 +314,7 @@
   "errors": {
     "insufficient_storage": "Não há espaço suficiente disponível no seu cartão SD para realizar esta operação.",
     "error_message": "{}\nPor favor, tente novamente em breve. Se o problema persistir, abra uma issue no GitHub.",
-    "mariko_payload_missing": "Seu console é desbloqueado por chip e não há payload.bin na raiz do SD. Provavelmente ele foi apagado ou renomeado: o chip inicia o hekate a partir desse arquivo.\n\nCopie bootloader/update.bin para a raiz do SD com o nome payload.bin, ou instale o nosso pack, que já o traz.",
+    "mariko_payload_missing": "Seu console é desbloqueado por chip e não há payload.bin na raiz do SD. Para terminar a instalação, o app reinicia com um payload especial que o chip carrega desse arquivo; sem ele, a instalação provavelmente ficaria pela metade, então nada é instalado.\n\nCopie bootloader/update.bin (é o hekate) para a raiz do SD com o nome payload.bin e tente de novo. Se o seu chip inicia por outro arquivo, a instalação pelo app não vai funcionar no seu console.",
     "download_failed": "Não foi possível baixar: verifique sua conexão com a internet (modo avião?). Nada foi alterado no seu SD.",
     "incomplete_download": "O download chegou incompleto. Nada foi alterado no seu SD; tente de novo com uma conexão estável.",
     "empty_cheats": "A base de trapaças baixada não tem nenhuma trapaça; provavelmente foi publicada incompleta. Nada foi alterado no seu SD; tente de novo mais tarde.",

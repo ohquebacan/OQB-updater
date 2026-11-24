@@ -157,8 +157,7 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
 
             const std::string nombreCatalogo = link.first;
             auto instalar = [this, text, text_hekate, url, hekate_url, hekate, pack, ams, packKey, packDate, nombreCatalogo]() {
-                /* Solo para Atmosphère suelto: un pack nuestro trae su propio payload.bin. */
-                if (!erista && !pack && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
+                if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
                     util::showDialogBoxInfo("menus/errors/mariko_payload_missing"_i18n);
                 }
                 else {

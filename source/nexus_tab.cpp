@@ -1594,8 +1594,9 @@ void NexusTab::armar()
         if (!fwOk) return "menus/nexus/fw_no"_i18n;
         if (ocBloquea) return "oc";
         if (!packOk) return "menus/nexus/pack_no_probado"_i18n;
-        /* Antes se pedía /payload.bin en Mariko (herencia de AIO). Instalar Nexus
-           no lo toca, y sin nuestro pack el aviso de abajo explica lo que importa. */
+        /* En Mariko la instalación termina al reiniciar con el payload de AIO, que el
+           chip carga desde /payload.bin: sin ese archivo quedaría a medias. */
+        if (!erista && !existe(MARIKO_PAYLOAD_PATH)) return "menus/errors/mariko_payload_missing"_i18n;
         return "";
     };
     /* Sin nuestro pack instalado desde la app no sabemos qué trae la SD: se
