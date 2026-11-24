@@ -1601,7 +1601,16 @@ void NexusTab::armar()
     };
     /* Sin nuestro pack instalado desde la app no sabemos qué trae la SD: se
        avisa y se deja elegir entre seguir igual o volver a instalarlo primero. */
-    const bool sinPackOqb = clavePack.empty();
+    /* Puesto a mano (de MediaFire) no queda registro: si el hekate_ipl.ini tiene
+       nuestras entradas de arranque, se toma como nuestro y no se avisa. */
+    const auto pareceNuestro = []() {
+        std::ifstream ini(HEKATE_IPL_PATH);
+        std::stringstream c;
+        c << ini.rdbuf();
+        const std::string t = c.str();
+        return t.find("[SEMI-STOCK CFW]") != std::string::npos && t.find("[EMUNAND CFW]") != std::string::npos;
+    };
+    const bool sinPackOqb = clavePack.empty() && !pareceNuestro();
     auto intentar = [bloqueo, url, publicada, erista, zipLocal, reinstalarPack, sinPackOqb]() {
         const std::string b = bloqueo();
         if (b == "oc") ofrecerPackNormal(reinstalarPack);

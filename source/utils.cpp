@@ -9,6 +9,7 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <mutex>
 #include <thread>
 #include <set>
@@ -86,7 +87,25 @@ namespace util {
             return !ec && size > 0 && size <= MaxPayloadSize;
         };
 
-        const char* next = valid(UPDATE_BIN_PATH) ? UPDATE_BIN_PATH : valid(REBOOT_PAYLOAD_PATH) ? REBOOT_PAYLOAD_PATH : nullptr;
+        /* El chip arranca /payload.bin. Si no existe, probablemente arranca desde
+           otro archivo: crearlo solo dejaria el payload de la app suelto en la SD. */
+        if (!std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
+            brls::Logger::error("No hay /payload.bin: no se prepara el reinicio");
+            return false;
+        }
+        /* Lo que vuelve a quedar como payload.bin despues: hekate de
+           bootloader/update.bin, el de reboot_payload.bin o, si no hay ninguno,
+           el mismo payload.bin que el chip arranca hoy (salvo que ya sea el de la
+           app, que quedo de un intento anterior). */
+        const auto esElDeLaApp = [](const char* path) {
+            std::ifstream a(path, std::ios::binary), b(RCM_PAYLOAD_PATH, std::ios::binary);
+            if (!a || !b) return false;
+            return std::equal(std::istreambuf_iterator<char>(a), std::istreambuf_iterator<char>(), std::istreambuf_iterator<char>(b), std::istreambuf_iterator<char>());
+        };
+        const char* next = valid(UPDATE_BIN_PATH) ? UPDATE_BIN_PATH
+                         : valid(REBOOT_PAYLOAD_PATH) ? REBOOT_PAYLOAD_PATH
+                         : (valid(MARIKO_PAYLOAD_PATH) && !esElDeLaApp(MARIKO_PAYLOAD_PATH)) ? MARIKO_PAYLOAD_PATH
+                         : nullptr;
         if (next == nullptr) {
             brls::Logger::error("No hay un payload valido para payload.bin.aio; payload.bin no se toca");
             return false;
@@ -95,7 +114,17 @@ namespace util {
             std::filesystem::remove(MARIKO_PAYLOAD_PATH_TEMP);
             return false;
         }
-        return fs::copyFile(RCM_PAYLOAD_PATH, MARIKO_PAYLOAD_PATH);
+        /* Si la copia del payload de la app se corta, payload.bin quedaria
+           dañado y la consola no arrancaria: se vuelve a poner el respaldo. */
+        std::error_code ec;
+        const auto esperado = std::filesystem::file_size(RCM_PAYLOAD_PATH, ec);
+        if (!fs::copyFile(RCM_PAYLOAD_PATH, MARIKO_PAYLOAD_PATH) || ec || std::filesystem::file_size(MARIKO_PAYLOAD_PATH, ec) != esperado || ec) {
+            brls::Logger::error("No se pudo poner el payload de la app; se restaura payload.bin");
+            fs::copyFile(MARIKO_PAYLOAD_PATH_TEMP, MARIKO_PAYLOAD_PATH);
+            std::filesystem::remove(MARIKO_PAYLOAD_PATH_TEMP);
+            return false;
+        }
+        return true;
     }
 
     void downloadArchive(const std::string& url, contentType type)

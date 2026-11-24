@@ -270,6 +270,7 @@
     "extract_failed": "Certains fichiers n'ont pas pu être écrits correctement sur la carte SD. Atmosphère garde la version précédente, la console démarre donc toujours. La carte SD a probablement des erreurs ou est pleine ; vérifie-la et réinstalle le pack.",
     "error_message": "{}\nVeuillez réessayer un peu plus tard. Si le problème persiste, ouvrez une issue sur GitHub",
     "mariko_payload_missing": "Ta console est patchée (avec puce) et il n’y a pas de payload.bin à la racine de la SD. Pour terminer l’installation, l’app redémarre avec un payload spécial que la puce charge depuis ce fichier ; sans lui, l’installation resterait probablement à moitié faite, donc rien n’est installé.\n\nCopie bootloader/update.bin (c’est hekate) à la racine de la SD sous le nom payload.bin et réessaie. Si ta puce démarre depuis un autre fichier, l’installation depuis l’app ne fonctionnera pas sur ta console.",
+    "mariko_payload_failed": "La dernière étape de l’installation n’a pas pu être préparée, donc la console ne s’éteint pas. Il manque probablement hekate dans bootloader/update.bin et le payload.bin actuel ne permet pas de redémarrer.\n\nLes nouveaux fichiers d’Atmosphère sont en attente. Copie hekate en bootloader/update.bin et réinstalle.",
     "empty_cheats": "La base de codes téléchargée ne contient aucun code ; elle a probablement été publiée incomplète. Rien n'a été modifié sur votre SD ; réessayez plus tard."
   },
   "worker": {

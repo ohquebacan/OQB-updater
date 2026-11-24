@@ -94,7 +94,12 @@ ConfirmPage_AmsUpdate::ConfirmPage_AmsUpdate(brls::StagedAppletFrame* frame, con
             util::rebootToPayload(RCM_PAYLOAD_PATH);
         }
         else {
-            util::prepareMarikoPayload();
+            /* Sin el payload de la app no se aplica el Atmosphère nuevo al
+               reiniciar: mejor decirlo que apagar y dejarlo a medias. */
+            if (!util::prepareMarikoPayload()) {
+                util::showDialogBoxInfo("menus/errors/mariko_payload_failed"_i18n);
+                return;
+            }
             util::shutDown(true);
         }
     });

@@ -315,6 +315,7 @@
         "insufficient_storage": "No hay suficiente espacio disponible en tu tarjeta SD para realizar esta operación.",
         "error_message": "{}\nPor favor, vuelve a intentarlo dentro de un rato. Si el problema persiste abre una incidencia en GitHub.",
         "mariko_payload_missing": "Tu consola es parcheada (con chip) y no hay payload.bin en la raíz de la SD. Para terminar de instalar, la app reinicia con un payload especial que el chip carga desde ese archivo; sin él, probablemente la instalación quedaría a medias, así que no se instala nada.\n\nCopia bootloader/update.bin (es hekate) a la raíz de la SD con el nombre payload.bin y vuelve a intentarlo. Si tu chip arranca desde otro archivo, la instalación desde la app no va a funcionar en tu consola.",
+        "mariko_payload_failed": "No se pudo preparar el paso final de la instalación, así que la consola no se apaga. Probablemente falta hekate en bootloader/update.bin y el payload.bin actual no sirve para volver a arrancar.\n\nLo nuevo de Atmosphère quedó en espera. Copia hekate como bootloader/update.bin y vuelve a instalar.",
         "download_failed": "No se pudo descargar: revisa tu conexión a internet (¿modo avión?). No se cambió nada en tu SD.",
         "incomplete_download": "La descarga llegó incompleta. No se cambió nada en tu SD; vuelve a intentarlo con una conexión estable.",
         "empty_cheats": "La base de trucos que se bajó no trae ningún truco; probablemente la publicaron incompleta. No se cambió nada en tu SD; prueba de nuevo más tarde.",

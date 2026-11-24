@@ -315,6 +315,7 @@
         "insufficient_storage": "There isn't enough space available on your SD card to perform this operation.",
         "error_message": "{}\nPlease try again in a little while. If the problem persists, open an issue on GitHub.",
         "mariko_payload_missing": "Your console is patched (with a modchip) and there is no payload.bin in the root of the SD. To finish installing, the app restarts with a special payload that the modchip loads from that file; without it the installation would probably be left half done, so nothing is installed.\n\nCopy bootloader/update.bin (it's hekate) to the root of the SD as payload.bin and try again. If your modchip starts from another file, installing from the app won't work on your console.",
+        "mariko_payload_failed": "The last step of the installation could not be prepared, so the console won't shut down. hekate is probably missing from bootloader/update.bin and the current payload.bin can't be used to start again.\n\nThe new Atmosphère files are waiting. Copy hekate as bootloader/update.bin and install again.",
         "download_failed": "The download failed: check your internet connection (airplane mode?). Nothing on your SD card was changed.",
         "incomplete_download": "The download arrived incomplete. Nothing on your SD card was changed; try again on a stable connection.",
         "empty_cheats": "The cheat database that was downloaded has no cheats in it; it was probably published incomplete. Nothing on your SD was changed; try again later.",
