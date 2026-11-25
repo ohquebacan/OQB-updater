@@ -75,6 +75,12 @@ namespace {
     // Lo escribe Nexus Bacán tras cada escaneo del USB (usb_resumen.cpp).
     constexpr const char RESUMEN_USB[] = "/config/nexusmanager/usb-juegos.json";
     constexpr const char* PISADOS[] = {"/atmosphere/package3", "/atmosphere/stratosphere.romfs", FUSEE, HOC_KIP, EXOSPHERE};
+    /* sys-icon y Nexus piden el mismo servicio (ns:am2): con los dos, la consola
+       se queda en el logo. Nexus ya pone los íconos propios solo, así que al
+       instalarlo el módulo se guarda en el respaldo y al volver al pack normal
+       se repone. Los íconos (/atmosphere/contents/<juego>/icon*.jpg) no se tocan. */
+    constexpr const char SYS_ICON[] = "/atmosphere/contents/00FF69636F6EFF00";
+    constexpr const char SYS_ICON_RESPALDO[] = "/config/aio-switch-updater/nexus_respaldo/sys-icon";
     /* Nexus 1.4.0+: el USB vive en un loader aparte (como en Nexus HS3R1/RF2),
        así el pack de overclock usa el hoc.kip de HOC sin cambios. Hekate lo
        carga solo con una línea kip1= en cada entrada; sin ella la consola
@@ -501,6 +507,33 @@ namespace {
         return rc;
     }
 
+    /* Saca sys-icon de /atmosphere/contents y lo deja en el respaldo de Nexus.
+       Si ya había uno guardado (una reinstalación de Nexus), se queda el nuevo. */
+    void apartarSysIcon(nlohmann::ordered_json& reg)
+    {
+        std::error_code ec;
+        if (!std::filesystem::is_directory(SYS_ICON, ec)) return;
+        fs::createTree(RESPALDO);
+        fs::removeDir(SYS_ICON_RESPALDO);
+        std::filesystem::rename(SYS_ICON, SYS_ICON_RESPALDO, ec);
+        if (ec) {
+            // Si no se pudo mover, al menos que no arranque junto con Nexus.
+            std::filesystem::remove(std::string(SYS_ICON) + "/flags/boot2.flag", ec);
+            reg["sysicon"] = "apagado";
+            return;
+        }
+        reg["sysicon"] = "respaldo";
+    }
+
+    // Al volver al pack normal: sys-icon vuelve a su lugar, si estaba.
+    void reponerSysIcon()
+    {
+        std::error_code ec;
+        if (!std::filesystem::is_directory(SYS_ICON_RESPALDO, ec) || std::filesystem::exists(SYS_ICON, ec)) return;
+        fs::createTree("/atmosphere/contents/");
+        std::filesystem::rename(SYS_ICON_RESPALDO, SYS_ICON, ec);
+    }
+
     /* Extrae el zip de Nexus ya descargado y deja todo listo: respaldo del pack
        (si Nexus no estaba), OC, system_settings.ini, hekate_ipl.ini y registro.
        Lo usan la instalacion de la seccion Nexus USB y la de despues de un pack. */
@@ -558,6 +591,7 @@ namespace {
             reg["oc"] = true;
         }
         fs::removeDir(ZIP_OC);
+        apartarSysIcon(reg);
         if (!ponerUsbEnIni(true) || !ponerLoaderEnHekate(existe(KIP_NEXUS))) {
             ProgressEvent::instance().setStatusCode(STATUS_NO_SPACE);
             ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
@@ -628,6 +662,7 @@ namespace {
             ponerLoaderEnHekate(false);
             std::filesystem::remove(KIP_NEXUS);
             std::filesystem::remove(REGISTRO);
+            reponerSysIcon();
             const std::string base = packVersion::current();
             if (reinstalarPack && !base.empty() && reinstalarPack(base)) return;
             aviso("menus/nexus/sin_respaldo"_i18n);
@@ -652,6 +687,7 @@ namespace {
                reinstalar Nexus, esos juegos vuelven a abrir desde el USB. */
             std::filesystem::remove(NRO);
             std::filesystem::remove(OVL);
+            reponerSysIcon();
             fs::removeDir(RESPALDO);
             std::filesystem::remove(REGISTRO);
             ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());

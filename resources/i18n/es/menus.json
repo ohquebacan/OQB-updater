@@ -893,7 +893,7 @@
         "reinstalar": "Reinstalar Nexus Bacán",
         "instalar_sub": "Puedes volver al pack normal cuando quieras, desde esta misma sección.",
         "en_pruebas": "En pruebas",
-        "instalar_explica": "Se instala encima de tu pack:\n\n•  Atmosphère con USB: el mismo de tu pack, con soporte para juegos en el USB.\n•  La app Nexus Bacán y su overlay para Ultrahand.\n•  El USB queda activado en la configuración.\n\nAntes se respaldan los archivos que cambian. Está en pruebas: si algo no te convence, «Volver al pack normal» deja todo como estaba y tus juegos del USB se quedan en el USB.\n\nAl terminar se reinicia la consola.",
+        "instalar_explica": "Se instala encima de tu pack:\n\n•  Atmosphère con USB: el mismo de tu pack, con soporte para juegos en el USB.\n•  La app Nexus Bacán y su overlay para Ultrahand.\n•  El USB queda activado en la configuración.\n•  Si tienes sys-icon, se guarda aparte: Nexus ya muestra tus íconos propios. Vuelve al regresar al pack normal.\n\nAntes se respaldan los archivos que cambian. Está en pruebas: si algo no te convence, «Volver al pack normal» deja todo como estaba y tus juegos del USB se quedan en el USB.\n\nAl terminar se reinicia la consola.",
         "instalado_reinicia": "Nexus Bacán quedó instalado. Reinicia para empezar a usarlo.",
         "sin_ams": "Nexus Bacán necesita Atmosphère. Probablemente la consola arrancó con otro sistema: entra por la entrada de Atmosphère de tu pack e inténtalo otra vez.",
         "fw_no": "Tu firmware todavía no está probado con Nexus Bacán. Cuando lo esté, aparecerá como compatible aquí mismo.",

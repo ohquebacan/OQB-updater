@@ -893,7 +893,7 @@
     "reinstalar": "Reinstalar o Nexus Bacán",
     "instalar_sub": "Você pode voltar ao pack normal quando quiser, nesta mesma seção.",
     "en_pruebas": "Em testes",
-    "instalar_explica": "É instalado por cima do seu pack:\n\n•  Atmosphère com USB: o mesmo do seu pack, com suporte a jogos no USB.\n•  O app Nexus Bacán e o overlay dele para o Ultrahand.\n•  O USB fica ativado na configuração.\n\nAntes, é feito um backup dos arquivos que mudam. Está em testes: se algo não te convencer, «Voltar ao pack normal» deixa tudo como estava e seus jogos do USB ficam no USB.\n\nAo terminar, o console reinicia.",
+    "instalar_explica": "É instalado por cima do seu pack:\n\n•  Atmosphère com USB: o mesmo do seu pack, com suporte a jogos no USB.\n•  O app Nexus Bacán e o overlay dele para o Ultrahand.\n•  O USB fica ativado na configuração.\n•  Se você tem o sys-icon, ele é guardado à parte: o Nexus já mostra seus ícones personalizados. Ele volta quando você voltar ao pack normal.\n\nAntes, é feito um backup dos arquivos que mudam. Está em testes: se algo não te convencer, «Voltar ao pack normal» deixa tudo como estava e seus jogos do USB ficam no USB.\n\nAo terminar, o console reinicia.",
     "instalado_reinicia": "O Nexus Bacán foi instalado. Reinicie para começar a usá-lo.",
     "sin_ams": "O Nexus Bacán precisa do Atmosphère. Provavelmente o console iniciou com outro sistema: entre pela opção do Atmosphère do seu pack e tente de novo.",
     "fw_no": "Seu firmware ainda não foi testado com o Nexus Bacán. Quando for, ele aparecerá como compatível aqui mesmo.",
