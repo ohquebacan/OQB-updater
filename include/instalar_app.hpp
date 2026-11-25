@@ -11,3 +11,7 @@ void instalarAppDelCatalogo(const nlohmann::ordered_json& nxlinks, const std::st
 /** La app del catalogo segun como este: sin instalar o con version nueva, la
     instala o actualiza; al dia, la abre (con esos argumentos). */
 void abrirOInstalar(const nlohmann::ordered_json& nxlinks, const std::string& nombre, const std::string& url, const std::string& argumentos = "");
+
+/** sys-icon con Nexus Bacan deja la consola en el logo al encender: mientras no
+    este arreglado, no se instala. Muestra el aviso y devuelve true si se bloquea. */
+bool bloqueadoPorNexus(const std::string& url);

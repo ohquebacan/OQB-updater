@@ -366,7 +366,9 @@
         "new_count_one": "1 app con versión nueva",
         "pending_short": "Nuevas",
         "new_version_text": "Hay una versión nueva de esta app.",
-        "group_more": "Más"
+        "group_more": "Más",
+        "sec_oqb": "Apps OQB",
+        "sysicon_nexus": "sys-icon no funciona junto con Nexus Bacán: con los dos instalados, la consola se queda en el logo de Nintendo Switch al encender.\n\nMientras no esté arreglado, no se instala. Si quieres cambiar íconos, usa el pack sin Nexus."
     },
     "donar": {
         "title": "Invítanos un café",

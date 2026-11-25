@@ -366,7 +366,9 @@
     "new_count_one": "1 app com versão nova",
     "pending_short": "Novas",
     "new_version_text": "Há uma versão nova deste app.",
-    "group_more": "Mais"
+    "group_more": "Mais",
+    "sec_oqb": "Apps OQB",
+    "sysicon_nexus": "O sys-icon não funciona junto com o Nexus Bacán: com os dois instalados, o console fica travado no logo do Nintendo Switch ao ligar.\n\nEnquanto não estiver corrigido, ele não é instalado. Para trocar ícones, use o pack sem Nexus."
   },
   "donar": {
     "title": "Nos pague um café",

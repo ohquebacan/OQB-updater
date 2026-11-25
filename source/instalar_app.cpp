@@ -5,6 +5,8 @@
 
 #include "app_updates.hpp"
 #include "confirm_page.hpp"
+#include "current_cfw.hpp"
+#include "dialogo_centrado.hpp"
 #include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
@@ -16,8 +18,19 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
+bool bloqueadoPorNexus(const std::string& url)
+{
+    if (url.find("/sys-icon") == std::string::npos || !CurrentCfw::nexusCorriendo()) return false;
+    brls::Dialog* d = new DialogoCentrado("menus/apps/sysicon_nexus"_i18n, 360);
+    d->addButton("menus/common/ok"_i18n, [d](brls::View*) { d->close(); });
+    d->setCancelable(true);
+    d->open();
+    return true;
+}
+
 void instalarAppDelCatalogo(const nlohmann::ordered_json& nxlinks, const std::string& nombre, const std::string& url)
 {
+    if (bloqueadoPorNexus(url)) return;
     const std::string fecha = appUpdates::published(nxlinks, url);
     brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
     frame->setTitle(nombre);

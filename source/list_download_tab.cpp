@@ -1,5 +1,6 @@
 #include "actividad.hpp"
 #include "list_download_tab.hpp"
+#include "instalar_app.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -234,6 +235,7 @@ void ListDownloadTab::createList(contentType type)
                 listItem->setValue("menus/apps/new_version"_i18n, false, false);
             }
             listItem->getClickEvent()->subscribe([this, type, text, url, title, fecha, ofertaNombre, ofertaUrl, video](brls::View* view) {
+                if (type == contentType::apps && bloqueadoPorNexus(url)) return;
                 brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                 stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
                 stagedFrame->addStage(new ConfirmPage(stagedFrame, text));

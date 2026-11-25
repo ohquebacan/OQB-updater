@@ -282,7 +282,9 @@
     "forwarder_ask": "Do you want to create a shortcut on the HOME menu for this app?",
     "forwarder_creating": "Creating shortcut...",
     "forwarder_error": "The shortcut could not be created: {}",
-    "installed": "Installed"
+    "installed": "Installed",
+    "sec_oqb": "Apps OQB",
+    "sysicon_nexus": "sys-icon ne fonctionne pas avec Nexus Bacán : avec les deux installés, la console reste bloquée sur le logo Nintendo Switch au démarrage.\n\nTant que ce n'est pas corrigé, il n'est pas installé. Pour changer les icônes, utilise le pack sans Nexus."
   },
   "forwarders": {
     "create_title": "Create HOME menu shortcut",

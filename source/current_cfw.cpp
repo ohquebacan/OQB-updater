@@ -73,4 +73,10 @@ namespace CurrentCfw {
             return "Couldn't retrieve AMS version";
     }
 
+    bool nexusCorriendo()
+    {
+        bool hay = false;
+        return R_SUCCEEDED(smAtmosphereHasService(&hay, smEncodeName("ams:usb"), isPost019())) && hay;
+    }
+
 }  // namespace CurrentCfw

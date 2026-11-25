@@ -345,7 +345,9 @@
         "new_count_one": "1 app with a new version",
         "pending_short": "New",
         "new_version_text": "There is a new version of this app.",
-        "group_more": "More"
+        "group_more": "More",
+        "sec_oqb": "OQB apps",
+        "sysicon_nexus": "sys-icon doesn't work together with Nexus Bacán: with both installed, the console gets stuck on the Nintendo Switch logo at boot.\n\nUntil it's fixed, it won't be installed. To change icons, use the pack without Nexus."
     },
     "donar": {
         "title": "Buy us a coffee",

@@ -25,6 +25,10 @@ namespace {
         {"apps_emuladores", "menus/apps/sec_emuladores"}, {"apps_mods", "menus/apps/sec_mods"},       {"apps_sysmodules", "menus/apps/sec_sysmodules"},
         {"apps_instaladores", "menus/apps/sec_instaladores"}, {"apps_sistema", "menus/apps/sec_sistema"},
         {"apps_ports", "menus/apps/sec_ports"},
+        /* Las nuestras. Al final de la lista para que cada app conserve su
+           categoría (la primera sección que la nombra), pero su chip va
+           primero, justo después de «Todas». */
+        {"apps_oqb", "menus/apps/sec_oqb"},
     };
     /* Secciones que no van en «Todas las aplicaciones» ni en el buscador: los
        ports son más de cien y ahí solo harían ruido. Se ven en su chip. */
@@ -189,8 +193,9 @@ void AppsPage::releer(bool conPack)
     if (!this->delPack.empty())
         this->chips.push_back({pendientes ? fmt::format("menus/apps_pack/chip"_i18n, pendientes) : "menus/apps_pack/chip_sin"_i18n, "_pack"});
     this->chips.push_back({"menus/inicio/apps_chip_todas"_i18n, ""});
+    if (this->porSeccion.count("apps_oqb")) this->chips.push_back({"menus/apps/sec_oqb"_i18n, "apps_oqb"});
     for (const auto& s : SECCIONES)
-        if (this->porSeccion.count(s.clave)) this->chips.push_back({i18n::getStr(s.etiqueta), s.clave});
+        if (this->porSeccion.count(s.clave) && std::string(s.clave) != "apps_oqb") this->chips.push_back({i18n::getStr(s.etiqueta), s.clave});
     this->chip = 0;
     for (int i = 0; i < (int)this->chips.size(); ++i)
         if (this->chips[i].clave == antes) this->chip = i;
