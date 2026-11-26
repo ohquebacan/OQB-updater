@@ -489,4 +489,14 @@ namespace appUpdates {
         fs::writeJsonToFile(registro, APP_VERSIONS_PATH);
     }
 
+    void forgetInstalled(const std::string& url)
+    {
+        nlohmann::ordered_json registro = installed();
+        if (!registro.is_object() || !registro.contains(url))
+            return;
+        registro.erase(url);
+        fs::writeJsonToFile(registro, APP_VERSIONS_PATH);
+        instalaciones.fetch_add(1);
+    }
+
 }  // namespace appUpdates

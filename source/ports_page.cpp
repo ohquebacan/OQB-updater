@@ -186,6 +186,7 @@ namespace {
         if (sec == nxlinks.end() || !sec->is_object()) return out;
         const std::set<std::string> pendientes = leerPendientes();
         util::LecturaSwitch lectura;  // /switch se lee una vez para todas las marcas
+        const nlohmann::ordered_json registro = appUpdates::installed();
         for (const auto& [nombre, datos] : sec->items()) {
             if (!datos.is_object()) continue;
             ports::Port p;
@@ -194,16 +195,43 @@ namespace {
             p.actualizacion = act != datos.end() && act->is_boolean() && act->get<bool>();
             const auto partes = datos.find("partes");
             if (partes == datos.end() || !partes->is_array()) continue;
-            for (const auto& u : *partes) {
-                if (!u.is_string()) continue;
+            /* Con "secciones" (4.8.0, ports propios): cada una con sus partes,
+               y en la ficha se marca que instalar. Si no, "partes" de siempre. */
+            std::vector<std::pair<std::string, int>> urls;
+            const auto secs = datos.find("secciones");
+            if (secs != datos.end() && secs->is_array()) {
+                for (const auto& sj : *secs) {
+                    if (!sj.is_object() || !sj.contains("partes") || !sj["partes"].is_array()) continue;
+                    ports::Seccion sec;
+                    sec.nombre = sj.value("nombre", "");
+                    sec.grupo = sj.contains("grupo") && sj["grupo"].is_string() ? sj["grupo"].get<std::string>() : "";
+                    sec.opcional = sec.grupo.empty() && sj.value("opcional", false);
+                    sec.marcada = sj.value("marcada", true);
+                    const int idx = p.secciones.size();
+                    p.secciones.push_back(sec);
+                    for (const auto& u : sj["partes"])
+                        if (u.is_string()) urls.emplace_back(u.get<std::string>(), idx);
+                }
+            }
+            if (urls.empty()) {
+                p.secciones.clear();
+                for (const auto& u : *partes)
+                    if (u.is_string()) urls.emplace_back(u.get<std::string>(), 0);
+            }
+            for (const auto& [url, sec] : urls) {
                 ports::Parte parte;
-                parte.url = u.get<std::string>();
+                parte.url = url;
+                parte.seccion = sec;
                 parte.bytes = bytesDe(nxlinks, parte.url);
                 if (const auto* e = versionDe(nxlinks, parte.url)) {
                     const auto d = e->find("descomprimido");
                     if (d != e->end() && d->is_number_integer()) parte.descomprimido = d->get<long long>();
                 }
                 parte.instalada = !pendientes.count(parte.url) && appUpdates::isInstalled(nxlinks, parte.url);
+                /* Con secciones, las partes comparten archivos (la actualizacion
+                   reemplaza el .nro del juego; el espanol y el ingles son los
+                   mismos archivos): cuentan solo si esta app las instalo. */
+                if (!p.secciones.empty() && !(registro.is_object() && registro.contains(parte.url))) parte.instalada = false;
                 if (const auto* e = versionDe(nxlinks, parte.url)) {
                     const auto f = e->find("fecha");
                     if (f != e->end() && f->is_string() && f->get<std::string>() > p.fecha) p.fecha = f->get<std::string>();
@@ -233,8 +261,68 @@ namespace {
         PortDetalle(brls::StagedAppletFrame* frame, const nlohmann::ordered_json& nxlinks, const ports::Port& port, std::vector<int> aInstalar, long long necesita, long long libre)
             : frame(frame), nxlinks(nxlinks), port(port), aInstalar(std::move(aInstalar)), necesita(necesita), libre(libre)
         {
-            const std::string boton = this->textoBoton();
+            /* Con secciones: una casilla por seccion. Arriba/abajo se mueve, A
+               marca (o elige, en un grupo) y en el boton instala lo marcado. Lo
+               obligatorio va siempre; de cada grupo, la instalada o la primera. */
+            if (this->port.conSecciones()) {
+                const int n = this->port.secciones.size();
+                this->marcada.assign(n, false);
+                std::set<std::string> grupoElegido;
+                for (int sec = 0; sec < n; ++sec) {
+                    const auto& s = this->port.secciones[sec];
+                    const bool completa = this->port.partesDe(sec) > 0 && this->port.instaladasDe(sec) == this->port.partesDe(sec);
+                    if (!s.grupo.empty()) {
+                        if (completa && !grupoElegido.count(s.grupo)) {
+                            for (int k = 0; k < n; ++k)
+                                if (this->port.secciones[k].grupo == s.grupo) this->marcada[k] = false;
+                            this->marcada[sec] = true;
+                            grupoElegido.insert(s.grupo);
+                        }
+                    }
+                    else
+                        this->marcada[sec] = s.opcional ? s.marcada : true;
+                }
+                // De cada grupo sin ninguna instalada, la primera.
+                for (int sec = 0; sec < n; ++sec) {
+                    const auto& g = this->port.secciones[sec].grupo;
+                    if (g.empty() || grupoElegido.count(g)) continue;
+                    this->marcada[sec] = true;
+                    grupoElegido.insert(g);
+                }
+                this->cursor = n;  // empieza en el boton
+                this->registerAction("", brls::Key::DUP, [this] {
+                    if (this->cursor > 0) --this->cursor;
+                    this->actualizarHint();
+                    return true;
+                }, true);
+                this->registerAction("", brls::Key::DDOWN, [this] {
+                    if (this->cursor < (int)this->port.secciones.size()) ++this->cursor;
+                    this->actualizarHint();
+                    return true;
+                }, true);
+            }
+            const std::string boton = this->port.conSecciones() ? this->textoBoton() : this->textoBoton();
             this->registerAction(boton, brls::Key::A, [this] {
+                if (this->port.conSecciones()) {
+                    if (this->cursor < (int)this->port.secciones.size()) {
+                        this->tocar(this->cursor);
+                        return true;
+                    }
+                    const std::vector<int> partes = this->seleccion();
+                    if (partes.empty()) return true;
+                    const long long nec = this->necesitaSeleccion();
+                    if (nec > 0 && this->libre >= 0 && nec > this->libre) {
+                        brls::Dialog* d = new brls::Dialog(fmt::format("menus/ports/sin_espacio"_i18n, tamano(nec), tamano(this->libre)));
+                        d->addButton("menus/common/ok"_i18n, [d](brls::View*) { d->close(); });
+                        d->open();
+                        return true;
+                    }
+                    const nlohmann::ordered_json nx = this->nxlinks;
+                    ports::Port p = this->port;
+                    p.imagen = -1;
+                    brls::Application::popView(brls::ViewAnimation::FADE, [nx, p, partes] { ports::instalar(nx, p, partes); });
+                    return true;
+                }
                 if (this->necesita > 0 && this->libre >= 0 && this->necesita > this->libre) {
                     brls::Dialog* d = new brls::Dialog(fmt::format("menus/ports/sin_espacio"_i18n, tamano(this->necesita), tamano(this->libre)));
                     d->addButton("menus/common/ok"_i18n, [d](brls::View*) { d->close(); });
@@ -284,9 +372,9 @@ namespace {
             // Debajo de la portada: tamano y estado.
             float dy = py + lado + 26.0f;
             const int est = this->port.estado();
-            const std::string meta = this->port.partes.size() > 1 && this->port.total() > 0
-                                         ? fmt::format("menus/ports/meta_partes"_i18n, tamano(this->port.total()), this->port.partes.size())
-                                         : tamano(this->port.total());
+            const std::string meta = this->port.partesDe(0) > 1 && this->port.totalDe(0) > 0
+                                         ? fmt::format("menus/ports/meta_partes"_i18n, tamano(this->port.totalDe(0)), this->port.partesDe(0))
+                                         : tamano(this->port.totalDe(0));
             nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
             if (!meta.empty()) {
                 nvgFontSize(vg, 16.0f);
@@ -313,14 +401,15 @@ namespace {
             nvgTextBox(vg, rx, ry, rw, this->port.nombre.c_str(), nullptr);
             ry = caja[3] + 14.0f;
 
-            if (this->port.partes.size() > 1 || this->port.actualizacion) {
-                const std::string t = this->port.actualizacion ? "menus/ports/actualizacion"_i18n : fmt::format("menus/ports/partes"_i18n, this->port.partes.size());
+            if (this->port.partesDe(0) > 1 || this->port.actualizacion) {
+                const std::string t = this->port.actualizacion ? "menus/ports/actualizacion"_i18n : fmt::format("menus/ports/partes"_i18n, this->port.partesDe(0));
                 pildora(vg, rx, ry + 12.0f, t, 13.0f, this->a(this->port.actualizacion ? nvgRGBA(143, 211, 240, 40) : nvgRGBA(242, 209, 107, 36)),
                         this->a(this->port.actualizacion ? nvgRGB(143, 211, 240) : oqb::doradoTexto()));
                 ry += 38.0f;
             }
 
-            const std::string explica = this->port.actualizacion ? "menus/ports/explica_actualizacion"_i18n
+            const std::string explica = this->port.conSecciones() ? "menus/ports/explica_secciones"_i18n
+                                        : this->port.actualizacion ? "menus/ports/explica_actualizacion"_i18n
                                         : est == 2               ? "menus/ports/explica_medias"_i18n
                                         : this->port.partes.size() > 1 ? fmt::format("menus/ports/explica_partes"_i18n, this->port.partes.size())
                                                                        : "menus/ports/explica_una"_i18n;
@@ -332,8 +421,76 @@ namespace {
             nvgTextBox(vg, rx, ry, rw, explica.c_str(), nullptr);
             ry = caja[3] + 16.0f;
 
+            // Con secciones: una fila por seccion, con su casilla.
+            if (this->port.conSecciones()) {
+                const float fh = 52.0f;
+                for (int sec = 0; sec < (int)this->port.secciones.size(); ++sec) {
+                    const ports::Seccion& sc = this->port.secciones[sec];
+                    const int n = this->port.partesDe(sec);
+                    if (n == 0) continue;
+                    const int si = this->port.instaladasDe(sec);
+                    const bool va = this->marcada[sec];
+                    const bool fija = sc.grupo.empty() && !sc.opcional;
+                    nvgBeginPath(vg);
+                    nvgRoundedRect(vg, rx, ry, rw, fh - 6.0f, 11.0f);
+                    nvgFillColor(vg, fondo);
+                    nvgFill(vg);
+                    if (this->cursor == sec) {
+                        nvgBeginPath(vg);
+                        nvgRoundedRect(vg, rx + 1.0f, ry + 1.0f, rw - 2.0f, fh - 8.0f, 10.0f);
+                        nvgStrokeColor(vg, this->a(oqb::esmeralda()));
+                        nvgStrokeWidth(vg, 2.5f);
+                        nvgStroke(vg);
+                    }
+                    const float cy = ry + (fh - 6.0f) / 2, cx = rx + 26.0f;
+                    // Casilla (opcional u obligatoria) o circulo (una de un grupo).
+                    nvgBeginPath(vg);
+                    if (sc.grupo.empty())
+                        nvgRoundedRect(vg, cx - 11.0f, cy - 11.0f, 22.0f, 22.0f, 6.0f);
+                    else
+                        nvgCircle(vg, cx, cy, 11.5f);
+                    if (va) {
+                        nvgFillColor(vg, this->a(fija ? oqb::velo(40) : oqb::esmeralda()));
+                        nvgFill(vg);
+                        if (sc.grupo.empty())
+                            check(vg, cx, cy, 11.0f, this->a(nvgRGBA(0, 0, 0, 0)), this->a(fija ? texto : nvgRGB(6, 20, 12)));
+                        else {
+                            nvgBeginPath(vg);
+                            nvgCircle(vg, cx, cy, 4.5f);
+                            nvgFillColor(vg, this->a(nvgRGB(6, 20, 12)));
+                            nvgFill(vg);
+                        }
+                    }
+                    else {
+                        nvgStrokeColor(vg, this->a(oqb::velo(60)));
+                        nvgStrokeWidth(vg, 2.0f);
+                        nvgStroke(vg);
+                    }
+                    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                    nvgFontSize(vg, 17.0f);
+                    nvgFillColor(vg, va ? texto : tenue);
+                    nvgBeginPath(vg);
+                    std::string izq = sc.grupo.empty() ? sc.nombre : sc.grupo + ": " + sc.nombre;
+                    if (n > 1) izq = fmt::format("menus/ports/sec_partes"_i18n, izq, n);
+                    nvgText(vg, rx + 52.0f, cy, izq.c_str(), nullptr);
+                    const long long t = this->port.totalDe(sec);
+                    const std::string est = si == n ? "menus/ports/instalada"_i18n
+                                            : si > 0 ? fmt::format("menus/ports/sec_de"_i18n, si, n)
+                                            : va     ? "menus/ports/falta"_i18n
+                                                     : "menus/ports/no_elegida"_i18n;
+                    const std::string der = est + (t > 0 ? "  ·  " + tamano(t) : "");
+                    nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
+                    nvgFontSize(vg, 16.0f);
+                    nvgFillColor(vg, si == n ? this->a(oqb::verdeTexto()) : va ? texto : tenue);
+                    nvgBeginPath(vg);
+                    nvgText(vg, rx + rw - 16.0f, cy, der.c_str(), nullptr);
+                    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                    ry += fh;
+                }
+                ry += 8.0f;
+            }
             // Las partes.
-            if (this->port.partes.size() > 1) {
+            else if (this->port.partes.size() > 1) {
                 const float fh = 46.0f;
                 for (size_t i = 0; i < this->port.partes.size(); ++i) {
                     const ports::Parte& p = this->port.partes[i];
@@ -372,11 +529,12 @@ namespace {
                 ry += 8.0f;
             }
 
-            // El espacio.
-            if (this->necesita > 0 && this->libre >= 0) {
-                const bool alcanza = this->necesita <= this->libre;
-                const std::string t = alcanza ? fmt::format("menus/ports/espacio_ok"_i18n, tamano(this->necesita), tamano(this->libre))
-                                              : fmt::format("menus/ports/espacio_no"_i18n, tamano(this->necesita), tamano(this->libre), tamano(this->necesita - this->libre));
+            // El espacio (con secciones, el de lo marcado).
+            const long long necesita = this->port.conSecciones() ? this->necesitaSeleccion() : this->necesita;
+            if (necesita > 0 && this->libre >= 0) {
+                const bool alcanza = necesita <= this->libre;
+                const std::string t = alcanza ? fmt::format("menus/ports/espacio_ok"_i18n, tamano(necesita), tamano(this->libre))
+                                              : fmt::format("menus/ports/espacio_no"_i18n, tamano(necesita), tamano(this->libre), tamano(necesita - this->libre));
                 nvgFontSize(vg, 15.0f);
                 nvgTextLineHeight(vg, 1.35f);
                 nvgTextBoxBounds(vg, rx + 44.0f, ry + 14.0f, rw - 60.0f, t.c_str(), nullptr, caja);
@@ -402,6 +560,13 @@ namespace {
             nvgRoundedRect(vg, rx, ry, bw, bh, 14.0f);
             nvgFillColor(vg, this->a(oqb::esmeralda()));
             nvgFill(vg);
+            if (this->port.conSecciones() && this->cursor == (int)this->port.secciones.size()) {
+                nvgBeginPath(vg);
+                nvgRoundedRect(vg, rx - 5.0f, ry - 5.0f, bw + 10.0f, bh + 10.0f, 18.0f);
+                nvgStrokeColor(vg, this->a(oqb::esmeralda()));
+                nvgStrokeWidth(vg, 2.5f);
+                nvgStroke(vg);
+            }
             const NVGcolor sobre = this->a(oqb::oscuro() ? nvgRGB(6, 20, 12) : nvgRGB(255, 255, 255));
             nvgBeginPath(vg);
             nvgCircle(vg, rx + 30.0f, ry + bh / 2, 12.0f);
@@ -439,9 +604,71 @@ namespace {
         ports::Port port;
         std::vector<int> aInstalar;
         long long necesita, libre;
+        std::vector<bool> marcada;
+        int cursor = 0;
+
+        // Marca o desmarca (en un grupo: elige esa). Lo obligatorio no cambia.
+        void tocar(int sec)
+        {
+            const auto& s = this->port.secciones[sec];
+            if (!s.grupo.empty()) {
+                for (int k = 0; k < (int)this->port.secciones.size(); ++k)
+                    if (this->port.secciones[k].grupo == s.grupo) this->marcada[k] = k == sec;
+            }
+            else if (s.opcional)
+                this->marcada[sec] = !this->marcada[sec];
+            this->actualizarHint();
+        }
+
+        void actualizarHint()
+        {
+            if (!this->port.conSecciones()) return;
+            const bool enFila = this->cursor < (int)this->port.secciones.size();
+            this->updateActionHint(brls::Key::A, enFila ? "menus/ports/marcar"_i18n : this->textoBoton());
+        }
+
+        // Las partes a instalar: de lo marcado, lo que falta; si ya esta todo, todo de nuevo.
+        std::vector<int> seleccion() const
+        {
+            std::vector<int> faltan, todas;
+            for (int i = 0; i < (int)this->port.partes.size(); ++i) {
+                if (!this->marcada[this->port.partes[i].seccion]) continue;
+                todas.push_back(i);
+                if (!this->port.partes[i].instalada) faltan.push_back(i);
+            }
+            return faltan.empty() ? todas : faltan;
+        }
+
+        long long necesitaSeleccion() const
+        {
+            long long n = 0;
+            for (int i : this->seleccion()) {
+                const auto& p = this->port.partes[i];
+                const long long b = p.descomprimido > 0 ? p.descomprimido : p.bytes;
+                if (b <= 0) return 0;
+                n += b;
+            }
+            return n;
+        }
+
+        // Lo marcado: 0 nada instalado, 1 todo, 2 a medias.
+        int estadoMarcado() const
+        {
+            int n = 0, si = 0;
+            for (const auto& p : this->port.partes)
+                if (this->marcada[p.seccion]) {
+                    ++n;
+                    si += p.instalada;
+                }
+            return si == 0 ? 0 : (si == n ? 1 : 2);
+        }
 
         std::string textoBoton() const
         {
+            if (this->port.conSecciones()) {
+                const int e = this->estadoMarcado();
+                return e == 1 ? "menus/ports/boton_reinstalar_marcado"_i18n : e == 2 ? "menus/ports/boton_faltan"_i18n : "menus/ports/boton_marcado"_i18n;
+            }
             const int est = this->port.estado();
             if (est == 1) return "menus/ports/boton_reinstalar"_i18n;
             if (est == 2) return "menus/ports/boton_faltan"_i18n;
@@ -464,21 +691,124 @@ namespace ports {
         return t;
     }
 
-    int Port::instaladas() const
+    int Port::partesDe(int seccion) const
     {
-        return std::count_if(this->partes.begin(), this->partes.end(), [](const Parte& p) { return p.instalada; });
+        return std::count_if(this->partes.begin(), this->partes.end(), [seccion](const Parte& p) { return p.seccion == seccion; });
     }
+
+    int Port::instaladasDe(int seccion) const
+    {
+        return std::count_if(this->partes.begin(), this->partes.end(), [seccion](const Parte& p) { return p.seccion == seccion && p.instalada; });
+    }
+
+    long long Port::totalDe(int seccion) const
+    {
+        long long t = 0;
+        for (const auto& p : this->partes) {
+            if (p.seccion != seccion) continue;
+            if (p.bytes <= 0) return 0;
+            t += p.bytes;
+        }
+        return t;
+    }
+
+    int Port::instaladas() const { return this->instaladasDe(0); }
 
     int Port::estado() const
     {
+        if (this->conSecciones()) {
+            /* Instalado: todo lo obligatorio y una de cada grupo. A medias: algo
+               instalado. Lo opcional (DLC, actualizacion) no cuenta. */
+            bool algo = false, completo = true;
+            std::set<std::string> gruposCon, grupos;
+            for (int sec = 0; sec < (int)this->secciones.size(); ++sec) {
+                const int n = this->partesDe(sec), si = this->instaladasDe(sec);
+                algo |= si > 0;
+                const auto& s = this->secciones[sec];
+                if (!s.grupo.empty()) {
+                    grupos.insert(s.grupo);
+                    if (n > 0 && si == n) gruposCon.insert(s.grupo);
+                }
+                else if (!s.opcional && si < n)
+                    completo = false;
+            }
+            if (gruposCon.size() < grupos.size()) completo = false;
+            return completo && algo ? 1 : algo ? 2 : 0;
+        }
         const int n = this->instaladas();
-        return n == 0 ? 0 : (n == (int)this->partes.size() ? 1 : 2);
+        return n == 0 ? 0 : (n == this->partesDe(0) ? 1 : 2);
     }
 
     bool disponible(const nlohmann::ordered_json& nxlinks)
     {
         const auto sec = nxlinks.find("ports");
         return sec != nxlinks.end() && sec->is_object() && !sec->empty();
+    }
+
+    /* Las etapas que instalan esas partes, una detras de otra, y al final el
+       acceso directo. Al terminar una parte de un grupo (Espanol / Ingles), las
+       otras del grupo dejan de contar como instaladas: sus archivos se pisaron. */
+    static void agregarEtapas(brls::StagedAppletFrame* frame, const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar)
+    {
+        auto nroPath = std::make_shared<std::string>();
+        const int total = aInstalar.size();
+        (void)total;
+        for (int k = 0; k < total; ++k) {
+            const int i = aInstalar[k];
+            const std::string url = port.partes[i].url;
+            const std::string fecha = appUpdates::published(nxlinks, url);
+            const bool varias = port.partes.size() > 1;
+            std::string titulo = varias ? fmt::format("menus/ports/bajando"_i18n, i + 1, port.partes.size()) : "menus/ports/bajando_una"_i18n;
+            if (port.conSecciones()) {
+                const int sec = port.partes[i].seccion;
+                int n = 0, de = port.partesDe(sec);
+                for (int j = 0; j <= i; ++j) n += port.partes[j].seccion == sec;
+                const ports::Seccion& sc = port.secciones[sec];
+                const std::string nombreSec = sc.grupo.empty() ? sc.nombre : sc.grupo + ": " + sc.nombre;
+                titulo = de > 1 ? fmt::format("menus/ports/bajando_seccion"_i18n, nombreSec, n, de) : fmt::format("menus/ports/bajando_seccion_una"_i18n, nombreSec);
+            }
+            /* Una sola etapa por parte: se baja y se escribe en su lugar a la
+               vez, sin guardar el zip (zip_vivo). Si el zip no se deja leer
+               asi, el camino de siempre: bajarlo entero y descomprimirlo. */
+            // Las partes de las otras secciones del mismo grupo (se pisan).
+            std::vector<std::string> pisadas;
+            if (port.conSecciones() && !port.secciones[port.partes[i].seccion].grupo.empty()) {
+                const std::string& g = port.secciones[port.partes[i].seccion].grupo;
+                for (const auto& otra : port.partes)
+                    if (otra.seccion != port.partes[i].seccion && port.secciones[otra.seccion].grupo == g) pisadas.push_back(otra.url);
+            }
+            frame->addStage(new WorkerPage(frame, titulo, [url, fecha, nroPath, titulo, pisadas]() {
+                actividad::paso(titulo);
+                marcarPendiente(url, true);
+                const zipvivo::Indice idx = zipvivo::leerIndice(url);
+                if (idx.apto) {
+                    if (nroPath->empty() && !idx.nro.empty()) *nroPath = idx.nro;
+                    const long c = zipvivo::instalar(url, idx);
+                    ProgressEvent::instance().setStatusCode(c == 200 ? 0 : c);
+                }
+                else {
+                    brls::Logger::info("ports: {} sin instalar en vivo ({}); se baja el zip", url, idx.motivo);
+                    util::downloadArchive(url, contentType::apps);
+                    if (ProgressEvent::instance().getStatusCode() <= 399) {
+                        if (util::isArchive(CUSTOM_FILENAME)) {
+                            const std::string wrapper = extract::detectWrapperDir(CUSTOM_FILENAME);
+                            const std::string nro = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, wrapper);
+                            if (nroPath->empty() && !nro.empty()) *nroPath = nro;
+                        }
+                        util::extractArchive(contentType::apps);
+                    }
+                    // El zip ocupa lo mismo que el juego: no se deja en la SD.
+                    std::error_code ec;
+                    std::filesystem::remove(CUSTOM_FILENAME, ec);
+                }
+                if (ProgressEvent::instance().getStatusCode() <= 399 && !ProgressEvent::instance().getInterupt()) {
+                    appUpdates::recordInstalled(url, fecha);
+                    marcarPendiente(url, false);
+                    for (const auto& u : pisadas) appUpdates::forgetInstalled(u);
+                }
+            }));
+        }
+        ListDownloadTab::addForwarderStages(frame, nroPath);
     }
 
     void abrir(const nlohmann::ordered_json& nxlinks, const Port& port)
@@ -509,51 +839,19 @@ namespace ports {
         Port copia = port;
         copia.imagen = -1;  // la ficha crea su propia textura
         frame->addStage(new PortDetalle(frame, nxlinks, copia, aInstalar, necesita, libre));
-
-        auto nroPath = std::make_shared<std::string>();
-        const int total = aInstalar.size();
-        for (int k = 0; k < total; ++k) {
-            const int i = aInstalar[k];
-            const std::string url = port.partes[i].url;
-            const std::string fecha = appUpdates::published(nxlinks, url);
-            const bool varias = port.partes.size() > 1;
-            const std::string titulo = varias ? fmt::format("menus/ports/bajando"_i18n, i + 1, port.partes.size()) : "menus/ports/bajando_una"_i18n;
-            /* Una sola etapa por parte: se baja y se escribe en su lugar a la
-               vez, sin guardar el zip (zip_vivo). Si el zip no se deja leer
-               asi, el camino de siempre: bajarlo entero y descomprimirlo. */
-            frame->addStage(new WorkerPage(frame, titulo, [url, fecha, nroPath, titulo]() {
-                actividad::paso(titulo);
-                marcarPendiente(url, true);
-                const zipvivo::Indice idx = zipvivo::leerIndice(url);
-                if (idx.apto) {
-                    if (nroPath->empty() && !idx.nro.empty()) *nroPath = idx.nro;
-                    const long c = zipvivo::instalar(url, idx);
-                    ProgressEvent::instance().setStatusCode(c == 200 ? 0 : c);
-                }
-                else {
-                    brls::Logger::info("ports: {} sin instalar en vivo ({}); se baja el zip", url, idx.motivo);
-                    util::downloadArchive(url, contentType::apps);
-                    if (ProgressEvent::instance().getStatusCode() <= 399) {
-                        if (util::isArchive(CUSTOM_FILENAME)) {
-                            const std::string wrapper = extract::detectWrapperDir(CUSTOM_FILENAME);
-                            const std::string nro = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, wrapper);
-                            if (nroPath->empty() && !nro.empty()) *nroPath = nro;
-                        }
-                        util::extractArchive(contentType::apps);
-                    }
-                    // El zip ocupa lo mismo que el juego: no se deja en la SD.
-                    std::error_code ec;
-                    std::filesystem::remove(CUSTOM_FILENAME, ec);
-                }
-                if (ProgressEvent::instance().getStatusCode() <= 399 && !ProgressEvent::instance().getInterupt()) {
-                    appUpdates::recordInstalled(url, fecha);
-                    marcarPendiente(url, false);
-                }
-            }));
-        }
-        ListDownloadTab::addForwarderStages(frame, nroPath);
+        // Con secciones, lo marcado se instala en otra ventana (instalar()).
+        if (!port.conSecciones()) agregarEtapas(frame, nxlinks, port, aInstalar);
         brls::Application::pushView(frame);
     }
+
+    void instalar(const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar)
+    {
+        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+        frame->setTitle(port.nombre);
+        agregarEtapas(frame, nxlinks, port, aInstalar);
+        brls::Application::pushView(frame);
+    }
+
 
 }  // namespace ports
 
@@ -636,7 +934,7 @@ std::vector<int> PortsPage::visibles() const
         const int e = p.estado();
         if (this->chip == 1 && e != 1) continue;
         if (this->chip == 2 && e != 2) continue;
-        if (this->chip == 3 && p.partes.size() < 2) continue;
+        if (this->chip == 3 && p.partesDe(0) < 2) continue;
         out.push_back(i);
     }
     // Lo que quedo a medias primero: es lo que hay que terminar.
@@ -729,7 +1027,7 @@ void PortsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         const int e = p.estado();
         instalados += e == 1;
         aMedias += e == 2;
-        enPartes += p.partes.size() > 1;
+        enPartes += p.partesDe(0) > 1;
     }
     {
         const float bw = 250.0f;
@@ -817,12 +1115,12 @@ void PortsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         // Marcas sobre la portada.
         if (p.actualizacion)
             pildora(vg, cx + 7.0f, cy + 17.0f, "menus/ports/actualizacion"_i18n, 11.0f, this->a(nvgRGBA(10, 10, 8, 210)), this->a(nvgRGB(143, 211, 240)), 20.0f);
-        else if (p.partes.size() > 1)
-            pildora(vg, cx + 7.0f, cy + 17.0f, fmt::format("menus/ports/partes"_i18n, p.partes.size()), 11.0f, this->a(nvgRGBA(10, 10, 8, 210)), this->a(nvgRGB(242, 209, 107)), 20.0f);
+        else if (p.partesDe(0) > 1)
+            pildora(vg, cx + 7.0f, cy + 17.0f, fmt::format("menus/ports/partes"_i18n, p.partesDe(0)), 11.0f, this->a(nvgRGBA(10, 10, 8, 210)), this->a(nvgRGB(242, 209, 107)), 20.0f);
         const int e = p.estado();
         if (e == 1) check(vg, cx + lado - 20.0f, cy + lado - 20.0f, 13.0f, this->a(oqb::esmeralda()), this->a(nvgRGB(6, 20, 12)));
         if (e == 2) {
-            const int faltan = p.partes.size() - p.instaladas();
+            const int faltan = p.partesDe(0) - p.instaladas();
             nvgBeginPath(vg);
             nvgRoundedRectVarying(vg, cx, cy + lado - 26.0f, lado, 26.0f, 0, 0, 14.0f, 14.0f);
             nvgFillColor(vg, this->a(nvgRGBA(230, 185, 92, 235)));
@@ -840,8 +1138,8 @@ void PortsPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         nvgFillColor(vg, texto);
         nvgBeginPath(vg);
         nvgText(vg, cx, cy + lado + 16.0f, cortar(vg, p.nombre, lado).c_str(), nullptr);
-        const std::string meta = p.partes.size() > 1 ? (p.total() > 0 ? fmt::format("menus/ports/meta_partes"_i18n, tamano(p.total()), p.partes.size())
-                                                                        : fmt::format("menus/ports/partes"_i18n, p.partes.size()))
+        const std::string meta = p.partesDe(0) > 1 ? (p.totalDe(0) > 0 ? fmt::format("menus/ports/meta_partes"_i18n, tamano(p.totalDe(0)), p.partesDe(0))
+                                                                        : fmt::format("menus/ports/partes"_i18n, p.partesDe(0)))
                                                      : tamano(p.total());
         nvgFontSize(vg, 13.0f);
         nvgFillColor(vg, tenue);

@@ -52,6 +52,8 @@ namespace appUpdates {
 
     // Se llama al terminar de instalar, con la fecha que estaba publicada.
     void recordInstalled(const std::string& url, const std::string& date);
+    // Deja de contar como instalada (sus archivos se reemplazaron por otros).
+    void forgetInstalled(const std::string& url);
 
     // Sube cada vez que termina una instalacion. Lo que muestra "version nueva"
     // (el punto del menu, la ficha de Bacán Shop, las filas de las listas) se

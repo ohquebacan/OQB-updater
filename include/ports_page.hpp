@@ -17,6 +17,17 @@ namespace ports {
         long long bytes = 0;  // 0 si el catalogo todavia no lo midio
         long long descomprimido = 0;  // lo que ocupa en la SD (0 si no se sabe)
         bool instalada = false;
+        int seccion = 0;  // indice en Port::secciones (0 si el port no tiene secciones)
+    };
+
+    /* Una seccion de un port (4.8.0): el juego base, un DLC, una actualizacion,
+       un pack de idioma o versiones que se excluyen (mismo grupo: Espanol /
+       Ingles). Obligatoria si no es opcional ni de un grupo. */
+    struct Seccion {
+        std::string nombre;
+        std::string grupo;     // de este grupo se elige una sola
+        bool opcional = false;  // se marca o no
+        bool marcada = true;    // si es opcional: como viene marcada
     };
 
     struct Port {
@@ -28,15 +39,25 @@ namespace ports {
         std::string fecha;           // la subida mas nueva de sus partes (ISO 8601), para «Recientes»
 
         long long total() const;
+        // Del juego base (sin DLC ni actualizacion).
         int instaladas() const;
-        // 0 sin instalar, 1 completo, 2 a medias.
+        // 0 sin instalar, 1 completo, 2 a medias (del juego base).
         int estado() const;
+        std::vector<Seccion> secciones;  // vacio: un port de siempre (todas las partes juntas)
+        int partesDe(int seccion) const;
+        int instaladasDe(int seccion) const;
+        long long totalDe(int seccion) const;  // 0 si alguna parte no esta medida
+        bool conSecciones() const { return !this->secciones.empty(); }
     };
 
     bool disponible(const nlohmann::ordered_json& nxlinks);
 
-    // Abre la ficha del port; con A instala lo que falte (o todo de nuevo).
+    // Abre la ficha del port; con A instala lo que falte (o todo de nuevo). Con
+    // secciones, se marca en la ficha que instalar.
     void abrir(const nlohmann::ordered_json& nxlinks, const Port& port);
+
+    // Instala esas partes del port, en orden.
+    void instalar(const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar);
 
 }  // namespace ports
 
