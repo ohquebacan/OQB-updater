@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <mutex>
 #include <filesystem>
 #include <vector>
 
@@ -23,28 +24,40 @@
 namespace appUpdates {
 
     namespace {
+        // Sube con cada instalacion terminada (las vistas se vuelven a marcar).
+        std::atomic<int> instalaciones{0};
+
 
         // La version que el autor puso dentro del .nro (display_version del NACP).
         std::string leerNroVersion(const std::string& path);
 
         // Con una LecturaSwitch activa (armando una ventana), cada .nro se lee
         // una vez: la misma app se pregunta desde varias pestañas.
+        /* La version interna de cada .nro se lee una vez y se recuerda hasta que
+           termine otra instalacion. Antes se recordaba solo dentro de una
+           LecturaSwitch: al terminar una instalacion, cinco vistas a la vez
+           (barra lateral, Apps, listas, Bacan Shop, Ports) volvian a abrir los
+           ~60 .nro de la SD cada una, y la app quedaba congelada 5 a 7 s
+           (5.0.0, con la cola de descargas se notaba al cerrar el aviso). */
         std::string nroVersion(const std::string& path)
         {
+            static std::mutex candado;
             static std::map<std::string, std::string> memo;
-            static int memoGen = 0;
-            const int gen = util::generacionLectura();
-            if (!gen)
-                return leerNroVersion(path);
-            if (gen != memoGen) {
-                memo.clear();
-                memoGen = gen;
+            static int memoGen = -1;
+            const int gen = instalaciones.load();
+            {
+                std::lock_guard<std::mutex> l(candado);
+                if (gen != memoGen) {
+                    memo.clear();
+                    memoGen = gen;
+                }
+                const auto it = memo.find(path);
+                if (it != memo.end())
+                    return it->second;
             }
-            const auto it = memo.find(path);
-            if (it != memo.end())
-                return it->second;
             const std::string v = util::existeEnSd(path) ? leerNroVersion(path) : "";
-            memo[path] = v;
+            std::lock_guard<std::mutex> l(candado);
+            if (gen == memoGen) memo[path] = v;
             return v;
         }
 
@@ -115,7 +128,6 @@ namespace appUpdates {
             return v != j.end() && v->is_string() ? v->get<std::string>() : "";
         }
 
-        std::atomic<int> instalaciones{0};
 
         // Descarga propia y minima para los iconos: a memoria, sin barra de
         // progreso ni registro de actividad ni comprobacion de espacio. La de
