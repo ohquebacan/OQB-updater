@@ -1054,6 +1054,12 @@
         "err_otro": "The service answered something unexpected (code {}). Try again in a few minutes or send the file by hand."
     },
     "ports": {
+        "eliminar": "Delete",
+        "eliminar_pregunta": "Delete {} from the console? The game files and its shortcuts will be removed. Your saves stay.",
+        "eliminando": "Deleting",
+        "eliminando_de": "Deleting {}",
+        "eliminado": "{} was deleted.",
+        "eliminar_sin_red": "Couldn't read the port's file list: probably no internet. Connect and delete it again to finish.",
         "menu": "Ports",
         "titulo": "PORTS",
         "sub": "{} PC and other-console games adapted to the Switch",

@@ -60,6 +60,12 @@ namespace ports {
     // Instala esas partes del port, en orden.
     void instalar(const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar);
 
+    /* Borra el port: solo los archivos que trajeron sus zips (se leen sus
+       indices), menos los que tambien traen otros ports instalados. Las
+       partidas y lo que el juego creo despues se quedan. Quita sus accesos
+       directos y lo olvida en el registro. */
+    void eliminar(const nlohmann::ordered_json& nxlinks, const Port& port);
+
 }  // namespace ports
 
 class PortsPage : public brls::View

@@ -1075,6 +1075,12 @@
         "err_otro": "El servicio respondió algo inesperado (código {}). Prueba en unos minutos o manda el archivo a mano."
     },
     "ports": {
+        "eliminar": "Eliminar",
+        "eliminar_pregunta": "¿Eliminar {} de la consola? Se borran los archivos del juego y sus accesos directos. Tus partidas se quedan.",
+        "eliminando": "Eliminando",
+        "eliminando_de": "Eliminando {}",
+        "eliminado": "{} quedó eliminado.",
+        "eliminar_sin_red": "No se pudo leer la lista de archivos del port: probablemente no hay internet. Lo que se alcanzó a borrar ya no está; conéctate y vuelve a eliminarlo para terminar.",
         "menu": "Ports",
         "titulo": "PORTS",
         "sub": "{} juegos de PC y otras consolas adaptados a la Switch",

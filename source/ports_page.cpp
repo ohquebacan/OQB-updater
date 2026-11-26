@@ -9,6 +9,7 @@
 
 #include "actividad.hpp"
 #include "app_updates.hpp"
+#include "confirm_page.hpp"
 #include "constants.hpp"
 #include "extract.hpp"
 #include "forwarder.hpp"
@@ -338,6 +339,23 @@ namespace {
                 this->frame->nextStage();
                 return true;
             });
+            // Instalado (aunque sea a medias): X lo elimina, con confirmacion.
+            bool algo = false;
+            for (const auto& pt : this->port.partes) algo = algo || pt.instalada;
+            if (algo) {
+                this->registerAction("menus/ports/eliminar"_i18n, brls::Key::X, [this] {
+                    const nlohmann::ordered_json nx = this->nxlinks;
+                    ports::Port p = this->port;
+                    p.imagen = -1;
+                    brls::Dialog* d = new brls::Dialog(fmt::format("menus/ports/eliminar_pregunta"_i18n, p.nombre));
+                    d->addButton("menus/common/cancel"_i18n, [d](brls::View*) { d->close(); });
+                    d->addButton("menus/ports/eliminar"_i18n, [d, nx, p](brls::View*) {
+                        d->close([nx, p] { brls::Application::popView(brls::ViewAnimation::FADE, [nx, p] { ports::eliminar(nx, p); }); });
+                    });
+                    d->open();
+                    return true;
+                });
+            }
             // Instalado: Y vuelve a crear el acceso directo del menu HOME.
             if (this->port.estado() == 1 && (!this->port.nro.empty() || !this->port.accesos.empty())) {
                 const std::vector<std::string> nros = this->port.accesos.empty() ? std::vector<std::string>{this->port.nro} : this->port.accesos;
@@ -854,6 +872,124 @@ namespace ports {
         frame->addStage(new PortDetalle(frame, nxlinks, copia, aInstalar, necesita, libre));
         // Con secciones, lo marcado se instala en otra ventana (instalar()).
         if (!port.conSecciones()) agregarEtapas(frame, nxlinks, port, aInstalar);
+        brls::Application::pushView(frame);
+    }
+
+    namespace {
+        std::string minusculas(std::string t)
+        {
+            std::transform(t.begin(), t.end(), t.begin(), [](unsigned char c) { return std::tolower(c); });
+            return t;
+        }
+
+        /* Lo que un port nunca debe borrar aunque su zip lo traiga. retroarch/:
+           los ports de PS1 traen el nucleo y las BIOS, que comparten RetroArch y
+           los demas ports (re1.zip, 26-nov-2026). */
+        bool intocable(const std::string& ruta)
+        {
+            const std::string r = minusculas(ruta);
+            for (const char* p : {"retroarch/", "switch/retroarch/", "bootloader/", "emummc/", "nintendo/", "atmosphere/package3", "atmosphere/stratosphere", "atmosphere/config", "atmosphere/hosts", "atmosphere/kips", "hbmenu.nro", "payload.bin", "boot.dat", "boot.ini"})
+                if (r.rfind(p, 0) == 0) return true;
+            return r.find("..") != std::string::npos;
+        }
+
+        // Carpetas que se dejan aunque queden vacias.
+        bool carpetaFija(const std::string& rel)
+        {
+            const std::string r = minusculas(rel);
+            if (r.find('/') == std::string::npos) return true;  // las de la raiz: switch, atmosphere, config...
+            return r == "atmosphere/contents" || r == "switch/.overlays" || r == "atmosphere/exefs_patches";
+        }
+
+        std::vector<std::string> archivosDe(const std::string& url, bool& ok)
+        {
+            std::vector<std::string> out;
+            const zipvivo::Indice idx = zipvivo::leerIndice(url);
+            if (idx.entradas.empty()) {
+                ok = false;
+                return out;
+            }
+            for (const auto& e : idx.entradas)
+                if (!e.nombre.empty() && e.nombre.back() != '/') out.push_back(e.nombre);
+            return out;
+        }
+    }  // namespace
+
+    void eliminar(const nlohmann::ordered_json& nxlinks, const Port& port)
+    {
+        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+        frame->setTitle(port.nombre);
+        auto resultado = std::make_shared<std::string>();
+        frame->addStage(new WorkerPage(frame, "menus/ports/eliminando"_i18n, [nxlinks, port, resultado]() {
+            auto& progress = ProgressEvent::instance();
+            actividad::paso(fmt::format("menus/ports/eliminando_de"_i18n, port.nombre));
+
+            // Lo que traen los otros ports instalados se queda (archivos compartidos).
+            std::set<std::string> deOtros;
+            for (const auto& otro : leerPorts(nxlinks)) {
+                if (otro.nombre == port.nombre) continue;
+                for (const auto& pt : otro.partes) {
+                    if (!pt.instalada) continue;
+                    bool ok = true;
+                    for (const auto& f : archivosDe(pt.url, ok)) deOtros.insert(minusculas(f));
+                }
+            }
+
+            std::set<std::string> archivos;
+            int sinIndice = 0;
+            for (const auto& pt : port.partes) {
+                bool ok = true;
+                for (const auto& f : archivosDe(pt.url, ok)) archivos.insert(f);
+                if (!ok) ++sinIndice;
+            }
+
+            progress.setTotalSteps(archivos.size() + 1);
+            std::set<std::string> carpetas;
+            int borrados = 0;
+            for (const auto& rel : archivos) {
+                progress.incrementStep(1);
+                if (intocable(rel) || deOtros.count(minusculas(rel))) continue;
+                std::error_code ec;
+                if (std::filesystem::remove(std::string(ROOT_PATH) + rel, ec)) ++borrados;
+                for (size_t p = rel.rfind('/'); p != std::string::npos && p > 0; p = rel.rfind('/', p - 1)) carpetas.insert(rel.substr(0, p));
+            }
+            // Las carpetas que quedaron vacias, de la mas honda a la de arriba.
+            std::vector<std::string> orden(carpetas.begin(), carpetas.end());
+            std::sort(orden.begin(), orden.end(), [](const std::string& a, const std::string& b) { return std::count(a.begin(), a.end(), '/') > std::count(b.begin(), b.end(), '/'); });
+            for (const auto& c : orden) {
+                if (carpetaFija(c)) continue;
+                std::error_code ec;
+                if (std::filesystem::is_empty(std::string(ROOT_PATH) + c, ec) && !ec) std::filesystem::remove(std::string(ROOT_PATH) + c, ec);
+            }
+
+            // Sus accesos directos del menu HOME.
+            std::vector<std::string> nros = port.accesos;
+            if (!port.nro.empty()) nros.push_back(port.nro);
+            for (const auto& pt : port.partes) {
+                const std::string n = nroDe(nxlinks, pt.url);
+                if (!n.empty()) nros.push_back(n);
+            }
+            for (const auto& n : nros) {
+                const std::string archivo = n.substr(n.rfind('/') + 1);
+                for (const auto& cand : util::nroCandidatePaths(archivo)) fwd::remove(cand);
+                fwd::remove(n);
+            }
+
+            // Mientras no se pudo leer algun indice, se queda marcado como instalado
+            // para poder intentarlo de nuevo.
+            if (sinIndice == 0) {
+                for (const auto& pt : port.partes) {
+                    appUpdates::forgetInstalled(pt.url);
+                    marcarPendiente(pt.url, false);
+                }
+                *resultado = fmt::format("menus/ports/eliminado"_i18n, port.nombre);
+            }
+            else
+                *resultado = "menus/ports/eliminar_sin_red"_i18n;
+            (void)borrados;
+            progress.setStep(progress.getMax());
+        }));
+        frame->addStage((new ConfirmPage_Deferred(frame, resultado))->returnToList());
         brls::Application::pushView(frame);
     }
 
