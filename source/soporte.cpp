@@ -226,6 +226,11 @@ namespace {
     class SoporteView : public brls::View
     {
     public:
+        ~SoporteView() override
+        {
+            if (this->hilo.joinable()) this->hilo.join();
+        }
+
         SoporteView(std::string app, std::function<std::string()> generar, std::vector<std::string> incluye)
             : app(std::move(app)), generar(std::move(generar)), incluye(std::move(incluye))
         {
@@ -256,6 +261,8 @@ namespace {
         Paso paso = Paso::Formulario;
         int foco = Mensaje;
         std::shared_ptr<Envio> envio;
+        // Sin detach(): en la consola no esta soportado y cerraba la app. Se espera al salir.
+        std::thread hilo;
         Resultado resultado;
         int fuente = -1;
         bool fuenteIntentada = false;
@@ -346,10 +353,11 @@ namespace {
             this->envio = std::make_shared<Envio>();
             auto e = this->envio;
             const std::string ruta = this->ruta, app = this->app, mensaje = this->mensaje, contacto = this->contacto;
-            std::thread([e, ruta, app, mensaje, contacto] {
+            if (this->hilo.joinable()) this->hilo.join();
+            this->hilo = std::thread([e, ruta, app, mensaje, contacto] {
                 e->resultado = soporte::enviar(ruta, app, mensaje, contacto, [e](float f) { e->avance = f; });
                 e->listo = true;
-            }).detach();
+            });
         }
     };
 

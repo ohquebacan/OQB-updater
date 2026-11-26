@@ -186,6 +186,9 @@ namespace {
     std::vector<std::string> g_avisos;
     std::mutex g_accesoCandado;          // de a un acceso directo por vez
     std::atomic<int> g_creandoAccesos{0};  // al cerrar, se espera a que terminen
+    /* El hilo que crea los accesos. Sin detach(): en la consola no esta soportado,
+       lanzaba una excepcion y la app se cerraba de golpe (5.0.0). */
+    std::thread g_hiloAcceso;
     bool g_exitBloqueado = true;  // appletLockExit hasta que se pida cerrar
 }
 
@@ -391,7 +394,8 @@ int main(int argc, char* argv[])
                     const std::vector<std::string> nros = oferta.nros;
                     const std::string nombre = oferta.nombre;
                     ++g_creandoAccesos;
-                    std::thread([nros, nombre]() {
+                    if (g_hiloAcceso.joinable()) g_hiloAcceso.join();  // el anterior ya termino o le falta poco
+                    g_hiloAcceso = std::thread([nros, nombre]() {
                         std::lock_guard<std::mutex> uno(g_accesoCandado);
                         bool bien = true;
                         for (const auto& n : nros)
@@ -399,7 +403,7 @@ int main(int argc, char* argv[])
                         std::lock_guard<std::mutex> l(g_avisosCandado);
                         g_avisos.push_back(fmt::format(bien ? "menus/cola/acceso_listo"_i18n : "menus/cola/acceso_fallo"_i18n, nombre));
                         --g_creandoAccesos;
-                    }).detach();
+                    });
                 });
             });
             d->setCancelable(true);
@@ -410,7 +414,7 @@ int main(int argc, char* argv[])
     }
     cola::detener();
     // Un acceso directo a medio crear se termina (son uno o dos segundos).
-    for (int i = 0; i < 100 && g_creandoAccesos.load() > 0; ++i) svcSleepThread(100000000ULL);
+    if (g_hiloAcceso.joinable()) g_hiloAcceso.join();
 
     // Antes de cerrar servicios: el hilo de la hora todavia puede estar usando
     // la red y el servicio de time.
