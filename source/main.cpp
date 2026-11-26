@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
         mainFrame->registerAction("menus/cola/titulo"_i18n, brls::Key::MINUS, [] {
             ColaPage::abrir();
             return true;
-        });
+        }, true);  // sin pista: lo dice la pildora del pie («− Abrir cola»)
         if (cargaVisible)
             cargaVisible->retirar(1.0f);
         arranque::marca("ventana principal armada");

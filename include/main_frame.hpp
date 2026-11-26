@@ -18,7 +18,8 @@ private:
     // El último release publicado, consultado una vez al construir la ventana.
     // Vacío si no se pudo consultar.
     std::string latestTag;
-    std::string pieBase, pieActual;  // el pie de siempre y el que se ve (con la cola, su avance)
+    std::string pieBase, pieActual;
+    float inicioBotones(NVGcontext* vg, int x, unsigned width, brls::Style* style, brls::FrameContext* ctx);  // el pie de siempre y el que se ve (con la cola, su avance)
 
     // El enlace de donacion: el del catalogo (enlaces.donar), o el de siempre.
     std::string donationUrl = DONATION_URL;

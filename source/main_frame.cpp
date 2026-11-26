@@ -793,73 +793,86 @@ void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
     }
 
 
-    /* La cola de descargas (5.0.0), en el pie: que se instala, el porcentaje
-       y cuantas esperan. Con − se abre. Sin nada en la cola, el pie de siempre. */
+    /* El pie (5.0.0). Con la cola trabajando, a la izquierda va una pildora con
+       lo que se instala, su barra y «− Abrir cola»; si no, el texto de siempre
+       (version y espacio libre). Las dos cosas se miden contra los botones de
+       la derecha y se acortan con «…»: antes se montaban encima. */
     {
-        std::string pie = this->pieBase;
+        const float pieY = y + height - style->AppletFrame.footerHeight / 2.0f;
+        const float izq = x + style->AppletFrame.separatorSpacing + style->AppletFrame.footerTextSpacing;
+        const float libre = this->inicioBotones(vg, x, width, style, ctx) - 24.0f - izq;
+        nvgFontFaceId(vg, ctx->fontStash->regular);
+
+        const auto cortar = [vg](std::string t, float ancho) {
+            if (nvgTextBounds(vg, 0, 0, t.c_str(), nullptr, nullptr) <= ancho) return t;
+            while (!t.empty()) {
+                size_t c = t.size() - 1;
+                while (c > 0 && (t[c] & 0xC0) == 0x80) --c;
+                t.erase(c);
+                if (nvgTextBounds(vg, 0, 0, (t + "…").c_str(), nullptr, nullptr) <= ancho) return t + "…";
+            }
+            return t;
+        };
+
         if (cola::ocupada()) {
+            if (!this->pieActual.empty()) {
+                this->pieActual.clear();
+                this->setFooterText("");
+            }
             const cola::Estado e = cola::estado();
             double frac = e.total > 0 ? e.ahora / e.total : (e.max > 0 ? (double)e.step / e.max : 0);
             frac = std::max(0.0, std::min(1.0, frac));
-            std::string nombre = e.actual;
-            // Que no choque con los botones del pie: los nombres largos se cortan.
-            if (nombre.size() > 30) {
-                size_t c = 28;
-                while (c > 0 && (nombre[c] & 0xC0) == 0x80) --c;
-                nombre = nombre.substr(0, c) + "…";
+            nvgFontSize(vg, 18.0f);
+            std::string cifras = e.trabajando ? std::to_string((int)(frac * 100)) + " %" : "";
+            if (!e.espera.empty()) cifras += "  +" + std::to_string(e.espera.size());
+            const std::string abrir = " " + "menus/cola/abrir"_i18n;
+            const float fijo = 38.0f + nvgTextBounds(vg, 0, 0, cifras.c_str(), nullptr, nullptr) + 18.0f +
+                               nvgTextBounds(vg, 0, 0, abrir.c_str(), nullptr, nullptr) + 20.0f + 10.0f;
+            const std::string nombre = cortar(e.trabajando ? e.actual : "menus/cola/esperando_corto"_i18n, std::max(40.0f, libre - fijo));
+            const float wNombre = nvgTextBounds(vg, 0, 0, nombre.c_str(), nullptr, nullptr);
+            const float h = 36.0f, w = fijo + wNombre, px = izq - 10.0f, py = pieY - h / 2;
+            nvgBeginPath(vg);
+            nvgRoundedRect(vg, px, py, w, h, h / 2);
+            nvgFillColor(vg, this->a(oqb::velo(30)));
+            nvgFill(vg);
+            // El avance llena la pildora de izquierda a derecha.
+            nvgSave(vg);
+            nvgScissor(vg, px, py, w * (float)frac, h);
+            nvgBeginPath(vg);
+            nvgRoundedRect(vg, px, py, w, h, h / 2);
+            nvgFillColor(vg, this->a(nvgTransRGBA(oqb::acentoFuerte(), 70)));
+            nvgFill(vg);
+            nvgRestore(vg);
+            // Flecha hacia abajo.
+            const float fx = px + 22.0f;
+            nvgBeginPath(vg);
+            nvgMoveTo(vg, fx - 7, pieY - 2);
+            nvgLineTo(vg, fx + 7, pieY - 2);
+            nvgLineTo(vg, fx, pieY + 7);
+            nvgClosePath(vg);
+            nvgFillColor(vg, this->a(oqb::acentoFuerte()));
+            nvgFill(vg);
+            nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+            float tx = px + 38.0f;
+            nvgFillColor(vg, this->a(ctx->theme->textColor));
+            nvgBeginPath(vg);
+            nvgText(vg, tx, pieY, nombre.c_str(), nullptr);
+            tx += wNombre + 10.0f;
+            nvgFillColor(vg, this->a(oqb::grisTexto()));
+            nvgBeginPath(vg);
+            tx = nvgText(vg, tx, pieY, cifras.c_str(), nullptr) + 18.0f;
+            nvgFillColor(vg, this->a(ctx->theme->textColor));
+            nvgBeginPath(vg);
+            nvgText(vg, tx, pieY, abrir.c_str(), nullptr);
+        }
+        else {
+            nvgFontSize(vg, style->AppletFrame.footerTextSize);
+            const std::string pie = cortar(this->pieBase, libre);
+            if (pie != this->pieActual) {
+                this->pieActual = pie;
+                this->setFooterText(pie);
             }
-            pie = e.trabajando ? fmt::format("menus/cola/pie"_i18n, nombre, (int)(frac * 100)) : "menus/cola/esperando_corto"_i18n;
-            if (!e.espera.empty()) pie += fmt::format("menus/cola/pie_espera"_i18n, e.espera.size());
         }
-        if (pie != this->pieActual) {
-            this->pieActual = pie;
-            this->setFooterText(pie);
-        }
-    }
-
-    /* La cola de descargas (5.0.0), arriba a la derecha: que se instala, el
-       porcentaje y cuantas esperan. Con − se abre. */
-    // Menos en Apps: ahi arriba a la derecha va el icono de la app elegida.
-    const auto* enApps = dynamic_cast<brls::SidebarItem*>(this->appsSidebar);
-    if (cola::ocupada() && !(enApps && const_cast<brls::SidebarItem*>(enApps)->isActive())) {
-        const cola::Estado e = cola::estado();
-        double frac = e.total > 0 ? e.ahora / e.total : (e.max > 0 ? (double)e.step / e.max : 0);
-        frac = std::max(0.0, std::min(1.0, frac));
-        std::string t = e.trabajando ? e.actual + "  " + std::to_string((int)(frac * 100)) + " %" : "menus/cola/esperando_corto"_i18n;
-        if (!e.espera.empty()) t += "  +" + std::to_string(e.espera.size());
-        // Como se abre la cola: el boton − (la letra del sistema).
-        t += "   \uE0F0 " + "menus/cola/abrir"_i18n;
-        nvgFontFaceId(vg, ctx->fontStash->regular);
-        nvgFontSize(vg, 17.0f);
-        float b[4];
-        nvgTextBounds(vg, 0, 0, t.c_str(), nullptr, b);
-        const float w = (b[2] - b[0]) + 56.0f, h = 34.0f;
-        const float px = x + width - w - 30.0f, py = y + 18.0f;
-        nvgBeginPath(vg);
-        nvgRoundedRect(vg, px, py, w, h, h / 2);
-        nvgFillColor(vg, this->a(oqb::velo(30)));
-        nvgFill(vg);
-        // La barra de avance en el borde de abajo de la pastilla.
-        nvgSave(vg);
-        nvgScissor(vg, px, py, w * (float)frac, h);
-        nvgBeginPath(vg);
-        nvgRoundedRect(vg, px, py, w, h, h / 2);
-        nvgFillColor(vg, this->a(nvgTransRGBA(oqb::acentoFuerte(), 70)));
-        nvgFill(vg);
-        nvgRestore(vg);
-        // Flecha hacia abajo.
-        const float fx = px + 22.0f, fy = py + h / 2;
-        nvgBeginPath(vg);
-        nvgMoveTo(vg, fx - 7, fy - 2);
-        nvgLineTo(vg, fx + 7, fy - 2);
-        nvgLineTo(vg, fx, fy + 7);
-        nvgClosePath(vg);
-        nvgFillColor(vg, this->a(oqb::acentoFuerte()));
-        nvgFill(vg);
-        nvgFillColor(vg, this->a(ctx->theme->textColor));
-        nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-        nvgBeginPath(vg);
-        nvgText(vg, px + 38.0f, fy, t.c_str(), nullptr);
     }
 
     // Termino una instalacion: lo que ya esta al dia deja de figurar pendiente.
@@ -970,4 +983,29 @@ void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         nvgFillColor(vg, this->a(verde));
         nvgFill(vg);
     }
+}
+
+/* Donde empiezan los botones del pie (borealis los arma a la derecha con las
+   acciones de la vista enfocada y sus padres, igual que aqui). Para que el
+   texto de la izquierda no se monte encima. */
+float MainFrame::inicioBotones(NVGcontext* vg, int x, unsigned width, brls::Style* style, brls::FrameContext* ctx)
+{
+    std::set<brls::Key> vistas;
+    float total = 0;
+    int n = 0;
+    nvgFontFaceId(vg, ctx->fontStash->regular);
+    nvgFontSize(vg, style->Label.hintFontSize);
+    for (brls::View* v = brls::Application::getCurrentFocus(); v; v = v->getParent()) {
+        for (const auto& a : v->getActions()) {
+            if (a.hidden || vistas.count(a.key)) continue;
+            vistas.insert(a.key);
+            if (a.hintText.empty()) continue;
+            // Los iconos de los botones miden lo mismo: se mide con el de A.
+            const std::string t = "\uE0E0  " + a.hintText;
+            total += nvgTextBounds(vg, 0, 0, t.c_str(), nullptr, nullptr);
+            ++n;
+        }
+    }
+    if (n > 1) total += (n - 1) * style->AppletFrame.footerTextSpacing;
+    return x + width - style->AppletFrame.separatorSpacing - style->AppletFrame.footerTextSpacing - total;
 }
