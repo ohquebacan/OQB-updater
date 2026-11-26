@@ -379,8 +379,19 @@ int main(int argc, char* argv[])
             d->setCancelable(true);
             d->open();
         }
-        cola::Oferta oferta;
-        if (cola::siguienteOferta(oferta)) {
+        /* El aviso espera unos cuadros: si se abre en el mismo cuadro en que la
+           pantalla de descarga pasa a la de listo, esa le quita el foco y no se
+           puede elegir nada (5.0.0, al instalar una app). */
+        static bool hayOferta = false;
+        static int cuadrosOferta = 0;
+        static cola::Oferta ofertaEnEspera;
+        if (!hayOferta && cola::siguienteOferta(ofertaEnEspera)) {
+            hayOferta = true;
+            cuadrosOferta = 0;
+        }
+        if (hayOferta && ++cuadrosOferta >= 30) {
+            hayOferta = false;
+            const cola::Oferta oferta = ofertaEnEspera;
             const std::string texto = oferta.nros.size() > 1
                                           ? fmt::format("menus/cola/oferta_varios"_i18n, oferta.nombre, oferta.nros.size())
                                           : fmt::format("menus/cola/oferta_uno"_i18n, oferta.nombre);
