@@ -1058,7 +1058,7 @@
         "oferta_varios": "{} was installed.\n\nCreate its {} HOME menu shortcuts?",
         "acceso_de": "Shortcut for {}",
         "segundo_plano": "Keep using the app",
-        "puedes_salir": "Press B to keep using the app: it keeps installing and you can see it with − (Downloads).",
+        "puedes_salir": "Press B to send the download to the queue and keep using the app.",
         "en_cola": "Queued · {} ahead",
         "instalando_otro": "Installing {}",
         "listo": "{} was installed.",

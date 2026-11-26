@@ -56,6 +56,9 @@ namespace cola {
     };
     Estado estado();
 
+    // La proxima linea de actividad de lo que se instala (para la cascada).
+    bool siguienteLinea(std::string& out);
+
     // Cancela lo que se esta instalando (lo escrito queda; la parte se marca pendiente).
     void cancelarActual();
 

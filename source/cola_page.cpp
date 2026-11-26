@@ -86,6 +86,10 @@ void ColaPage::abrir()
 
 void ColaPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
+    {
+        std::string linea;
+        while (cola::siguienteLinea(linea)) {}
+    }
     const cola::Estado e = cola::estado();
     if (this->cursor > (int)e.espera.size()) this->cursor = e.espera.size();
 
@@ -244,18 +248,17 @@ void InstalacionPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigne
         cy += 26.0f;
         texto(vg, lx, cy, cifras, 18.0f, gris);
         texto(vg, lx + ancho, cy, std::to_string((int)std::lround(frac * 100)) + " %", 18.0f, gris, NVG_ALIGN_RIGHT);
-        cy += 34.0f;
-        if (!e.detalle.empty()) texto(vg, cx, cy, e.detalle, 17.0f, gris, NVG_ALIGN_CENTER);
-        cy += 60.0f;
-        texto(vg, cx, cy, "menus/cola/puedes_salir"_i18n, 18.0f, gris, NVG_ALIGN_CENTER);
+        cy += 62.0f;
+        // Las lineas en cascada, como en todas las descargas.
+        this->cascada.dibujar(vg, cx, cy, ancho, ctx, this->getAlpha(), [](std::string& l) { return cola::siguienteLinea(l); });
+        texto(vg, cx, y + height - 56.0f, "menus/cola/puedes_salir"_i18n, 17.0f, gris, NVG_ALIGN_CENTER);
     }
     else if (antes >= 0) {
         this->fase = 0;
         texto(vg, cx, cy, fmt::format("menus/cola/en_cola"_i18n, antes + (e.trabajando ? 1 : 0)), 26.0f, tinta, NVG_ALIGN_CENTER);
         cy += 50.0f;
         if (e.trabajando) texto(vg, cx, cy, fmt::format("menus/cola/instalando_otro"_i18n, e.actual), 18.0f, gris, NVG_ALIGN_CENTER);
-        cy += 70.0f;
-        texto(vg, cx, cy, "menus/cola/puedes_salir"_i18n, 18.0f, gris, NVG_ALIGN_CENTER);
+        texto(vg, cx, y + height - 56.0f, "menus/cola/puedes_salir"_i18n, 17.0f, gris, NVG_ALIGN_CENTER);
     }
     else if (hecho) {
         if (this->fase != 2) {

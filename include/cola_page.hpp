@@ -2,6 +2,8 @@
 
 #include <borealis.hpp>
 
+#include "cascada.hpp"
+
 /* La cola de descargas (5.0.0): lo que se instala ahora con su barra, lo que
    espera (se puede quitar o cambiar de orden) y lo ultimo terminado. */
 class ColaPage : public brls::View
@@ -43,5 +45,5 @@ private:
     int id;
     std::string nombre;
     int fase = 0;  // 0 esperando, 1 instalando, 2 terminado
-    bool listoAvisado = false;
+    Cascada cascada;
 };

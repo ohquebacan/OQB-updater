@@ -155,12 +155,6 @@ namespace cola {
     {
         Estado e;
         std::lock_guard<std::mutex> l(m);
-        // Las lineas de actividad solo las lee la cascada de WorkerPage; con la
-        // cola trabajando no hay ninguna, asi que se toma la ultima aqui.
-        if (trabajando) {
-            std::string linea;
-            while (actividad::siguiente(linea)) detalle = linea;
-        }
         e.trabajando = trabajando;
         e.actual = actual;
         e.actualId = actualId;
@@ -182,6 +176,18 @@ namespace cola {
         }
         e.hechos = hechos;
         return e;
+    }
+
+    bool siguienteLinea(std::string& out)
+    {
+        {
+            std::lock_guard<std::mutex> l(m);
+            if (!trabajando) return false;
+        }
+        if (!actividad::siguiente(out)) return false;
+        std::lock_guard<std::mutex> l(m);
+        detalle = out;
+        return true;
     }
 
     void cancelarActual()
