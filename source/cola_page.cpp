@@ -3,6 +3,8 @@
 #include <cmath>
 
 #include "cola.hpp"
+#include "confirm_page.hpp"
+#include "worker_page.hpp"
 #include "oqb_theme.hpp"
 
 namespace i18n = brls::i18n;
@@ -35,6 +37,27 @@ ColaPage::ColaPage()
 {
     this->registerAction("", brls::Key::DUP, [this] { this->mover(-1); return true; }, true);
     this->registerAction("", brls::Key::DDOWN, [this] { this->mover(1); return true; }, true);
+    // A: vuelve a la pantalla de descarga de siempre (Trifuerza, barra, cascada).
+    this->registerAction("menus/cola/ver"_i18n, brls::Key::A, [this] {
+        const cola::Estado e = cola::estado();
+        int id = 0;
+        std::string nombre;
+        if (this->cursor == 0 && e.trabajando) {
+            id = e.actualId;
+            nombre = e.actual;
+        }
+        else if (this->cursor >= 1 && this->cursor <= (int)e.esperaIds.size()) {
+            id = e.esperaIds[this->cursor - 1];
+            nombre = e.espera[this->cursor - 1];
+        }
+        if (!id) return true;
+        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+        frame->setTitle(nombre);
+        frame->addStage(WorkerPage::deCola(frame, [id]() { return id; }));
+        frame->addStage((new ConfirmPage_Done(frame, "menus/common/all_done"_i18n))->returnToList());
+        brls::Application::pushView(frame);
+        return true;
+    });
     this->registerAction("menus/cola/quitar"_i18n, brls::Key::X, [this] {
         const cola::Estado e = cola::estado();
         if (this->cursor == 0) {
