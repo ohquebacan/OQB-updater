@@ -1,3 +1,4 @@
+#include "dialogo_centrado.hpp"
 #include "ports_page.hpp"
 
 #include <algorithm>
@@ -321,7 +322,7 @@ namespace {
                     if (partes.empty()) return true;
                     const long long nec = this->necesitaSeleccion();
                     if (nec > 0 && this->libre >= 0 && nec > this->libre) {
-                        brls::Dialog* d = new brls::Dialog(fmt::format("menus/ports/sin_espacio"_i18n, tamano(nec), tamano(this->libre)));
+                        brls::Dialog* d = new DialogoCentrado(fmt::format("menus/ports/sin_espacio"_i18n, tamano(nec), tamano(this->libre)), 360);
                         d->addButton("menus/common/ok"_i18n, [d](brls::View*) { d->close(); });
                         d->open();
                         return true;
@@ -333,7 +334,7 @@ namespace {
                     return true;
                 }
                 if (this->necesita > 0 && this->libre >= 0 && this->necesita > this->libre) {
-                    brls::Dialog* d = new brls::Dialog(fmt::format("menus/ports/sin_espacio"_i18n, tamano(this->necesita), tamano(this->libre)));
+                    brls::Dialog* d = new DialogoCentrado(fmt::format("menus/ports/sin_espacio"_i18n, tamano(this->necesita), tamano(this->libre)), 360);
                     d->addButton("menus/common/ok"_i18n, [d](brls::View*) { d->close(); });
                     d->open();
                     return true;
@@ -355,7 +356,7 @@ namespace {
                     const nlohmann::ordered_json nx = this->nxlinks;
                     ports::Port p = this->port;
                     p.imagen = -1;
-                    brls::Dialog* d = new brls::Dialog(fmt::format("menus/ports/eliminar_pregunta"_i18n, p.nombre));
+                    brls::Dialog* d = new DialogoCentrado(fmt::format("menus/ports/eliminar_pregunta"_i18n, p.nombre), 360);
                     d->addButton("menus/common/cancel"_i18n, [d](brls::View*) { d->close(); });
                     d->addButton("menus/ports/eliminar"_i18n, [d, nx, p](brls::View*) {
                         d->close([nx, p] { brls::Application::popView(brls::ViewAnimation::FADE, [nx, p] { ports::eliminar(nx, p); }); });

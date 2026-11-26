@@ -1,5 +1,6 @@
 #include <vector>
 #include <mutex>
+#include "dialogo_centrado.hpp"
 #include "hekate_idioma.hpp"
 #include "led.hpp"
 #include <curl/curl.h>
@@ -353,7 +354,7 @@ int main(int argc, char* argv[])
             GLFWwindow* ventana = glfwGetCurrentContext();
             if (ventana && glfwWindowShouldClose(ventana)) {
                 glfwSetWindowShouldClose(ventana, GLFW_FALSE);
-                brls::Dialog* d = new brls::Dialog("menus/cola/salir_pregunta"_i18n);
+                brls::Dialog* d = new DialogoCentrado("menus/cola/salir_pregunta"_i18n, 360);
                 d->addButton("menus/cola/seguir"_i18n, [d](brls::View*) { d->close(); });
                 d->addButton("menus/cola/salir"_i18n, [d, &salirConfirmado](brls::View*) {
                     salirConfirmado = true;
@@ -373,7 +374,7 @@ int main(int argc, char* argv[])
         // Fallo algo de la cola sin su pantalla a la vista: se avisa estes donde estes.
         cola::Hecho fallo;
         if (cola::siguienteFallo(fallo)) {
-            brls::Dialog* d = new brls::Dialog(fmt::format("menus/cola/fallo"_i18n, fallo.nombre, fallo.error));
+            brls::Dialog* d = new DialogoCentrado(fmt::format("menus/cola/fallo"_i18n, fallo.nombre, fallo.error), 460);
             d->addButton("menus/common/ok"_i18n, [d](brls::View*) { d->close(); });
             d->setCancelable(true);
             d->open();
@@ -383,7 +384,7 @@ int main(int argc, char* argv[])
             const std::string texto = oferta.nros.size() > 1
                                           ? fmt::format("menus/cola/oferta_varios"_i18n, oferta.nombre, oferta.nros.size())
                                           : fmt::format("menus/cola/oferta_uno"_i18n, oferta.nombre);
-            brls::Dialog* d = new brls::Dialog(texto);
+            brls::Dialog* d = new DialogoCentrado(texto, 320);
             d->addButton("menus/common/no"_i18n, [d](brls::View*) { d->close(); });
             d->addButton("menus/common/yes"_i18n, [d, oferta](brls::View*) {
                 d->close([oferta] {

@@ -1,3 +1,4 @@
+#include "dialogo_centrado.hpp"
 #include "led.hpp"
 #include "worker_page.hpp"
 #include "confirm_page.hpp"
@@ -170,7 +171,7 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
                 ProgressEvent::instance().setStatusCode(0);
                 led::error();  // parpadea hasta que se cierra el aviso
                 const int niveles = this->nivelesAlVolver;
-                brls::Dialog* aviso = new brls::Dialog(mensaje);
+                brls::Dialog* aviso = new DialogoCentrado(mensaje, 400);
                 aviso->addButton("menus/common/back"_i18n, [aviso, niveles](brls::View* view) {
                     led::apagar();
                     aviso->close([niveles] { util::volverAtras(niveles); });
@@ -260,7 +261,7 @@ void WorkerPage::drawCola(NVGcontext* vg, int x, int y, unsigned width, unsigned
         if (!hecho->error.empty()) {
             const std::string mensaje = fmt::format("menus/errors/error_message"_i18n, hecho->error);
             const int niveles = this->nivelesAlVolver;
-            brls::Dialog* aviso = new brls::Dialog(mensaje);
+            brls::Dialog* aviso = new DialogoCentrado(mensaje, 400);
             aviso->addButton("menus/common/back"_i18n, [aviso, niveles](brls::View* view) {
                 aviso->close([niveles] { util::volverAtras(niveles); });
             });
