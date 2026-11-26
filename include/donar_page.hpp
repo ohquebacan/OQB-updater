@@ -100,9 +100,9 @@ public:
 
 namespace donar {
 
-    // Cuenta una apertura de la app y, si toca, muestra la invitacion. Toca la
-    // 5.a vez y despues cada 10: ni a quien recien la instala ni tan seguido que
-    // moleste. `url` vacia = no se muestra.
+    // Cuenta una apertura de la app y, si toca, muestra la invitacion: la 3.a
+    // vez y despues como mucho una vez cada 3 dias. `url` vacia = no se muestra
+    // (se cuenta igual).
     void showIfDue(const std::string& url);
 
 }  // namespace donar

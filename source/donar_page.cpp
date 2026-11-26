@@ -1,6 +1,7 @@
 #include "donar_page.hpp"
 
 #include <algorithm>
+#include <chrono>
 
 #include "constants.hpp"
 #include "fs.hpp"
@@ -274,8 +275,18 @@ namespace donar {
         registro["aperturas"] = veces;
         fs::writeJsonToFile(registro, APERTURAS_PATH);
 
-        if (url.empty() || veces < 5 || (veces - 5) % 10 != 0)
+        /* Por tiempo, igual en todas las apps de OQB: la primera vez en la 3.a
+           apertura y despues como mucho una vez cada 3 dias (la primera
+           apertura pasado ese plazo). Por aperturas, quien la abria poco casi no
+           la veia y quien la abria mucho la veia varias veces el mismo dia. */
+        constexpr long PRIMERA = 3;
+        constexpr long long CADA = 3LL * 24 * 60 * 60;
+        const long long ahora = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        const long long ultima = registro.contains("ultima_donar") && registro["ultima_donar"].is_number_integer() ? registro["ultima_donar"].get<long long>() : 0;
+        if (url.empty() || veces < PRIMERA || (ultima > 0 && ahora - ultima < CADA))
             return;
+        registro["ultima_donar"] = ahora;
+        fs::writeJsonToFile(registro, APERTURAS_PATH);
         brls::Application::pushView(new DonarPage(url));
     }
 
