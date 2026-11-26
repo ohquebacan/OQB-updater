@@ -204,6 +204,15 @@ namespace appUpdates {
         return catalogo();
     }
 
+    bool traeNro(const nlohmann::ordered_json& nxlinks, const std::string& url)
+    {
+        if (url.size() > 4 && url.substr(url.size() - 4) == ".nro") return true;
+        const nlohmann::ordered_json* app = entry(nxlinks, url);
+        if (!app || !app->contains("revisado")) return true;
+        const auto nros = app->find("nros");
+        return nros != app->end() && nros->is_array() && !nros->empty();
+    }
+
     std::string published(const nlohmann::ordered_json& nxlinks, const std::string& url)
     {
         const nlohmann::ordered_json* app = entry(nxlinks, url);

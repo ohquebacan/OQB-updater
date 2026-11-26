@@ -1,0 +1,221 @@
+#include "cola.hpp"
+
+#include <atomic>
+#include <condition_variable>
+#include <deque>
+#include <mutex>
+#include <thread>
+
+#include <switch.h>
+
+#include "actividad.hpp"
+#include "led.hpp"
+#include "progress_event.hpp"
+#include "utils.hpp"
+
+namespace cola {
+
+    namespace {
+
+        struct Trabajo {
+            std::string nombre;
+            std::vector<Paso> pasos;
+        };
+
+        std::mutex m;
+        std::condition_variable cv;
+        std::deque<Trabajo> espera;
+        std::vector<Hecho> hechos;
+        std::thread* hilo = nullptr;
+        bool parar = false;
+        bool trabajando = false;
+        int exclusivas = 0;
+
+        // Lo que se ve de lo actual (bajo m).
+        std::string actual, pasoTexto, detalle;
+        int pasoNum = 0, pasosTotal = 0;
+
+        void anotar(Hecho h)
+        {
+            hechos.insert(hechos.begin(), std::move(h));
+            if (hechos.size() > 20) hechos.resize(20);
+        }
+
+        void bucle()
+        {
+            for (;;) {
+                Trabajo t;
+                {
+                    std::unique_lock<std::mutex> l(m);
+                    // Espera algo que hacer y que ninguna pantalla completa tenga la consola.
+                    cv.wait(l, [] { return parar || (!espera.empty() && exclusivas == 0); });
+                    if (parar) return;
+                    t = std::move(espera.front());
+                    espera.pop_front();
+                    trabajando = true;
+                    actual = t.nombre;
+                    pasoTexto.clear();
+                    detalle.clear();
+                    pasoNum = 0;
+                    pasosTotal = t.pasos.size();
+                }
+                // Que la consola no se duerma a mitad de una descarga.
+                appletSetMediaPlaybackState(true);
+                led::pulso();
+
+                Hecho h;
+                h.nombre = t.nombre;
+                for (size_t i = 0; i < t.pasos.size(); ++i) {
+                    {
+                        std::lock_guard<std::mutex> l(m);
+                        pasoTexto = t.pasos[i].texto;
+                        pasoNum = i + 1;
+                    }
+                    auto& p = ProgressEvent::instance();
+                    p.reset();
+                    actividad::limpiar();
+                    if (t.pasos[i].fn) t.pasos[i].fn();
+                    p.setStep(p.getMax());
+                    if (p.getInterupt()) {
+                        h.cancelado = true;
+                        break;
+                    }
+                    if (p.getStatusCode() > 399) {
+                        h.error = util::getErrorMessage(p.getStatusCode());
+                        break;
+                    }
+                }
+                ProgressEvent::instance().setInterupt(false);
+                ProgressEvent::instance().setStatusCode(0);
+
+                bool vacia;
+                {
+                    std::lock_guard<std::mutex> l(m);
+                    anotar(h);
+                    trabajando = false;
+                    actual.clear();
+                    vacia = espera.empty();
+                }
+                cv.notify_all();  // una pantalla completa puede estar esperando
+                if (vacia) {
+                    appletSetMediaPlaybackState(false);
+                    if (h.error.empty() && !h.cancelado)
+                        led::exito();
+                    else
+                        led::apagar();
+                }
+            }
+        }
+
+    }  // namespace
+
+    void agregar(const std::string& nombre, std::vector<Paso> pasos)
+    {
+        {
+            std::lock_guard<std::mutex> l(m);
+            espera.push_back({nombre, std::move(pasos)});
+            if (!hilo) {
+                parar = false;
+                hilo = new std::thread(bucle);
+            }
+        }
+        cv.notify_all();
+    }
+
+    bool ocupada()
+    {
+        std::lock_guard<std::mutex> l(m);
+        return trabajando || !espera.empty();
+    }
+
+    Estado estado()
+    {
+        Estado e;
+        std::lock_guard<std::mutex> l(m);
+        // Las lineas de actividad solo las lee la cascada de WorkerPage; con la
+        // cola trabajando no hay ninguna, asi que se toma la ultima aqui.
+        if (trabajando) {
+            std::string linea;
+            while (actividad::siguiente(linea)) detalle = linea;
+        }
+        e.trabajando = trabajando;
+        e.actual = actual;
+        e.paso = pasoTexto;
+        e.detalle = detalle;
+        e.pasoNum = pasoNum;
+        e.pasos = pasosTotal;
+        if (trabajando) {
+            auto& p = ProgressEvent::instance();
+            e.ahora = p.getNow();
+            e.total = p.getTotal();
+            e.velocidad = p.getSpeed();
+            e.step = p.getStep();
+            e.max = p.getMax();
+        }
+        for (const auto& t : espera) e.espera.push_back(t.nombre);
+        e.hechos = hechos;
+        return e;
+    }
+
+    void cancelarActual()
+    {
+        std::lock_guard<std::mutex> l(m);
+        if (trabajando) ProgressEvent::instance().setInterupt(true);
+    }
+
+    void quitar(std::size_t i)
+    {
+        std::lock_guard<std::mutex> l(m);
+        if (i < espera.size()) espera.erase(espera.begin() + i);
+    }
+
+    void mover(std::size_t i, int hacia)
+    {
+        std::lock_guard<std::mutex> l(m);
+        const long j = (long)i + hacia;
+        if (i < espera.size() && j >= 0 && j < (long)espera.size()) std::swap(espera[i], espera[j]);
+    }
+
+    void limpiarHechos()
+    {
+        std::lock_guard<std::mutex> l(m);
+        hechos.clear();
+    }
+
+    bool tomarExclusiva()
+    {
+        std::lock_guard<std::mutex> l(m);
+        if (trabajando || !espera.empty()) return false;
+        ++exclusivas;
+        return true;
+    }
+
+    void soltarExclusiva()
+    {
+        {
+            std::lock_guard<std::mutex> l(m);
+            if (exclusivas > 0) --exclusivas;
+        }
+        cv.notify_all();
+    }
+
+    void detener()
+    {
+        std::thread* h;
+        {
+            std::lock_guard<std::mutex> l(m);
+            parar = true;
+            espera.clear();
+            if (trabajando) ProgressEvent::instance().setInterupt(true);
+            h = hilo;
+            hilo = nullptr;
+        }
+        cv.notify_all();
+        if (h) {
+            if (h->joinable()) h->join();
+            delete h;
+        }
+        appletSetMediaPlaybackState(false);
+    }
+
+}  // namespace cola

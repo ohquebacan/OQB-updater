@@ -1,4 +1,5 @@
 #include "main_frame.hpp"
+#include "cola.hpp"
 #include "forwarder.hpp"
 #include "instalar_app.hpp"
 
@@ -788,6 +789,47 @@ void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         }
     }
 
+
+    /* La cola de descargas (5.0.0), arriba a la derecha: que se instala, el
+       porcentaje y cuantas esperan. Con − se abre. */
+    if (cola::ocupada()) {
+        const cola::Estado e = cola::estado();
+        double frac = e.total > 0 ? e.ahora / e.total : (e.max > 0 ? (double)e.step / e.max : 0);
+        frac = std::max(0.0, std::min(1.0, frac));
+        std::string t = e.trabajando ? e.actual + "  " + std::to_string((int)(frac * 100)) + " %" : "menus/cola/esperando_corto"_i18n;
+        if (!e.espera.empty()) t += "  +" + std::to_string(e.espera.size());
+        nvgFontFaceId(vg, ctx->fontStash->regular);
+        nvgFontSize(vg, 17.0f);
+        float b[4];
+        nvgTextBounds(vg, 0, 0, t.c_str(), nullptr, b);
+        const float w = (b[2] - b[0]) + 56.0f, h = 34.0f;
+        const float px = x + width - w - 30.0f, py = y + 18.0f;
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, px, py, w, h, h / 2);
+        nvgFillColor(vg, this->a(oqb::velo(30)));
+        nvgFill(vg);
+        // La barra de avance en el borde de abajo de la pastilla.
+        nvgSave(vg);
+        nvgScissor(vg, px, py, w * (float)frac, h);
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, px, py, w, h, h / 2);
+        nvgFillColor(vg, this->a(nvgTransRGBA(oqb::acentoFuerte(), 70)));
+        nvgFill(vg);
+        nvgRestore(vg);
+        // Flecha hacia abajo.
+        const float fx = px + 22.0f, fy = py + h / 2;
+        nvgBeginPath(vg);
+        nvgMoveTo(vg, fx - 7, fy - 2);
+        nvgLineTo(vg, fx + 7, fy - 2);
+        nvgLineTo(vg, fx, fy + 7);
+        nvgClosePath(vg);
+        nvgFillColor(vg, this->a(oqb::acentoFuerte()));
+        nvgFill(vg);
+        nvgFillColor(vg, this->a(ctx->theme->textColor));
+        nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+        nvgBeginPath(vg);
+        nvgText(vg, px + 38.0f, fy, t.c_str(), nullptr);
+    }
 
     // Termino una instalacion: lo que ya esta al dia deja de figurar pendiente.
     if (const int gen = appUpdates::generacionInstalaciones(); gen != this->genInstalaciones) {

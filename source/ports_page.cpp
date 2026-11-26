@@ -9,6 +9,7 @@
 
 #include "actividad.hpp"
 #include "app_updates.hpp"
+#include "cola.hpp"
 #include "confirm_page.hpp"
 #include "constants.hpp"
 #include "extract.hpp"
@@ -336,7 +337,13 @@ namespace {
                     d->open();
                     return true;
                 }
-                this->frame->nextStage();
+                {
+                    const nlohmann::ordered_json nx = this->nxlinks;
+                    ports::Port p = this->port;
+                    p.imagen = -1;
+                    const std::vector<int> partes = this->aInstalar;
+                    brls::Application::popView(brls::ViewAnimation::FADE, [nx, p, partes] { ports::instalar(nx, p, partes); });
+                }
                 return true;
             });
             // Instalado (aunque sea a medias): X lo elimina, con confirmacion.
@@ -776,8 +783,9 @@ namespace ports {
     /* Las etapas que instalan esas partes, una detras de otra, y al final el
        acceso directo. Al terminar una parte de un grupo (Espanol / Ingles), las
        otras del grupo dejan de contar como instaladas: sus archivos se pisaron. */
-    static void agregarEtapas(brls::StagedAppletFrame* frame, const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar)
+    static std::vector<cola::Paso> pasosDe(const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar, bool accesos)
     {
+        std::vector<cola::Paso> pasos;
         auto nroPath = std::make_shared<std::string>();
         const int total = aInstalar.size();
         (void)total;
@@ -805,7 +813,7 @@ namespace ports {
                 for (const auto& otra : port.partes)
                     if (otra.seccion != port.partes[i].seccion && port.secciones[otra.seccion].grupo == g) pisadas.push_back(otra.url);
             }
-            frame->addStage(new WorkerPage(frame, titulo, [url, fecha, nroPath, titulo, pisadas]() {
+            pasos.push_back({titulo, [url, fecha, nroPath, titulo, pisadas]() {
                 actividad::paso(titulo);
                 marcarPendiente(url, true);
                 const zipvivo::Indice idx = zipvivo::leerIndice(url);
@@ -834,12 +842,22 @@ namespace ports {
                     marcarPendiente(url, false);
                     for (const auto& u : pisadas) appUpdates::forgetInstalled(u);
                 }
-            }));
+            }});
         }
-        if (port.accesos.empty())
-            ListDownloadTab::addForwarderStages(frame, nroPath);
-        else
-            ListDownloadTab::addForwarderStages(frame, port.accesos);
+        if (accesos) {
+            const std::vector<std::string> propios = port.accesos;
+            pasos.push_back({"menus/apps/forwarder_creating"_i18n, [nroPath, propios]() {
+                const std::vector<std::string> nros = propios.empty() ? std::vector<std::string>{*nroPath} : propios;
+                std::string fallo;
+                for (const auto& n : nros) {
+                    if (n.empty()) continue;
+                    const std::string r = ListDownloadTab::crearAcceso(n);
+                    if (r != "menus/common/all_done"_i18n) fallo = r;
+                }
+                if (!fallo.empty()) brls::Logger::error("cola: acceso directo: {}", fallo);
+            }});
+        }
+        return pasos;
     }
 
     void abrir(const nlohmann::ordered_json& nxlinks, const Port& port)
@@ -870,8 +888,6 @@ namespace ports {
         Port copia = port;
         copia.imagen = -1;  // la ficha crea su propia textura
         frame->addStage(new PortDetalle(frame, nxlinks, copia, aInstalar, necesita, libre));
-        // Con secciones, lo marcado se instala en otra ventana (instalar()).
-        if (!port.conSecciones()) agregarEtapas(frame, nxlinks, port, aInstalar);
         brls::Application::pushView(frame);
     }
 
@@ -995,10 +1011,17 @@ namespace ports {
 
     void instalar(const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar)
     {
-        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
-        frame->setTitle(port.nombre);
-        agregarEtapas(frame, nxlinks, port, aInstalar);
-        brls::Application::pushView(frame);
+        /* A la cola (5.0.0): se sigue usando la app mientras baja. El acceso
+           directo se decide aqui, porque al terminar nadie esta mirando. */
+        const auto agregar = [nxlinks, port, aInstalar](bool accesos) {
+            cola::agregar(port.nombre, pasosDe(nxlinks, port, aInstalar, accesos));
+            brls::Application::notify(fmt::format("menus/cola/agregado"_i18n, port.nombre));
+        };
+        brls::Dialog* d = new brls::Dialog(fmt::format("menus/cola/pregunta_acceso"_i18n, port.nombre));
+        d->addButton("menus/common/no"_i18n, [d, agregar](brls::View*) { d->close([agregar] { agregar(false); }); });
+        d->addButton("menus/common/yes"_i18n, [d, agregar](brls::View*) { d->close([agregar] { agregar(true); }); });
+        d->setCancelable(true);
+        d->open();
     }
 
 

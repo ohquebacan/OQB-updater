@@ -235,7 +235,12 @@ void ListDownloadTab::createList(contentType type)
                 listItem->setValue("menus/apps/new_version"_i18n, false, false);
             }
             listItem->getClickEvent()->subscribe([this, type, text, url, title, fecha, ofertaNombre, ofertaUrl, video](brls::View* view) {
-                if (type == contentType::apps && bloqueadoPorNexus(url)) return;
+                if (type == contentType::apps) {
+                    // A la cola de descargas (5.0.0), igual que desde las demas listas.
+                    const size_t corte = text.find("\n\n");
+                    instalarAppDelCatalogo(this->nxlinks, title, url, corte == std::string::npos ? "" : text.substr(corte + 2));
+                    return;
+                }
                 brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                 stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
                 stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
@@ -260,51 +265,7 @@ void ListDownloadTab::createList(contentType type)
                 if (type == contentType::fw && !ofertaUrl.empty()) {
                     stagedFrame->addStage(new DialoguePage_optional(stagedFrame, fmt::format("menus/firmware/offer_app"_i18n, ofertaNombre), llevarOferta));
                 }
-                if (type == contentType::apps) {
-                    // La ruta del NRO se conoce de entrada si el link es un .nro;
-                    // si viene en zip, la descubre el worker de extracción.
-                    auto nroPath = std::make_shared<std::string>();
 
-                    if (url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
-                        const std::string dest = util::resolveNroDestination(url.substr(url.rfind('/') + 1));
-                        *nroPath = dest;
-                        fs::createTree(dest.substr(0, dest.rfind('/') + 1));
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest, fecha]() {
-                            // Solo si bajo de verdad: un error deja el archivo viejo en su lugar.
-                            if (download::downloadFile(url, dest, OFF) == 200)
-                                appUpdates::recordInstalled(url, fecha);
-                        }));
-                    }
-                    else if (nspInstaller::isNspUrl(url)) {
-                        const std::string dest = "/config/aio-switch-updater/download.nsp";
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest]() {
-                            download::downloadFile(url, dest, OFF);
-                        }));
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/instalando_nsp"_i18n, [url, dest, fecha]() {
-                            if (R_SUCCEEDED(nspInstaller::installAndDelete(dest)))
-                                appUpdates::recordInstalled(url, fecha);
-                        }));
-                    }
-                    else {
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() { util::downloadArchive(url, contentType::apps); }));
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [nroPath, url, fecha]() {
-                            const std::string wrapper = extract::detectWrapperDir(CUSTOM_FILENAME);
-                            *nroPath = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, wrapper);
-                            const auto nsps = nspInstaller::findInArchive(CUSTOM_FILENAME, wrapper);
-                            util::extractArchive(contentType::apps);
-                            Result rc = 0;
-                            for (const auto& nsp : nsps) {
-                                rc = nspInstaller::installAndDelete(nsp);
-                                if (R_FAILED(rc)) break;
-                            }
-                            if (R_SUCCEEDED(rc)) appUpdates::recordInstalled(url, fecha);
-                        }));
-                    }
-
-                    this->addForwarderStages(stagedFrame, nroPath);
-                    brls::Application::pushView(stagedFrame);
-                    return;
-                }
                 else if (type != contentType::payloads && type != contentType::hekate_ipl) {
                     /* La base se vuelve a bajar si salio otra, y tambien si la que quedo
                        en la SD no trae trucos (la 2026-09-08 vacia se quedaba para siempre). */
@@ -412,7 +373,7 @@ void ListDownloadTab::openSearch(contentType type, const nlohmann::ordered_json&
 
 namespace {
     // Crea un acceso directo; devuelve el mensaje para la pagina final.
-    std::string crearAcceso(std::shared_ptr<std::string> nroPath)
+    std::string crearAccesoDe(std::shared_ptr<std::string> nroPath)
     {
             fwd::Config config;
             Result rc = fwd::configFromNro(*nroPath, config);
@@ -458,6 +419,11 @@ namespace {
     }
 }
 
+std::string ListDownloadTab::crearAcceso(const std::string& nro)
+{
+    return crearAccesoDe(std::make_shared<std::string>(nro));
+}
+
 void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath)
 {
     auto makeForwarder = std::make_shared<bool>(false);
@@ -468,7 +434,7 @@ void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, s
     stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/apps/forwarder_ask"_i18n, makeForwarder, nroPath));
     stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/apps/forwarder_creating"_i18n, [nroPath, makeForwarder, forwarderResult]() {
         auto& progress = ProgressEvent::instance();
-        *forwarderResult = (*makeForwarder && !nroPath->empty()) ? crearAcceso(nroPath) : "menus/common/all_done"_i18n;
+        *forwarderResult = (*makeForwarder && !nroPath->empty()) ? crearAccesoDe(nroPath) : "menus/common/all_done"_i18n;
         progress.setStep(progress.getMax());
     }));
     stagedFrame->addStage((new ConfirmPage_Deferred(stagedFrame, forwarderResult))->returnToList());
@@ -489,7 +455,7 @@ void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, c
         *forwarderResult = "menus/common/all_done"_i18n;
         if (*makeForwarder) {
             for (const auto& nro : nros) {
-                const std::string r = crearAcceso(std::make_shared<std::string>(nro));
+                const std::string r = crearAccesoDe(std::make_shared<std::string>(nro));
                 if (r != "menus/common/all_done"_i18n) *forwarderResult = r;
             }
         }

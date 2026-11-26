@@ -25,6 +25,8 @@ private:
     std::string text;
     int progressValue = 0;
     bool workStarted = false;
+    bool exclusiva = false;  // tiene la consola tomada frente a la cola de descargas
+    bool esperandoCola = false;
     // La tarea termino de verdad (su funcion volvio), no solo la barra llena.
     std::atomic<bool> workDone{false};
     bool draw_page = true;

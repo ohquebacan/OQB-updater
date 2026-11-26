@@ -21,6 +21,8 @@ extern "C" u32 __nx_applet_exit_mode;
 #include "icono_carga.hpp"
 #include "donar_page.hpp"
 #include "main_frame.hpp"
+#include "cola.hpp"
+#include "cola_page.hpp"
 #include "ntp.hpp"
 #include "oqb_theme.hpp"
 #include "warning_page.hpp"
@@ -305,6 +307,11 @@ int main(int argc, char* argv[])
     if (seguir && std::filesystem::exists(HIDDEN_AIO_FILE)) {
         MainFrame* mainFrame = new MainFrame();
         brls::Application::pushView(mainFrame);
+        // − abre la cola de descargas (pushView le habia puesto el contador de FPS).
+        mainFrame->registerAction("menus/cola/titulo"_i18n, brls::Key::MINUS, [] {
+            ColaPage::abrir();
+            return true;
+        });
         if (cargaVisible)
             cargaVisible->retirar(1.0f);
         arranque::marca("ventana principal armada");
@@ -325,8 +332,28 @@ int main(int argc, char* argv[])
         brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
     }
 
-    while (seguir && brls::Application::mainLoop())
+    /* Con la cola de descargas trabajando, + no cierra de una: pregunta. Se
+       ataja antes de que mainLoop vea la ventana marcada para cerrar. */
+    bool salirConfirmado = false;
+    for (;;) {
+        if (!salirConfirmado && cola::ocupada()) {
+            GLFWwindow* ventana = glfwGetCurrentContext();
+            if (ventana && glfwWindowShouldClose(ventana)) {
+                glfwSetWindowShouldClose(ventana, GLFW_FALSE);
+                brls::Dialog* d = new brls::Dialog("menus/cola/salir_pregunta"_i18n);
+                d->addButton("menus/cola/seguir"_i18n, [d](brls::View*) { d->close(); });
+                d->addButton("menus/cola/salir"_i18n, [d, &salirConfirmado](brls::View*) {
+                    salirConfirmado = true;
+                    d->close([] { brls::Application::quit(); });
+                });
+                d->setCancelable(true);
+                d->open();
+            }
+        }
+        if (!(seguir && brls::Application::mainLoop())) break;
         led::refrescar();  // el pulso del mando tiene fin: se renueva mientras siga
+    }
+    cola::detener();
 
     // Antes de cerrar servicios: el hilo de la hora todavia puede estar usando
     // la red y el servicio de time.

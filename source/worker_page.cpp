@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "cola.hpp"
 #include "constants.hpp"
 #include "actividad.hpp"
 #include "deep_clean.hpp"
@@ -122,7 +123,17 @@ std::string formatLabelText(double speed, double fileSizeCurrent, double fileSiz
 void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
     if (this->draw_page) {
-        if (!this->workStarted) {
+        if (!this->workStarted && !this->exclusiva && !cola::tomarExclusiva()) {
+            // La cola de descargas esta trabajando: esto empieza cuando termine.
+            if (!this->esperandoCola) {
+                this->esperandoCola = true;
+                this->label->setText("menus/cola/esperando"_i18n);
+            }
+            this->label->frame(ctx);
+        }
+        else if (!this->workStarted) {
+            this->exclusiva = true;
+            if (this->esperandoCola) this->label->setText(this->text);
             this->workStarted = true;
             appletSetMediaPlaybackState(true);
             appletBeginBlockingHomeButton(0);
@@ -135,6 +146,10 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
            siguiente mientras el hilo seguia, y al volver atras se congelaba
            esperandolo y la navegacion quedaba en gris. */
         else if (this->workDone.load()) {
+            if (this->exclusiva) {
+                this->exclusiva = false;
+                cola::soltarExclusiva();
+            }
             appletEndBlockingHomeButton();
             appletSetMediaPlaybackState(false);
             /* Un error o un cancelar no siguen con ninguna etapa (en un pack la
@@ -234,6 +249,7 @@ brls::View* WorkerPage::getDefaultFocus()
 
 WorkerPage::~WorkerPage()
 {
+    if (this->exclusiva) cola::soltarExclusiva();
     if (this->workStarted && workerThread->joinable()) {
         this->workerThread->join();
         if (this->workerThread)

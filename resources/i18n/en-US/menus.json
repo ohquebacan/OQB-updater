@@ -1053,6 +1053,27 @@
         "err_archivo": "The file could not be created. The SD is probably full or write-protected.",
         "err_otro": "The service answered something unexpected (code {}). Try again in a few minutes or send the file by hand."
     },
+    "cola": {
+        "titulo": "Downloads",
+        "ahora": "NOW",
+        "nada": "Nothing is being installed.",
+        "en_espera": "WAITING ({})",
+        "terminados": "FINISHED",
+        "cancelado": "Cancelled",
+        "quitar": "Remove / cancel",
+        "subir": "Move up",
+        "bajar": "Move down",
+        "limpiar": "Clear finished",
+        "agregado": "{} was added to Downloads (−)",
+        "pregunta_acceso": "{} is added to Downloads and installs while you keep using the app.\n\nAlso create its HOME menu shortcut?",
+        "pregunta_instalar": "Install {}? It is added to Downloads and installs while you keep using the app.",
+        "instalar": "Install",
+        "esperando": "Waiting for the downloads to finish…\nIt starts on its own as soon as they do.",
+        "esperando_corto": "Downloads",
+        "salir_pregunta": "Downloads are still running. If you exit now they stop; anything left half-way can be installed again later.",
+        "seguir": "Stay",
+        "salir": "Exit anyway"
+    },
     "ports": {
         "eliminar": "Delete",
         "eliminar_pregunta": "Delete {} from the console? The game files and its shortcuts will be removed. Your saves stay.",

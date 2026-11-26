@@ -48,6 +48,8 @@ public:
     // Añade la pregunta del acceso directo, el worker que lo crea y la página
     // de resultado. nroPath puede llenarse recién durante los stages previos.
     // Estatica: la usa tambien instalarAppDelCatalogo (Bacán Shop, Nextendo).
+    /// Crea el acceso directo de ese .nro (sin pantalla); devuelve el mensaje final.
+    static std::string crearAcceso(const std::string& nro);
     static void addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath);
     /// Varios accesos (un port con multijugador y zombies): una sola pregunta para todos.
     static void addForwarderStages(brls::StagedAppletFrame* stagedFrame, const std::vector<std::string>& nros);

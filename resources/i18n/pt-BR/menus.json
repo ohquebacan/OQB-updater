@@ -1074,6 +1074,27 @@
     "err_archivo": "Não foi possível montar o arquivo. Provavelmente o SD está cheio ou protegido contra gravação.",
     "err_otro": "O serviço respondeu algo inesperado (código {}). Tente em alguns minutos ou envie o arquivo manualmente."
   },
+  "cola": {
+      "titulo": "Downloads",
+      "ahora": "AGORA",
+      "nada": "Nada está sendo instalado.",
+      "en_espera": "NA FILA ({})",
+      "terminados": "CONCLUÍDOS",
+      "cancelado": "Cancelado",
+      "quitar": "Remover / cancelar",
+      "subir": "Subir",
+      "bajar": "Descer",
+      "limpiar": "Limpar concluídos",
+      "agregado": "{} foi adicionado aos Downloads (−)",
+      "pregunta_acceso": "{} vai para os Downloads e é instalado enquanto você continua usando o app.\n\nCriar também o atalho no menu HOME?",
+      "pregunta_instalar": "Instalar {}? Vai para os Downloads e é instalado enquanto você continua usando o app.",
+      "instalar": "Instalar",
+      "esperando": "Esperando os downloads terminarem…\nComeça sozinho assim que terminarem.",
+      "esperando_corto": "Downloads",
+      "salir_pregunta": "Ainda há downloads em andamento. Se sair agora eles param; o que ficou pela metade pode ser instalado depois.",
+      "seguir": "Ficar",
+      "salir": "Sair mesmo assim"
+  },
   "ports": {
       "eliminar": "Excluir",
       "eliminar_pregunta": "Excluir {} do console? Os arquivos do jogo e seus atalhos serão apagados. Seus saves ficam.",

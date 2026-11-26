@@ -1074,6 +1074,27 @@
         "err_archivo": "No se pudo armar el archivo. Probablemente la SD está llena o protegida contra escritura.",
         "err_otro": "El servicio respondió algo inesperado (código {}). Prueba en unos minutos o manda el archivo a mano."
     },
+    "cola": {
+        "titulo": "Descargas",
+        "ahora": "AHORA",
+        "nada": "No se está instalando nada.",
+        "en_espera": "EN ESPERA ({})",
+        "terminados": "TERMINADOS",
+        "cancelado": "Cancelado",
+        "quitar": "Quitar / cancelar",
+        "subir": "Subir",
+        "bajar": "Bajar",
+        "limpiar": "Limpiar terminados",
+        "agregado": "{} se agregó a Descargas (−)",
+        "pregunta_acceso": "{} se agrega a Descargas y se instala mientras sigues usando la app.\n\n¿Crear también su acceso directo en el menú HOME?",
+        "pregunta_instalar": "¿Instalar {}? Se agrega a Descargas y se instala mientras sigues usando la app.",
+        "instalar": "Instalar",
+        "esperando": "Esperando a que terminen las descargas…\nEmpieza solo en cuanto terminen.",
+        "esperando_corto": "Descargas",
+        "salir_pregunta": "Todavía hay descargas en curso. Si sales ahora se cortan; lo que quedó a medias se puede volver a instalar después.",
+        "seguir": "Seguir aquí",
+        "salir": "Salir igual"
+    },
     "ports": {
         "eliminar": "Eliminar",
         "eliminar_pregunta": "¿Eliminar {} de la consola? Se borran los archivos del juego y sus accesos directos. Tus partidas se quedan.",
