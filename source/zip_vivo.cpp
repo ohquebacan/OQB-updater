@@ -333,12 +333,22 @@ namespace zipvivo {
             return idx;
         }
         const std::string quitar = envoltorio(nombres);
+        bool nroPrincipal = false;
         for (auto& e : crudas) {
             if (!quitar.empty()) e.nombre = e.nombre.substr(quitar.size());
             idx.descomprimido += e.descomprimido;
             const std::string bajo = minusculas(e.nombre);
-            if (idx.nro.empty() && bajo.rfind("switch/", 0) == 0 && bajo.size() > 4 && bajo.compare(bajo.size() - 4, 4, ".nro") == 0)
-                idx.nro = std::string(ROOT_PATH) + e.nombre;
+            if (bajo.rfind("switch/", 0) == 0 && bajo.size() > 4 && bajo.compare(bajo.size() - 4, 4, ".nro") == 0) {
+                /* Con varias apps (Black Ops II: t6game, t6mp y t6zm), el acceso
+                   directo va a la que se llama como su carpeta; si ninguna, la primera. */
+                const size_t barra = bajo.rfind('/');
+                const size_t antes = bajo.rfind('/', barra - 1);
+                const bool principal = antes != std::string::npos && bajo.substr(antes + 1, barra - antes - 1) == bajo.substr(barra + 1, bajo.size() - barra - 5);
+                if (idx.nro.empty() || (principal && !nroPrincipal)) {
+                    idx.nro = std::string(ROOT_PATH) + e.nombre;
+                    nroPrincipal = principal;
+                }
+            }
         }
         std::sort(crudas.begin(), crudas.end(), [](const Entrada& a, const Entrada& b) { return a.posicion < b.posicion; });
         for (size_t i = 1; i < crudas.size(); ++i)

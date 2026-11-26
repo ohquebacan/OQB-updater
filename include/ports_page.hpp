@@ -44,6 +44,7 @@ namespace ports {
         // 0 sin instalar, 1 completo, 2 a medias (del juego base).
         int estado() const;
         std::vector<Seccion> secciones;  // vacio: un port de siempre (todas las partes juntas)
+        std::vector<std::string> accesos;  // las apps con su propio acceso directo (4.8.1); vacio: una sola
         int partesDe(int seccion) const;
         int instaladasDe(int seccion) const;
         long long totalDe(int seccion) const;  // 0 si alguna parte no esta medida

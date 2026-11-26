@@ -80,25 +80,20 @@ namespace {
         if (!e) return "";
         const auto m = e->find("marcas");
         if (m == e->end() || !m->is_array()) return "";
+        // La que se llama como su carpeta (t6game.nro en /switch/t6game/); si ninguna, la primera.
+        std::string primera;
         for (const auto& r : *m) {
             if (!r.is_string()) continue;
             const std::string ruta = r.get<std::string>();
             std::string bajo = ruta;
             for (auto& c : bajo) c = std::tolower(static_cast<unsigned char>(c));
-            if (bajo.size() > 4 && bajo.compare(bajo.size() - 4, 4, ".nro") == 0) return ruta;
+            if (bajo.size() <= 4 || bajo.compare(bajo.size() - 4, 4, ".nro") != 0) continue;
+            if (primera.empty()) primera = ruta;
+            const size_t barra = bajo.rfind('/');
+            const size_t antes = barra == std::string::npos || barra == 0 ? std::string::npos : bajo.rfind('/', barra - 1);
+            if (antes != std::string::npos && bajo.substr(antes + 1, barra - antes - 1) == bajo.substr(barra + 1, bajo.size() - barra - 5)) return ruta;
         }
-        return "";
-    }
-
-    /* Crea (o vuelve a crear) el acceso directo del menu HOME de un port ya
-       instalado. Mismo tid que antes (sale de la ruta del .nro): si el de antes
-       quedo con el icono cargando, este lo reemplaza. */
-    void crearAccesoDirecto(const std::string& nro, const std::string& nombre)
-    {
-        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
-        frame->setTitle(nombre);
-        ListDownloadTab::addForwarderStages(frame, std::make_shared<std::string>(nro));
-        brls::Application::pushView(frame);
+        return primera;
     }
 
     double gb(long long bytes) { return bytes / 1073741824.0; }
@@ -211,6 +206,17 @@ namespace {
                     p.secciones.push_back(sec);
                     for (const auto& u : sj["partes"])
                         if (u.is_string()) urls.emplace_back(u.get<std::string>(), idx);
+                }
+            }
+            /* Accesos directos propios (4.8.1): Black Ops II tiene multijugador y
+               zombis, cada uno con su app y su icono. */
+            const auto acc = datos.find("accesos");
+            if (acc != datos.end() && acc->is_array()) {
+                for (const auto& a : *acc) {
+                    if (!a.is_object() || !a.contains("nro") || !a["nro"].is_string()) continue;
+                    const std::string nro = a["nro"].get<std::string>();
+                    p.accesos.push_back(nro);
+                    if (a.contains("icono") && a["icono"].is_string()) fwd::agregarIconoPropio(nro.substr(nro.rfind('/') + 1), a["icono"].get<std::string>());
                 }
             }
             if (urls.empty()) {
@@ -333,10 +339,14 @@ namespace {
                 return true;
             });
             // Instalado: Y vuelve a crear el acceso directo del menu HOME.
-            if (this->port.estado() == 1 && !this->port.nro.empty()) {
-                const std::string nro = this->port.nro, nombre = this->port.nombre;
-                this->registerAction("menus/ports/acceso_directo"_i18n, brls::Key::Y, [nro, nombre] {
-                    crearAccesoDirecto(nro, nombre);
+            if (this->port.estado() == 1 && (!this->port.nro.empty() || !this->port.accesos.empty())) {
+                const std::vector<std::string> nros = this->port.accesos.empty() ? std::vector<std::string>{this->port.nro} : this->port.accesos;
+                const std::string nombre = this->port.nombre;
+                this->registerAction("menus/ports/acceso_directo"_i18n, brls::Key::Y, [nros, nombre] {
+                    brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+                    frame->setTitle(nombre);
+                    for (const auto& nro : nros) ListDownloadTab::addForwarderStages(frame, std::make_shared<std::string>(nro));
+                    brls::Application::pushView(frame);
                     return true;
                 });
             }
@@ -808,7 +818,10 @@ namespace ports {
                 }
             }));
         }
-        ListDownloadTab::addForwarderStages(frame, nroPath);
+        if (port.accesos.empty())
+            ListDownloadTab::addForwarderStages(frame, nroPath);
+        else
+            for (const auto& nro : port.accesos) ListDownloadTab::addForwarderStages(frame, std::make_shared<std::string>(nro));
     }
 
     void abrir(const nlohmann::ordered_json& nxlinks, const Port& port)
