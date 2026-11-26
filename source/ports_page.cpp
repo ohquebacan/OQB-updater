@@ -78,6 +78,50 @@ namespace {
     }
 
     // El primer .nro que el catalogo conoce de esta parte (aunque no este en la SD).
+    /* La lista de archivos de cada zip de port, guardada en la SD (5.0.0): al
+       eliminar un port hay que saber que trajo el y que traen los demas, y
+       leerla por internet zip por zip tardaba mucho. Se guarda al instalar y la
+       primera vez que se lee; el nombre lleva la fecha de la subida, asi un zip
+       nuevo con la misma direccion no usa la lista vieja. */
+    std::string rutaLista(const std::string& url, const std::string& fecha)
+    {
+        u8 h[32];
+        const std::string clave = url + "|" + fecha;
+        sha256CalculateHash(h, clave.data(), clave.size());
+        char hex[17];
+        for (int i = 0; i < 8; ++i) snprintf(hex + i * 2, 3, "%02x", h[i]);
+        return std::string(CONFIG_PATH) + "ports_listas/" + hex + ".txt";
+    }
+
+    void guardarLista(const std::string& url, const std::string& fecha, const std::vector<std::string>& archivos)
+    {
+        std::error_code ec;
+        std::filesystem::create_directories(std::string(CONFIG_PATH) + "ports_listas", ec);
+        const std::string ruta = rutaLista(url, fecha);
+        std::ofstream f(ruta + ".tmp", std::ios::trunc);
+        for (const auto& a : archivos) f << a << "\n";
+        f.close();
+        if (f) std::filesystem::rename(ruta + ".tmp", ruta, ec);
+    }
+
+    bool leerLista(const std::string& url, const std::string& fecha, std::vector<std::string>& out)
+    {
+        std::ifstream f(rutaLista(url, fecha));
+        if (!f) return false;
+        std::string linea;
+        while (std::getline(f, linea))
+            if (!linea.empty()) out.push_back(linea);
+        return !out.empty();
+    }
+
+    std::vector<std::string> archivosDelIndice(const zipvivo::Indice& idx)
+    {
+        std::vector<std::string> out;
+        for (const auto& e : idx.entradas)
+            if (!e.nombre.empty() && e.nombre.back() != '/') out.push_back(e.nombre);
+        return out;
+    }
+
     std::string nroDe(const nlohmann::ordered_json& nxlinks, const std::string& url)
     {
         const auto* e = versionDe(nxlinks, url);
@@ -818,6 +862,7 @@ namespace ports {
                 actividad::paso(titulo);
                 marcarPendiente(url, true);
                 const zipvivo::Indice idx = zipvivo::leerIndice(url);
+                if (!idx.entradas.empty()) guardarLista(url, fecha, archivosDelIndice(idx));
                 if (idx.apto) {
                     if (nroPath->empty() && !idx.nro.empty()) *nroPath = idx.nro;
                     const long c = zipvivo::instalar(url, idx);
@@ -907,16 +952,18 @@ namespace ports {
             return r == "atmosphere/contents" || r == "switch/.overlays" || r == "atmosphere/exefs_patches";
         }
 
-        std::vector<std::string> archivosDe(const std::string& url, bool& ok)
+        std::vector<std::string> archivosDe(const nlohmann::ordered_json& nxlinks, const std::string& url, bool& ok)
         {
             std::vector<std::string> out;
+            const std::string fecha = appUpdates::published(nxlinks, url);
+            if (leerLista(url, fecha, out)) return out;  // guardada: sin internet
             const zipvivo::Indice idx = zipvivo::leerIndice(url);
             if (idx.entradas.empty()) {
                 ok = false;
                 return out;
             }
-            for (const auto& e : idx.entradas)
-                if (!e.nombre.empty() && e.nombre.back() != '/') out.push_back(e.nombre);
+            out = archivosDelIndice(idx);
+            guardarLista(url, fecha, out);
             return out;
         }
     }  // namespace
@@ -930,33 +977,53 @@ namespace ports {
             auto& progress = ProgressEvent::instance();
             actividad::paso(fmt::format("menus/ports/eliminando_de"_i18n, port.nombre));
 
+            /* Cada paso se ve en la barra y en la cascada: leer las listas por
+               internet tarda, y sin nada en pantalla parecia atascado. */
+            const std::vector<ports::Port> todos = leerPorts(nxlinks);
+            int lecturas = 0;
+            for (const auto& otro : todos)
+                if (otro.nombre != port.nombre)
+                    for (const auto& pt : otro.partes) lecturas += pt.instalada;
+            lecturas += port.partes.size();
+            progress.setTotalSteps(lecturas + 1);
+            progress.setStep(0);
+
             // Lo que traen los otros ports instalados se queda (archivos compartidos).
             std::set<std::string> deOtros;
-            for (const auto& otro : leerPorts(nxlinks)) {
+            for (const auto& otro : todos) {
                 if (otro.nombre == port.nombre) continue;
                 for (const auto& pt : otro.partes) {
                     if (!pt.instalada) continue;
+                    actividad::paso(fmt::format("menus/ports/revisando_comparte"_i18n, otro.nombre));
                     bool ok = true;
-                    for (const auto& f : archivosDe(pt.url, ok)) deOtros.insert(minusculas(f));
+                    for (const auto& f : archivosDe(nxlinks, pt.url, ok)) deOtros.insert(minusculas(f));
+                    progress.incrementStep(1);
                 }
             }
 
             std::set<std::string> archivos;
             int sinIndice = 0;
             for (const auto& pt : port.partes) {
+                actividad::paso(fmt::format("menus/ports/leyendo_lista"_i18n, port.nombre));
                 bool ok = true;
-                for (const auto& f : archivosDe(pt.url, ok)) archivos.insert(f);
+                for (const auto& f : archivosDe(nxlinks, pt.url, ok)) archivos.insert(f);
                 if (!ok) ++sinIndice;
+                progress.incrementStep(1);
             }
 
+            // Ahora el borrado, archivo por archivo.
             progress.setTotalSteps(archivos.size() + 1);
+            progress.setStep(0);
             std::set<std::string> carpetas;
             int borrados = 0;
             for (const auto& rel : archivos) {
                 progress.incrementStep(1);
                 if (intocable(rel) || deOtros.count(minusculas(rel))) continue;
                 std::error_code ec;
-                if (std::filesystem::remove(std::string(ROOT_PATH) + rel, ec)) ++borrados;
+                if (std::filesystem::remove(std::string(ROOT_PATH) + rel, ec)) {
+                    ++borrados;
+                    actividad::paso(fmt::format("menus/ports/borrando"_i18n, "/" + rel));
+                }
                 for (size_t p = rel.rfind('/'); p != std::string::npos && p > 0; p = rel.rfind('/', p - 1)) carpetas.insert(rel.substr(0, p));
             }
             // Las carpetas que quedaron vacias, de la mas honda a la de arriba.

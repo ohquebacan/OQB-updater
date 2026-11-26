@@ -1112,6 +1112,9 @@
       "salir": "Sair mesmo assim"
   },
   "ports": {
+      "revisando_comparte": "Verificando o que compartilha com {}",
+      "leyendo_lista": "Lendo a lista de arquivos de {}",
+      "borrando": "Apagando {}",
       "eliminar": "Excluir",
       "eliminar_pregunta": "Excluir {} do console? Os arquivos do jogo e seus atalhos serão apagados. Seus saves ficam.",
       "eliminando": "Excluindo",

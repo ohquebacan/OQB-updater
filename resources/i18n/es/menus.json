@@ -1112,6 +1112,9 @@
         "salir": "Salir igual"
     },
     "ports": {
+        "revisando_comparte": "Revisando qué comparte con {}",
+        "leyendo_lista": "Leyendo la lista de archivos de {}",
+        "borrando": "Borrando {}",
         "eliminar": "Eliminar",
         "eliminar_pregunta": "¿Eliminar {} de la consola? Se borran los archivos del juego y sus accesos directos. Tus partidas se quedan.",
         "eliminando": "Eliminando",

@@ -1091,6 +1091,9 @@
         "salir": "Exit anyway"
     },
     "ports": {
+        "revisando_comparte": "Checking what it shares with {}",
+        "leyendo_lista": "Reading the file list of {}",
+        "borrando": "Deleting {}",
         "eliminar": "Delete",
         "eliminar_pregunta": "Delete {} from the console? The game files and its shortcuts will be removed. Your saves stay.",
         "eliminando": "Deleting",
