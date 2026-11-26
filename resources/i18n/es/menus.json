@@ -350,6 +350,7 @@
     },
     "apps": {
         "forwarder_ask": "¿Quieres crear un acceso directo de esta app en el menú HOME?",
+        "forwarder_ask_varios": "¿Quieres crear los {} accesos directos de esta app en el menú HOME?",
         "forwarder_creating": "Creando acceso directo...",
         "forwarder_error": "No se pudo crear el acceso directo: {}",
         "installed": "Instalada",

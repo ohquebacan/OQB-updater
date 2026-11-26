@@ -49,6 +49,8 @@ public:
     // de resultado. nroPath puede llenarse recién durante los stages previos.
     // Estatica: la usa tambien instalarAppDelCatalogo (Bacán Shop, Nextendo).
     static void addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath);
+    /// Varios accesos (un port con multijugador y zombies): una sola pregunta para todos.
+    static void addForwarderStages(brls::StagedAppletFrame* stagedFrame, const std::vector<std::string>& nros);
 
     /* Pide el texto y abre los resultados.
        La ofrece solo el menu de categorias de Apps, que es donde sirve: ahi se

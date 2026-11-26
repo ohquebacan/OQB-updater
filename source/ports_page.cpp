@@ -345,7 +345,7 @@ namespace {
                 this->registerAction("menus/ports/acceso_directo"_i18n, brls::Key::Y, [nros, nombre] {
                     brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
                     frame->setTitle(nombre);
-                    for (const auto& nro : nros) ListDownloadTab::addForwarderStages(frame, std::make_shared<std::string>(nro));
+                    ListDownloadTab::addForwarderStages(frame, nros);
                     brls::Application::pushView(frame);
                     return true;
                 });
@@ -821,7 +821,7 @@ namespace ports {
         if (port.accesos.empty())
             ListDownloadTab::addForwarderStages(frame, nroPath);
         else
-            for (const auto& nro : port.accesos) ListDownloadTab::addForwarderStages(frame, std::make_shared<std::string>(nro));
+            ListDownloadTab::addForwarderStages(frame, port.accesos);
     }
 
     void abrir(const nlohmann::ordered_json& nxlinks, const Port& port)

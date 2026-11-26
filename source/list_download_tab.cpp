@@ -410,18 +410,10 @@ void ListDownloadTab::openSearch(contentType type, const nlohmann::ordered_json&
     brls::PopupFrame::open(fmt::format("menus/search/results"_i18n, query), frame, "", "");
 }
 
-void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath)
-{
-    auto makeForwarder = std::make_shared<bool>(false);
-    auto forwarderResult = std::make_shared<std::string>();
-
-    // Si nroPath sigue vacío al llegar acá, el zip no traía ningún .nro y la
-    // pregunta se saltea sola.
-    stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/apps/forwarder_ask"_i18n, makeForwarder, nroPath));
-    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/apps/forwarder_creating"_i18n, [nroPath, makeForwarder, forwarderResult]() {
-        auto& progress = ProgressEvent::instance();
-
-        if (*makeForwarder && !nroPath->empty()) {
+namespace {
+    // Crea un acceso directo; devuelve el mensaje para la pagina final.
+    std::string crearAcceso(std::shared_ptr<std::string> nroPath)
+    {
             fwd::Config config;
             Result rc = fwd::configFromNro(*nroPath, config);
             if (R_SUCCEEDED(rc)) {
@@ -460,14 +452,47 @@ void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, s
             }
             // El diálogo no se puede abrir desde este hilo, así que el mensaje
             // se deja acá y lo muestra la página siguiente.
-            *forwarderResult = R_SUCCEEDED(rc)
+            return R_SUCCEEDED(rc)
                                    ? "menus/common/all_done"_i18n
                                    : fmt::format("menus/apps/forwarder_error"_i18n, fwd::resultToString(rc));
-        }
-        else {
-            *forwarderResult = "menus/common/all_done"_i18n;
-        }
+    }
+}
 
+void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath)
+{
+    auto makeForwarder = std::make_shared<bool>(false);
+    auto forwarderResult = std::make_shared<std::string>();
+
+    // Si nroPath sigue vacío al llegar acá, el zip no traía ningún .nro y la
+    // pregunta se saltea sola.
+    stagedFrame->addStage(new DialoguePage_optional(stagedFrame, "menus/apps/forwarder_ask"_i18n, makeForwarder, nroPath));
+    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/apps/forwarder_creating"_i18n, [nroPath, makeForwarder, forwarderResult]() {
+        auto& progress = ProgressEvent::instance();
+        *forwarderResult = (*makeForwarder && !nroPath->empty()) ? crearAcceso(nroPath) : "menus/common/all_done"_i18n;
+        progress.setStep(progress.getMax());
+    }));
+    stagedFrame->addStage((new ConfirmPage_Deferred(stagedFrame, forwarderResult))->returnToList());
+}
+
+void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, const std::vector<std::string>& nros)
+{
+    if (nros.size() <= 1) {
+        addForwarderStages(stagedFrame, std::make_shared<std::string>(nros.empty() ? std::string() : nros[0]));
+        return;
+    }
+    auto makeForwarder = std::make_shared<bool>(false);
+    auto forwarderResult = std::make_shared<std::string>();
+    auto primero = std::make_shared<std::string>(nros[0]);
+    stagedFrame->addStage(new DialoguePage_optional(stagedFrame, fmt::format("menus/apps/forwarder_ask_varios"_i18n, nros.size()), makeForwarder, primero));
+    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/apps/forwarder_creating"_i18n, [nros, makeForwarder, forwarderResult]() {
+        auto& progress = ProgressEvent::instance();
+        *forwarderResult = "menus/common/all_done"_i18n;
+        if (*makeForwarder) {
+            for (const auto& nro : nros) {
+                const std::string r = crearAcceso(std::make_shared<std::string>(nro));
+                if (r != "menus/common/all_done"_i18n) *forwarderResult = r;
+            }
+        }
         progress.setStep(progress.getMax());
     }));
     stagedFrame->addStage((new ConfirmPage_Deferred(stagedFrame, forwarderResult))->returnToList());
