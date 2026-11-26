@@ -42,9 +42,6 @@ namespace appUpdates {
     // El .nro de esa app que se puede abrir (en /switch), o vacio si no hay (sysmodules, plugins).
     std::string rutaParaAbrir(const nlohmann::ordered_json& nxlinks, const std::string& url);
 
-    // Si lo que baja ese link trae un .nro (para ofrecer el acceso directo). Sin datos del catalogo: true.
-    bool traeNro(const nlohmann::ordered_json& nxlinks, const std::string& url);
-
     // La version interna (NACP) del .nro instalado de esa app, o vacia.
     std::string installedVersion(const std::string& url);
     // La version interna publicada en el catalogo ("nro_version"), o vacia.

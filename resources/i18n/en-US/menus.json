@@ -1054,6 +1054,13 @@
         "err_otro": "The service answered something unexpected (code {}). Try again in a few minutes or send the file by hand."
     },
     "cola": {
+        "segundo_plano": "Keep using the app",
+        "puedes_salir": "Press B to keep using the app: it keeps installing and you can see it with − (Downloads).",
+        "en_cola": "Queued · {} ahead",
+        "instalando_otro": "Installing {}",
+        "listo": "{} was installed.",
+        "pie": "Installing {} · {} %",
+        "pie_espera": "  ·  {} waiting  ·  − Downloads",
         "titulo": "Downloads",
         "ahora": "NOW",
         "nada": "Nothing is being installed.",
@@ -1065,7 +1072,7 @@
         "bajar": "Move down",
         "limpiar": "Clear finished",
         "agregado": "{} was added to Downloads (−)",
-        "pregunta_acceso": "{} is added to Downloads and installs while you keep using the app.\n\nAlso create its HOME menu shortcut?",
+        "pregunta_acceso": "Also create the HOME menu shortcut for {}?",
         "pregunta_instalar": "Install {}? It is added to Downloads and installs while you keep using the app.",
         "instalar": "Install",
         "esperando": "Waiting for the downloads to finish…\nIt starts on its own as soon as they do.",

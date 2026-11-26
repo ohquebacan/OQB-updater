@@ -64,6 +64,11 @@ ColaPage::ColaPage()
         cola::limpiarHechos();
         return true;
     });
+    // − la cierra (si no, borealis lo usa para el contador de FPS).
+    this->registerAction("", brls::Key::MINUS, [] {
+        brls::Application::popView();
+        return true;
+    }, true);
 }
 
 void ColaPage::mover(int d)
@@ -163,5 +168,109 @@ void ColaPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heigh
             if (!estado.empty()) texto(vg, lx + ancho, ly, estado, 16.0f, gris, NVG_ALIGN_RIGHT);
             ly += 30.0f;
         }
+    }
+}
+
+// ------------------------------------------------------- un port en la cola
+
+InstalacionPage::InstalacionPage(int id, const std::string& nombre) : id(id), nombre(nombre)
+{
+    this->registerAction("menus/cola/segundo_plano"_i18n, brls::Key::B, [] {
+        brls::Application::popView();
+        return true;
+    });
+    this->registerAction("menus/common/cancel"_i18n, brls::Key::X, [this] {
+        const cola::Estado e = cola::estado();
+        if (e.actualId == this->id)
+            cola::cancelarActual();
+        else
+            for (size_t i = 0; i < e.esperaIds.size(); ++i)
+                if (e.esperaIds[i] == this->id) cola::quitar(i);
+        brls::Application::popView();
+        return true;
+    });
+    this->registerAction("", brls::Key::MINUS, [] { return true; }, true);
+}
+
+void InstalacionPage::abrir(int id, const std::string& nombre)
+{
+    brls::AppletFrame* marco = new brls::AppletFrame(true, true);
+    marco->setTitle(nombre);
+    marco->setContentView(new InstalacionPage(id, nombre));
+    brls::Application::pushView(marco);
+}
+
+void InstalacionPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    const cola::Estado e = cola::estado();
+    const NVGcolor tinta = this->a(ctx->theme->textColor);
+    const NVGcolor gris = this->a(oqb::grisTexto());
+    const NVGcolor acento = this->a(oqb::acentoFuerte());
+    nvgFontFaceId(vg, ctx->fontStash->regular);
+    const float cx = x + width / 2.0f, ancho = std::min(760.0f, width - 120.0f), lx = cx - ancho / 2;
+    float cy = y + height / 2.0f - 70.0f;
+
+    int antes = -1;
+    for (size_t i = 0; i < e.esperaIds.size(); ++i)
+        if (e.esperaIds[i] == this->id) antes = i;
+    const cola::Hecho* hecho = nullptr;
+    for (const auto& h : e.hechos)
+        if (h.id == this->id) hecho = &h;
+
+    if (e.actualId == this->id) {
+        this->fase = 1;
+        std::string titulo = e.paso;
+        if (e.pasos > 1) titulo += "  (" + std::to_string(e.pasoNum) + "/" + std::to_string(e.pasos) + ")";
+        texto(vg, cx, cy, titulo, 26.0f, tinta, NVG_ALIGN_CENTER);
+        cy += 56.0f;
+        double frac = 0;
+        std::string cifras;
+        if (e.total > 0) {
+            frac = e.ahora / e.total;
+            cifras = mb(e.ahora) + " / " + mb(e.total);
+            if (e.velocidad > 0) cifras += "  ·  " + mb(e.velocidad) + "/s";
+        }
+        else if (e.max > 0)
+            frac = (double)e.step / e.max;
+        frac = std::max(0.0, std::min(1.0, frac));
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, lx, cy, ancho, 12, 6);
+        nvgFillColor(vg, this->a(oqb::velo(40)));
+        nvgFill(vg);
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, lx, cy, ancho * frac, 12, 6);
+        nvgFillColor(vg, acento);
+        nvgFill(vg);
+        cy += 26.0f;
+        texto(vg, lx, cy, cifras, 18.0f, gris);
+        texto(vg, lx + ancho, cy, std::to_string((int)std::lround(frac * 100)) + " %", 18.0f, gris, NVG_ALIGN_RIGHT);
+        cy += 34.0f;
+        if (!e.detalle.empty()) texto(vg, cx, cy, e.detalle, 17.0f, gris, NVG_ALIGN_CENTER);
+        cy += 60.0f;
+        texto(vg, cx, cy, "menus/cola/puedes_salir"_i18n, 18.0f, gris, NVG_ALIGN_CENTER);
+    }
+    else if (antes >= 0) {
+        this->fase = 0;
+        texto(vg, cx, cy, fmt::format("menus/cola/en_cola"_i18n, antes + (e.trabajando ? 1 : 0)), 26.0f, tinta, NVG_ALIGN_CENTER);
+        cy += 50.0f;
+        if (e.trabajando) texto(vg, cx, cy, fmt::format("menus/cola/instalando_otro"_i18n, e.actual), 18.0f, gris, NVG_ALIGN_CENTER);
+        cy += 70.0f;
+        texto(vg, cx, cy, "menus/cola/puedes_salir"_i18n, 18.0f, gris, NVG_ALIGN_CENTER);
+    }
+    else if (hecho) {
+        if (this->fase != 2) {
+            this->fase = 2;
+            this->updateActionHint(brls::Key::B, "menus/common/back"_i18n);
+            this->setActionAvailable(brls::Key::X, false);
+            this->registerAction("menus/common/ok"_i18n, brls::Key::A, [] {
+                brls::Application::popView();
+                return true;
+            });
+        }
+        const bool bien = hecho->error.empty() && !hecho->cancelado;
+        const std::string t = bien ? fmt::format("menus/cola/listo"_i18n, this->nombre)
+                                   : hecho->cancelado ? "menus/cola/cancelado"_i18n
+                                                      : hecho->error;
+        texto(vg, cx, cy, t, 26.0f, bien ? this->a(oqb::verdeTexto()) : this->a(oqb::rojoTexto()), NVG_ALIGN_CENTER);
     }
 }

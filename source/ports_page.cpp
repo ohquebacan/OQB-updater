@@ -10,6 +10,7 @@
 #include "actividad.hpp"
 #include "app_updates.hpp"
 #include "cola.hpp"
+#include "cola_page.hpp"
 #include "confirm_page.hpp"
 #include "constants.hpp"
 #include "extract.hpp"
@@ -1014,8 +1015,8 @@ namespace ports {
         /* A la cola (5.0.0): se sigue usando la app mientras baja. El acceso
            directo se decide aqui, porque al terminar nadie esta mirando. */
         const auto agregar = [nxlinks, port, aInstalar](bool accesos) {
-            cola::agregar(port.nombre, pasosDe(nxlinks, port, aInstalar, accesos));
-            brls::Application::notify(fmt::format("menus/cola/agregado"_i18n, port.nombre));
+            const int id = cola::agregar(port.nombre, pasosDe(nxlinks, port, aInstalar, accesos));
+            InstalacionPage::abrir(id, port.nombre);
         };
         brls::Dialog* d = new brls::Dialog(fmt::format("menus/cola/pregunta_acceso"_i18n, port.nombre));
         d->addButton("menus/common/no"_i18n, [d, agregar](brls::View*) { d->close([agregar] { agregar(false); }); });

@@ -18,6 +18,7 @@ namespace cola {
     namespace {
 
         struct Trabajo {
+            int id = 0;
             std::string nombre;
             std::vector<Paso> pasos;
         };
@@ -30,6 +31,8 @@ namespace cola {
         bool parar = false;
         bool trabajando = false;
         int exclusivas = 0;
+        int ultimoId = 0;
+        int actualId = 0;
 
         // Lo que se ve de lo actual (bajo m).
         std::string actual, pasoTexto, detalle;
@@ -54,6 +57,7 @@ namespace cola {
                     espera.pop_front();
                     trabajando = true;
                     actual = t.nombre;
+                    actualId = t.id;
                     pasoTexto.clear();
                     detalle.clear();
                     pasoNum = 0;
@@ -64,6 +68,7 @@ namespace cola {
                 led::pulso();
 
                 Hecho h;
+                h.id = t.id;
                 h.nombre = t.nombre;
                 for (size_t i = 0; i < t.pasos.size(); ++i) {
                     {
@@ -94,6 +99,7 @@ namespace cola {
                     anotar(h);
                     trabajando = false;
                     actual.clear();
+                    actualId = 0;
                     vacia = espera.empty();
                 }
                 cv.notify_all();  // una pantalla completa puede estar esperando
@@ -109,17 +115,20 @@ namespace cola {
 
     }  // namespace
 
-    void agregar(const std::string& nombre, std::vector<Paso> pasos)
+    int agregar(const std::string& nombre, std::vector<Paso> pasos)
     {
+        int id;
         {
             std::lock_guard<std::mutex> l(m);
-            espera.push_back({nombre, std::move(pasos)});
+            id = ++ultimoId;
+            espera.push_back({id, nombre, std::move(pasos)});
             if (!hilo) {
                 parar = false;
                 hilo = new std::thread(bucle);
             }
         }
         cv.notify_all();
+        return id;
     }
 
     bool ocupada()
@@ -140,6 +149,7 @@ namespace cola {
         }
         e.trabajando = trabajando;
         e.actual = actual;
+        e.actualId = actualId;
         e.paso = pasoTexto;
         e.detalle = detalle;
         e.pasoNum = pasoNum;
@@ -152,7 +162,10 @@ namespace cola {
             e.step = p.getStep();
             e.max = p.getMax();
         }
-        for (const auto& t : espera) e.espera.push_back(t.nombre);
+        for (const auto& t : espera) {
+            e.espera.push_back(t.nombre);
+            e.esperaIds.push_back(t.id);
+        }
         e.hechos = hechos;
         return e;
     }

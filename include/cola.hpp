@@ -19,13 +19,14 @@ namespace cola {
         std::function<void()> fn;  // corre en el hilo de la cola; avisa por ProgressEvent
     };
 
-    // Agrega una instalacion al final; empieza sola cuando le toca.
-    void agregar(const std::string& nombre, std::vector<Paso> pasos);
+    // Agrega una instalacion al final; empieza sola cuando le toca. Devuelve su id.
+    int agregar(const std::string& nombre, std::vector<Paso> pasos);
 
     // Trabajando o con algo esperando.
     bool ocupada();
 
     struct Hecho {
+        int id = 0;
         std::string nombre;
         std::string error;  // vacio: salio bien
         bool cancelado = false;
@@ -33,6 +34,7 @@ namespace cola {
 
     struct Estado {
         bool trabajando = false;
+        int actualId = 0;
         std::string actual;    // lo que se instala ahora
         std::string paso;      // en que va ("Bajando parte 2 de 9")
         std::string detalle;   // el ultimo archivo, si el paso lo dice
@@ -40,6 +42,7 @@ namespace cola {
         double ahora = 0, total = 0, velocidad = 0;  // bytes del paso actual
         int step = 0, max = 0;
         std::vector<std::string> espera;  // lo que sigue, en orden
+        std::vector<int> esperaIds;
         std::vector<Hecho> hechos;        // lo ultimo terminado, lo mas nuevo primero
     };
     Estado estado();

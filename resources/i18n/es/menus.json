@@ -1075,6 +1075,13 @@
         "err_otro": "El servicio respondió algo inesperado (código {}). Prueba en unos minutos o manda el archivo a mano."
     },
     "cola": {
+        "segundo_plano": "Seguir usando la app",
+        "puedes_salir": "Pulsa B para seguir usando la app: se sigue instalando y lo ves con − (Descargas).",
+        "en_cola": "En cola · {} antes",
+        "instalando_otro": "Instalando {}",
+        "listo": "{} quedó instalado.",
+        "pie": "Instalando {} · {} %",
+        "pie_espera": "  ·  {} en espera  ·  − Descargas",
         "titulo": "Descargas",
         "ahora": "AHORA",
         "nada": "No se está instalando nada.",
@@ -1086,7 +1093,7 @@
         "bajar": "Bajar",
         "limpiar": "Limpiar terminados",
         "agregado": "{} se agregó a Descargas (−)",
-        "pregunta_acceso": "{} se agrega a Descargas y se instala mientras sigues usando la app.\n\n¿Crear también su acceso directo en el menú HOME?",
+        "pregunta_acceso": "¿Crear también el acceso directo de {} en el menú HOME?",
         "pregunta_instalar": "¿Instalar {}? Se agrega a Descargas y se instala mientras sigues usando la app.",
         "instalar": "Instalar",
         "esperando": "Esperando a que terminen las descargas…\nEmpieza solo en cuanto terminen.",
