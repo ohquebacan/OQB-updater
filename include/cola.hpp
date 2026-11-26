@@ -19,8 +19,17 @@ namespace cola {
         std::function<void()> fn;  // corre en el hilo de la cola; avisa por ProgressEvent
     };
 
-    // Agrega una instalacion al final; empieza sola cuando le toca. Devuelve su id.
-    int agregar(const std::string& nombre, std::vector<Paso> pasos);
+    /* Agrega una instalacion al final; empieza sola cuando le toca. Devuelve su id.
+       `accesos`: si salio bien, que .nro ofrecer como acceso directo (se pregunta
+       al terminar, con siguienteOferta). */
+    int agregar(const std::string& nombre, std::vector<Paso> pasos, std::function<std::vector<std::string>()> accesos = {});
+
+    struct Oferta {
+        std::string nombre;
+        std::vector<std::string> nros;
+    };
+    // Lo que termino bien y tiene acceso directo para ofrecer (se saca de la lista).
+    bool siguienteOferta(Oferta& out);
 
     // Trabajando o con algo esperando.
     bool ocupada();

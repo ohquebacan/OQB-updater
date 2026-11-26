@@ -784,10 +784,9 @@ namespace ports {
     /* Las etapas que instalan esas partes, una detras de otra, y al final el
        acceso directo. Al terminar una parte de un grupo (Espanol / Ingles), las
        otras del grupo dejan de contar como instaladas: sus archivos se pisaron. */
-    static std::vector<cola::Paso> pasosDe(const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar, bool accesos)
+    static std::vector<cola::Paso> pasosDe(const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar, std::shared_ptr<std::string> nroPath)
     {
         std::vector<cola::Paso> pasos;
-        auto nroPath = std::make_shared<std::string>();
         const int total = aInstalar.size();
         (void)total;
         for (int k = 0; k < total; ++k) {
@@ -843,19 +842,6 @@ namespace ports {
                     marcarPendiente(url, false);
                     for (const auto& u : pisadas) appUpdates::forgetInstalled(u);
                 }
-            }});
-        }
-        if (accesos) {
-            const std::vector<std::string> propios = port.accesos;
-            pasos.push_back({"menus/apps/forwarder_creating"_i18n, [nroPath, propios]() {
-                const std::vector<std::string> nros = propios.empty() ? std::vector<std::string>{*nroPath} : propios;
-                std::string fallo;
-                for (const auto& n : nros) {
-                    if (n.empty()) continue;
-                    const std::string r = ListDownloadTab::crearAcceso(n);
-                    if (r != "menus/common/all_done"_i18n) fallo = r;
-                }
-                if (!fallo.empty()) brls::Logger::error("cola: acceso directo: {}", fallo);
             }});
         }
         return pasos;
@@ -1012,17 +998,15 @@ namespace ports {
 
     void instalar(const nlohmann::ordered_json& nxlinks, const Port& port, const std::vector<int>& aInstalar)
     {
-        /* A la cola (5.0.0): se sigue usando la app mientras baja. El acceso
-           directo se decide aqui, porque al terminar nadie esta mirando. */
-        const auto agregar = [nxlinks, port, aInstalar](bool accesos) {
-            const int id = cola::agregar(port.nombre, pasosDe(nxlinks, port, aInstalar, accesos));
-            InstalacionPage::abrir(id, port.nombre);
-        };
-        brls::Dialog* d = new brls::Dialog(fmt::format("menus/cola/pregunta_acceso"_i18n, port.nombre));
-        d->addButton("menus/common/no"_i18n, [d, agregar](brls::View*) { d->close([agregar] { agregar(false); }); });
-        d->addButton("menus/common/yes"_i18n, [d, agregar](brls::View*) { d->close([agregar] { agregar(true); }); });
-        d->setCancelable(true);
-        d->open();
+        /* A la cola (5.0.0): su pantalla de siempre, y con B se sigue usando la
+           app. El acceso directo se ofrece al terminar (main.cpp, siguienteOferta). */
+        auto nroPath = std::make_shared<std::string>();
+        const std::vector<std::string> propios = port.accesos;
+        const int id = cola::agregar(port.nombre, pasosDe(nxlinks, port, aInstalar, nroPath), [nroPath, propios]() {
+            if (!propios.empty()) return propios;
+            return nroPath->empty() ? std::vector<std::string>{} : std::vector<std::string>{*nroPath};
+        });
+        InstalacionPage::abrir(id, port.nombre);
     }
 
 

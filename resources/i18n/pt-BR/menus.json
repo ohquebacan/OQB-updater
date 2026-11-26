@@ -1075,6 +1075,9 @@
     "err_otro": "O serviço respondeu algo inesperado (código {}). Tente em alguns minutos ou envie o arquivo manualmente."
   },
   "cola": {
+      "oferta_uno": "{} foi instalado.\n\nCriar o atalho no menu HOME?",
+      "oferta_varios": "{} foi instalado.\n\nCriar os {} atalhos no menu HOME?",
+      "acceso_de": "Atalho de {}",
       "segundo_plano": "Continuar usando o app",
       "puedes_salir": "Aperte B para continuar usando o app: a instalação segue e você a vê com − (Downloads).",
       "en_cola": "Na fila · {} antes",

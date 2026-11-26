@@ -21,12 +21,14 @@ namespace cola {
             int id = 0;
             std::string nombre;
             std::vector<Paso> pasos;
+            std::function<std::vector<std::string>()> accesos;
         };
 
         std::mutex m;
         std::condition_variable cv;
         std::deque<Trabajo> espera;
         std::vector<Hecho> hechos;
+        std::deque<Oferta> ofertas;
         std::thread* hilo = nullptr;
         bool parar = false;
         bool trabajando = false;
@@ -93,10 +95,13 @@ namespace cola {
                 ProgressEvent::instance().setInterupt(false);
                 ProgressEvent::instance().setStatusCode(0);
 
+                std::vector<std::string> nros;
+                if (h.error.empty() && !h.cancelado && t.accesos) nros = t.accesos();
                 bool vacia;
                 {
                     std::lock_guard<std::mutex> l(m);
                     anotar(h);
+                    if (!nros.empty()) ofertas.push_back({h.nombre, nros});
                     trabajando = false;
                     actual.clear();
                     actualId = 0;
@@ -115,13 +120,13 @@ namespace cola {
 
     }  // namespace
 
-    int agregar(const std::string& nombre, std::vector<Paso> pasos)
+    int agregar(const std::string& nombre, std::vector<Paso> pasos, std::function<std::vector<std::string>()> accesos)
     {
         int id;
         {
             std::lock_guard<std::mutex> l(m);
             id = ++ultimoId;
-            espera.push_back({id, nombre, std::move(pasos)});
+            espera.push_back({id, nombre, std::move(pasos), std::move(accesos)});
             if (!hilo) {
                 parar = false;
                 hilo = new std::thread(bucle);
@@ -129,6 +134,15 @@ namespace cola {
         }
         cv.notify_all();
         return id;
+    }
+
+    bool siguienteOferta(Oferta& out)
+    {
+        std::lock_guard<std::mutex> l(m);
+        if (ofertas.empty()) return false;
+        out = std::move(ofertas.front());
+        ofertas.pop_front();
+        return true;
     }
 
     bool ocupada()

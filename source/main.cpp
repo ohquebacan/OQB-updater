@@ -23,6 +23,7 @@ extern "C" u32 __nx_applet_exit_mode;
 #include "main_frame.hpp"
 #include "cola.hpp"
 #include "cola_page.hpp"
+#include "list_download_tab.hpp"
 #include "ntp.hpp"
 #include "oqb_theme.hpp"
 #include "warning_page.hpp"
@@ -349,6 +350,28 @@ int main(int argc, char* argv[])
                 d->setCancelable(true);
                 d->open();
             }
+        }
+        /* Termino un port: su acceso directo se ofrece aqui, estes donde estes
+           en la app (5.0.0). Si dice que si, se crea en la cola. */
+        cola::Oferta oferta;
+        if (cola::siguienteOferta(oferta)) {
+            const std::string texto = oferta.nros.size() > 1
+                                          ? fmt::format("menus/cola/oferta_varios"_i18n, oferta.nombre, oferta.nros.size())
+                                          : fmt::format("menus/cola/oferta_uno"_i18n, oferta.nombre);
+            brls::Dialog* d = new brls::Dialog(texto);
+            d->addButton("menus/common/no"_i18n, [d](brls::View*) { d->close(); });
+            d->addButton("menus/common/yes"_i18n, [d, oferta](brls::View*) {
+                d->close([oferta] {
+                    const std::vector<std::string> nros = oferta.nros;
+                    const std::string nombre = fmt::format("menus/cola/acceso_de"_i18n, oferta.nombre);
+                    const int id = cola::agregar(nombre, {{"menus/apps/forwarder_creating"_i18n, [nros]() {
+                        for (const auto& n : nros) ListDownloadTab::crearAcceso(n);
+                    }}});
+                    InstalacionPage::abrir(id, nombre);
+                });
+            });
+            d->setCancelable(true);
+            d->open();
         }
         if (!(seguir && brls::Application::mainLoop())) break;
         led::refrescar();  // el pulso del mando tiene fin: se renueva mientras siga

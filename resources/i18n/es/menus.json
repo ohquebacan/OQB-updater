@@ -1075,6 +1075,9 @@
         "err_otro": "El servicio respondió algo inesperado (código {}). Prueba en unos minutos o manda el archivo a mano."
     },
     "cola": {
+        "oferta_uno": "{} quedó instalado.\n\n¿Crear su acceso directo en el menú HOME?",
+        "oferta_varios": "{} quedó instalado.\n\n¿Crear sus {} accesos directos en el menú HOME?",
+        "acceso_de": "Acceso directo de {}",
         "segundo_plano": "Seguir usando la app",
         "puedes_salir": "Pulsa B para seguir usando la app: se sigue instalando y lo ves con − (Descargas).",
         "en_cola": "En cola · {} antes",

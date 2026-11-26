@@ -1054,6 +1054,9 @@
         "err_otro": "The service answered something unexpected (code {}). Try again in a few minutes or send the file by hand."
     },
     "cola": {
+        "oferta_uno": "{} was installed.\n\nCreate its HOME menu shortcut?",
+        "oferta_varios": "{} was installed.\n\nCreate its {} HOME menu shortcuts?",
+        "acceso_de": "Shortcut for {}",
         "segundo_plano": "Keep using the app",
         "puedes_salir": "Press B to keep using the app: it keeps installing and you can see it with − (Downloads).",
         "en_cola": "Queued · {} ahead",
