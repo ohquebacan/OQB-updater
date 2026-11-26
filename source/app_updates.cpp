@@ -142,6 +142,7 @@ namespace appUpdates {
         bool bajarAMemoria(const char* url, std::vector<uint8_t>& out)
         {
             CURL* curl = curl_easy_init();
+            download::protegerSockets(curl);
             if (!curl)
                 return false;
             long codigo = 0;

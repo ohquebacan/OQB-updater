@@ -10,6 +10,7 @@
 #include <switch.h>
 
 #include "actividad.hpp"
+#include "forwarder.hpp"
 #include "led.hpp"
 #include "progress_event.hpp"
 #include "utils.hpp"
@@ -112,6 +113,8 @@ namespace cola {
 
                 std::vector<std::string> nros;
                 if (h.error.empty() && !h.cancelado && t.accesos) nros = t.accesos();
+                // El icono del acceso se baja aqui, sin otra descarga en curso.
+                for (const auto& n : nros) fwd::precargarIcono(n);
                 bool vacia;
                 {
                     std::lock_guard<std::mutex> l(m);

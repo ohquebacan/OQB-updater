@@ -3,11 +3,15 @@
 constexpr int ON = 1;
 constexpr int OFF = 0;
 
+#include <curl/curl.h>
 #include <cstdint>
 #include <functional>
 #include <json.hpp>
 
 namespace download {
+
+    // Toda conexion de curl abre y cierra su socket con el candado comun (5.0.0).
+    void protegerSockets(CURL* curl);
 
     long downloadFile(const std::string& url, std::vector<std::uint8_t>& res, const std::string& output = "", int api = OFF);
     long downloadFile(const std::string& url, const std::string& output = "", int api = OFF);

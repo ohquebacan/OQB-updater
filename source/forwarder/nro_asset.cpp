@@ -123,6 +123,7 @@ namespace {
     std::mutex iconosMutex;
     std::map<std::string, std::string> iconosPropios;  // nombre del .nro en minusculas -> URL
     std::set<std::string> accesos39;                    // nombres de .nro en minusculas
+    std::map<std::string, std::vector<u8>> iconosBajados;  // ya bajados (precargarIcono), por nombre de .nro
 
     std::string minusculas(std::string t)
     {
@@ -162,12 +163,40 @@ void aplicarIconoPropio(Config& config)
         if (it == iconosPropios.end()) return;
         url = it->second;
     }
+    // Si la cola ya lo bajo (precargarIcono), sin red: crear el acceso mientras
+    // otra descarga sigue no debe abrir otra conexion (5.0.0).
+    {
+        std::lock_guard<std::mutex> lock(iconosMutex);
+        const auto it = iconosBajados.find(minusculas(config.nro_path.substr(config.nro_path.rfind('/') + 1)));
+        if (it != iconosBajados.end()) {
+            config.icon = it->second;
+            return;
+        }
+    }
     std::string jpeg;
     // Un JPEG de 256x256 pesa unas decenas de KB; el menu HOME no acepta mas de 128 KB.
     if (download::textoCorto(url, jpeg, 20, 0x20000) != 200) return;
     std::vector<u8> icono(jpeg.begin(), jpeg.end());
     if (!isValidHomeMenuIcon(icono)) return;
     config.icon = std::move(icono);
+}
+
+void precargarIcono(const std::string& nro_path)
+{
+    const std::string nro = minusculas(nro_path.substr(nro_path.rfind('/') + 1));
+    std::string url;
+    {
+        std::lock_guard<std::mutex> lock(iconosMutex);
+        const auto it = iconosPropios.find(nro);
+        if (it == iconosPropios.end() || iconosBajados.count(nro)) return;
+        url = it->second;
+    }
+    std::string jpeg;
+    if (download::textoCorto(url, jpeg, 20, 0x20000) != 200) return;
+    std::vector<u8> icono(jpeg.begin(), jpeg.end());
+    if (!isValidHomeMenuIcon(icono)) return;
+    std::lock_guard<std::mutex> lock(iconosMutex);
+    iconosBajados[nro] = std::move(icono);
 }
 
 Result configFromNro(const std::string& nro_path, Config& out)

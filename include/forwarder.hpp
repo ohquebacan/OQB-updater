@@ -46,6 +46,9 @@ void recordarIconosPropios(const std::map<std::string, std::string>& porNro);
 // falla la descarga, queda el del .nro.
 void aplicarIconoPropio(Config& config);
 
+// Baja ya el icono propio de ese .nro (si tiene) para que aplicarIconoPropio no use la red.
+void precargarIcono(const std::string& nro_path);
+
 // Los .nro que necesitan un acceso directo de 39 bits, del catalogo
 // ("accesos_39bit": nombres de .nro). aplicarIconoPropio lo marca en el Config.
 void recordarAccesos39(const std::set<std::string>& nros);

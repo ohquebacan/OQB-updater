@@ -1,3 +1,6 @@
+#include <unistd.h>
+#include <sys/socket.h>
+#include <mutex>
 #include "download.hpp"
 
 #include <curl/curl.h>
@@ -26,6 +29,35 @@ constexpr int _1MiB = 0x100000;
 using json = nlohmann::ordered_json;
 
 namespace download {
+
+    /* Las conexiones se abren y se cierran de a una (5.0.0). Con la cola bajando
+       y otra conexion a la vez (el icono de un acceso directo), la app se caia
+       en _socketGetFd: la tabla de descriptores de newlib no aguanta dos hilos
+       abriendo y cerrando sockets juntos. */
+    namespace {
+        std::mutex& candadoSockets()
+        {
+            static std::mutex m;
+            return m;
+        }
+        curl_socket_t abrirSocket(void*, curlsocktype, struct curl_sockaddr* a)
+        {
+            std::lock_guard<std::mutex> l(candadoSockets());
+            return socket(a->family, a->socktype, a->protocol);
+        }
+        int cerrarSocket(void*, curl_socket_t s)
+        {
+            std::lock_guard<std::mutex> l(candadoSockets());
+            return close(s);
+        }
+    }  // namespace
+
+    void protegerSockets(CURL* curl)
+    {
+        if (!curl) return;
+        curl_easy_setopt(curl, CURLOPT_OPENSOCKETFUNCTION, abrirSocket);
+        curl_easy_setopt(curl, CURLOPT_CLOSESOCKETFUNCTION, cerrarSocket);
+    }
 
     namespace {
 
@@ -212,6 +244,8 @@ namespace download {
             std::string output;
 
             auto curl = curl_easy_init();
+
+            download::protegerSockets(curl);
             curl_easy_setopt(curl, CURLOPT_URL, "https://g.api.mega.co.nz/cs");
             curl_easy_setopt(curl, CURLOPT_POST, 1L);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
@@ -331,6 +365,7 @@ namespace download {
     {
         const char* out = output.c_str();
         CURL* curl = curl_easy_init();
+        download::protegerSockets(curl);
         ntwrk_struct_t chunk = {0};
         long status_code = 0;
         time_old = std::chrono::steady_clock::now();
@@ -423,6 +458,8 @@ namespace download {
         chunk.size = 0;                               /* no data at this point */
 
         curl_handle = curl_easy_init();
+
+        download::protegerSockets(curl_handle);
         curl_easy_setopt(curl_handle, CURLOPT_URL, url);
         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback2);
         curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&chunk);
@@ -459,6 +496,8 @@ namespace download {
         chunk.size = 0;                               /* no data at this point */
 
         curl_handle = curl_easy_init();
+
+        download::protegerSockets(curl_handle);
         curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
         if (!headers.empty()) {
             for (auto& h : headers) {
@@ -541,6 +580,7 @@ namespace download {
         out.clear();
         Texto destino{&out, maximo};
         CURL* curl = curl_easy_init();
+        download::protegerSockets(curl);
         if (!curl)
             return 0;
         long codigo = 0;
@@ -600,6 +640,7 @@ namespace download {
     {
         out.clear();
         CURL* curl = curl_easy_init();
+        download::protegerSockets(curl);
         if (!curl) return 0;
         std::uint64_t tam = 0;
         const std::string r = std::to_string(desde) + "-" + std::to_string(hasta);
@@ -625,6 +666,7 @@ namespace download {
     long enVivo(const std::string& url, const std::function<bool(const std::uint8_t*, std::size_t)>& recibir)
     {
         CURL* curl = curl_easy_init();
+        download::protegerSockets(curl);
         if (!curl) return 0;
         time_old = std::chrono::steady_clock::now();
         dlold = 0.0f;

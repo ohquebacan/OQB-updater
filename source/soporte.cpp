@@ -1,3 +1,4 @@
+#include "download.hpp"
 #include "soporte.hpp"
 
 #include <curl/curl.h>
@@ -126,6 +127,7 @@ namespace soporte {
 
         std::string respuesta;
         CURL* curl = curl_easy_init();
+        download::protegerSockets(curl);
         curl_easy_setopt(curl, CURLOPT_URL, URL);
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, cuerpo.data());
