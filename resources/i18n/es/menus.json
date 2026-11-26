@@ -1075,6 +1075,8 @@
         "err_otro": "El servicio respondió algo inesperado (código {}). Prueba en unos minutos o manda el archivo a mano."
     },
     "cola": {
+        "acceso_listo": "Acceso directo de {} creado",
+        "acceso_fallo": "No se pudo crear el acceso directo de {}",
         "ver": "Ver",
         "abrir": "Abrir cola",
         "a_la_cola": "Mandar a la cola",

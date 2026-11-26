@@ -374,17 +374,19 @@ void ListDownloadTab::openSearch(contentType type, const nlohmann::ordered_json&
 
 namespace {
     // Crea un acceso directo; devuelve el mensaje para la pagina final.
-    std::string crearAccesoDe(std::shared_ptr<std::string> nroPath)
+    // `silencioso`: sin tocar la barra ni la cascada (se crea mientras la cola baja otra cosa).
+    std::string crearAccesoDe(std::shared_ptr<std::string> nroPath, bool silencioso = false)
     {
             fwd::Config config;
             Result rc = fwd::configFromNro(*nroPath, config);
             if (R_SUCCEEDED(rc)) {
                 fwd::aplicarIconoPropio(config);
-                actividad::paso(actividad::texto("acceso_directo", config.name));
-                rc = fwd::install(config, [](int step, int total) {
-                    ProgressEvent::instance().setTotalSteps(total);
-                    ProgressEvent::instance().setStep(step);
-                });
+                if (!silencioso) actividad::paso(actividad::texto("acceso_directo", config.name));
+                rc = silencioso ? fwd::install(config)
+                                : fwd::install(config, [](int step, int total) {
+                                      ProgressEvent::instance().setTotalSteps(total);
+                                      ProgressEvent::instance().setStep(step);
+                                  });
             }
 
             // El tid de un forwarder es el hash de la ruta del NRO, y esa ruta
@@ -420,9 +422,9 @@ namespace {
     }
 }
 
-std::string ListDownloadTab::crearAcceso(const std::string& nro)
+std::string ListDownloadTab::crearAcceso(const std::string& nro, bool silencioso)
 {
-    return crearAccesoDe(std::make_shared<std::string>(nro));
+    return crearAccesoDe(std::make_shared<std::string>(nro), silencioso);
 }
 
 void ListDownloadTab::addForwarderStages(brls::StagedAppletFrame* stagedFrame, std::shared_ptr<std::string> nroPath)

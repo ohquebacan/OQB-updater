@@ -1054,6 +1054,8 @@
         "err_otro": "The service answered something unexpected (code {}). Try again in a few minutes or send the file by hand."
     },
     "cola": {
+        "acceso_listo": "Shortcut for {} created",
+        "acceso_fallo": "Couldn't create the shortcut for {}",
         "ver": "View",
         "abrir": "Open queue",
         "a_la_cola": "Send to queue",

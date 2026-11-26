@@ -1,3 +1,5 @@
+#include <vector>
+#include <mutex>
 #include "hekate_idioma.hpp"
 #include "led.hpp"
 #include <curl/curl.h>
@@ -179,6 +181,11 @@ namespace {
 
 namespace {
     AppletHookCookie g_luzCookie{};
+    // Avisos de otros hilos (el acceso directo creado aparte), para mostrarlos en el de la pantalla.
+    std::mutex g_avisosCandado;
+    std::vector<std::string> g_avisos;
+    std::mutex g_accesoCandado;          // de a un acceso directo por vez
+    std::atomic<int> g_creandoAccesos{0};  // al cerrar, se espera a que terminen
     bool g_exitBloqueado = true;  // appletLockExit hasta que se pida cerrar
 }
 
@@ -355,6 +362,11 @@ int main(int argc, char* argv[])
         }
         /* Termino un port: su acceso directo se ofrece aqui, estes donde estes
            en la app (5.0.0). Si dice que si, se crea en la cola. */
+        {
+            std::lock_guard<std::mutex> l(g_avisosCandado);
+            for (const auto& a : g_avisos) brls::Application::notify(a);
+            g_avisos.clear();
+        }
         cola::Oferta oferta;
         if (cola::siguienteOferta(oferta)) {
             const std::string texto = oferta.nros.size() > 1
@@ -364,18 +376,22 @@ int main(int argc, char* argv[])
             d->addButton("menus/common/no"_i18n, [d](brls::View*) { d->close(); });
             d->addButton("menus/common/yes"_i18n, [d, oferta](brls::View*) {
                 d->close([oferta] {
+                    /* Enseguida y aparte de la cola: si mientras se respondia ya
+                       empezo la siguiente descarga, el acceso esperaba detras de
+                       ella (y de todo lo que siguiera). Tarda uno o dos segundos;
+                       avisa al terminar. */
                     const std::vector<std::string> nros = oferta.nros;
-                    const std::string nombre = fmt::format("menus/cola/acceso_de"_i18n, oferta.nombre);
-                    // La misma pantalla de descarga de siempre, sobre la cola.
-                    brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
-                    frame->setTitle(nombre);
-                    frame->addStage(WorkerPage::deCola(frame, [nombre, nros]() {
-                        return cola::agregar(nombre, {{"menus/apps/forwarder_creating"_i18n, [nros]() {
-                            for (const auto& n : nros) ListDownloadTab::crearAcceso(n);
-                        }}});
-                    }));
-                    frame->addStage((new ConfirmPage_Done(frame, "menus/common/all_done"_i18n))->returnToList());
-                    brls::Application::pushView(frame);
+                    const std::string nombre = oferta.nombre;
+                    ++g_creandoAccesos;
+                    std::thread([nros, nombre]() {
+                        std::lock_guard<std::mutex> uno(g_accesoCandado);
+                        bool bien = true;
+                        for (const auto& n : nros)
+                            bien = ListDownloadTab::crearAcceso(n, true) == "menus/common/all_done"_i18n && bien;
+                        std::lock_guard<std::mutex> l(g_avisosCandado);
+                        g_avisos.push_back(fmt::format(bien ? "menus/cola/acceso_listo"_i18n : "menus/cola/acceso_fallo"_i18n, nombre));
+                        --g_creandoAccesos;
+                    }).detach();
                 });
             });
             d->setCancelable(true);
@@ -385,6 +401,8 @@ int main(int argc, char* argv[])
         led::refrescar();  // el pulso del mando tiene fin: se renueva mientras siga
     }
     cola::detener();
+    // Un acceso directo a medio crear se termina (son uno o dos segundos).
+    for (int i = 0; i < 100 && g_creandoAccesos.load() > 0; ++i) svcSleepThread(100000000ULL);
 
     // Antes de cerrar servicios: el hilo de la hora todavia puede estar usando
     // la red y el servicio de time.

@@ -1075,6 +1075,8 @@
     "err_otro": "O serviço respondeu algo inesperado (código {}). Tente em alguns minutos ou envie o arquivo manualmente."
   },
   "cola": {
+      "acceso_listo": "Atalho de {} criado",
+      "acceso_fallo": "Não foi possível criar o atalho de {}",
       "ver": "Ver",
       "abrir": "Abrir fila",
       "a_la_cola": "Mandar para a fila",
