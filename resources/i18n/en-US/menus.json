@@ -537,7 +537,7 @@
         "registrado_sub": "{}. Press A to see your support code.",
         "no_registrado_sub": "If you bought or set up your console at OQB, press A to register it.",
         "no_id": "Could not read this console’s identifier.",
-        "registro_desc": "Send this code to OQB with your name. Once they confirm it is registered, press Activate (online).",
+        "registro_desc": "Show this QR code to OQB (or send them the code below with your name). Once they confirm it is registered, press Activate (online).",
         "codigo": "This console’s code",
         "activar": "Activate",
         "activar_desc": "Downloads and verifies this console’s customer certificate.",

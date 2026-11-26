@@ -32,6 +32,9 @@ namespace cliente {
     // cliente (descifrado) en `nombre`.
     bool verificar(const std::string& idhex, const nlohmann::ordered_json& cert, std::string& nombre);
 
+    // Enlace a la pagina de registro de OQB con el codigo de esta consola ya puesto.
+    std::string urlRegistro(const std::string& idhex);
+
     // Lo que viaja en el QR de soporte, como enlace a la pagina de OQB que lo
     // verifica y lo muestra.
     std::string urlSoporte(const nlohmann::ordered_json& datos);

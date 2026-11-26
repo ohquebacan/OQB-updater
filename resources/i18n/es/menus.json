@@ -558,7 +558,7 @@
         "registrado_sub": "{}. Presiona A para ver tu código de soporte.",
         "no_registrado_sub": "Si compraste o configuraste tu consola en OQB, presiona A para registrarla.",
         "no_id": "No se pudo leer el identificador de esta consola.",
-        "registro_desc": "Envía este código a OQB junto con tu nombre. Cuando te confirmen que está registrado, presiona Activar (con internet).",
+        "registro_desc": "Muéstrale este código QR a OQB (o envíale el código de abajo con tu nombre). Cuando te confirmen que está registrado, presiona Activar (con internet).",
         "codigo": "Código de esta consola",
         "activar": "Activar",
         "activar_desc": "Descarga y verifica el certificado de cliente de esta consola.",

@@ -168,6 +168,11 @@ namespace cliente {
         return true;
     }
 
+    std::string urlRegistro(const std::string& idhex)
+    {
+        return std::string(PAGINA) + "#c=" + codigoDe(idhex);
+    }
+
     std::string urlSoporte(const nlohmann::ordered_json& datos)
     {
         return std::string(PAGINA) + "#s=" + base64url(datos.dump());

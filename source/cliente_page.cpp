@@ -144,7 +144,15 @@ ClientePage::ClientePage(std::function<void(const cliente::Estado&)> alActivar)
     }
     else {
         this->construirRegistro(estado);
-        this->setContentView(this->list);
+        if (estado.idhex.empty()) this->setContentView(this->list);
+        else {
+            // El QR lo escanea OQB al instalar: abre el registro con el codigo ya puesto.
+            brls::BoxLayout* pantalla = new brls::BoxLayout(brls::BoxLayoutOrientation::HORIZONTAL);
+            pantalla->setSpacing(20);
+            pantalla->addView(new QrView(cliente::urlRegistro(estado.idhex), 400));
+            pantalla->addView(this->list, true);
+            this->setContentView(pantalla);
+        }
     }
 }
 
