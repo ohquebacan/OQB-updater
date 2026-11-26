@@ -64,6 +64,13 @@ namespace appUpdates {
     // Para lo que se instala fuera del catalogo (las apps del pack): sube el contador.
     void avisarInstalacion();
 
+    // Olvida las versiones de los .nro ya leidas (tras una tarea de pantalla completa).
+    void olvidarVersiones();
+
+    /* Vuelve a leer las versiones de todos los .nro del catalogo (en el hilo que
+       la llama, la cola) y despues avisa a las vistas que se vuelvan a marcar. */
+    void precalentar(const nlohmann::ordered_json& nxlinks);
+
     // La version interna (NACP) de un .nro u .ovl de la SD, o vacia.
     std::string versionDeNro(const std::string& path);
     // El icono (JPEG) de un .nro de la SD, o vacio.

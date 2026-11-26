@@ -20,4 +20,4 @@ bool bloqueadoPorNexus(const std::string& url);
 // de siempre mirando ese trabajo, y al final la de listo. El acceso directo se
 // ofrece al terminar (main.cpp).
 namespace brls { class StagedAppletFrame; }
-void agregarEtapasApp(brls::StagedAppletFrame* frame, const std::string& nombre, const std::string& url, const std::string& fecha);
+void agregarEtapasApp(brls::StagedAppletFrame* frame, const nlohmann::ordered_json& nxlinks, const std::string& nombre, const std::string& url, const std::string& fecha);

@@ -63,20 +63,28 @@ namespace cola {
                     pasoTexto.clear();
                     detalle.clear();
                     pasoNum = 0;
-                    pasosTotal = t.pasos.size();
+                    pasosTotal = 0;
+                    for (const auto& p : t.pasos) pasosTotal += !p.texto.empty();
                 }
                 // Que la consola no se duerma a mitad de una descarga.
                 appletSetMediaPlaybackState(true);
                 led::pulso();
 
+                std::vector<std::function<void()>> despues;
                 Hecho h;
                 h.id = t.id;
                 h.nombre = t.nombre;
                 for (size_t i = 0; i < t.pasos.size(); ++i) {
+                    /* Un paso sin texto es interno (precalentar): corre despues de dar
+                       por terminado el trabajo, para que la pantalla diga listo ya. */
+                    if (t.pasos[i].texto.empty()) {
+                        if (t.pasos[i].fn) despues.push_back(t.pasos[i].fn);
+                        continue;
+                    }
                     {
                         std::lock_guard<std::mutex> l(m);
                         pasoTexto = t.pasos[i].texto;
-                        pasoNum = i + 1;
+                        ++pasoNum;
                     }
                     auto& p = ProgressEvent::instance();
                     p.reset();
@@ -107,6 +115,8 @@ namespace cola {
                     actualId = 0;
                     vacia = espera.empty();
                 }
+                if (h.error.empty() && !h.cancelado)
+                    for (auto& fn : despues) fn();
                 cv.notify_all();  // una pantalla completa puede estar esperando
                 if (vacia) {
                     appletSetMediaPlaybackState(false);

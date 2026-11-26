@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "app_updates.hpp"
 #include "cola.hpp"
 #include "constants.hpp"
 #include "actividad.hpp"
@@ -154,6 +155,8 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
                 this->exclusiva = false;
                 cola::soltarExclusiva();
             }
+            // Pudo cambiar cualquier .nro (un pack, una app): se vuelven a leer.
+            appUpdates::olvidarVersiones();
             appletEndBlockingHomeButton();
             appletSetMediaPlaybackState(false);
             /* Un error o un cancelar no siguen con ninguna etapa (en un pack la

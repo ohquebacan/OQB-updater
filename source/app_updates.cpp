@@ -31,33 +31,28 @@ namespace appUpdates {
         // La version que el autor puso dentro del .nro (display_version del NACP).
         std::string leerNroVersion(const std::string& path);
 
-        // Con una LecturaSwitch activa (armando una ventana), cada .nro se lee
-        // una vez: la misma app se pregunta desde varias pestañas.
-        /* La version interna de cada .nro se lee una vez y se recuerda hasta que
-           termine otra instalacion. Antes se recordaba solo dentro de una
-           LecturaSwitch: al terminar una instalacion, cinco vistas a la vez
-           (barra lateral, Apps, listas, Bacan Shop, Ports) volvian a abrir los
-           ~60 .nro de la SD cada una, y la app quedaba congelada 5 a 7 s
-           (5.0.0, con la cola de descargas se notaba al cerrar el aviso). */
+        /* La version interna de cada .nro se lee una vez y se recuerda. Al terminar
+           algo en la cola, precalentar() la vuelve a leer toda en ese hilo y
+           recien despues avisa a las vistas: antes, al terminar una instalacion,
+           cada vista (barra lateral, Apps, listas, Bacan Shop, Ports) abria los
+           ~60 .nro de la SD en el hilo de la pantalla y la app se congelaba unos
+           segundos (5.0.0). Una tarea de pantalla completa la olvida al terminar. */
+        std::mutex candadoVersiones;
+        std::map<std::string, std::string> memoVersiones;
+
+        std::string leerNroVersion(const std::string& path);
+
         std::string nroVersion(const std::string& path)
         {
-            static std::mutex candado;
-            static std::map<std::string, std::string> memo;
-            static int memoGen = -1;
-            const int gen = instalaciones.load();
             {
-                std::lock_guard<std::mutex> l(candado);
-                if (gen != memoGen) {
-                    memo.clear();
-                    memoGen = gen;
-                }
-                const auto it = memo.find(path);
-                if (it != memo.end())
+                std::lock_guard<std::mutex> l(candadoVersiones);
+                const auto it = memoVersiones.find(path);
+                if (it != memoVersiones.end())
                     return it->second;
             }
             const std::string v = util::existeEnSd(path) ? leerNroVersion(path) : "";
-            std::lock_guard<std::mutex> l(candado);
-            if (gen == memoGen) memo[path] = v;
+            std::lock_guard<std::mutex> l(candadoVersiones);
+            memoVersiones[path] = v;
             return v;
         }
 
@@ -346,6 +341,38 @@ namespace appUpdates {
         return registro;
     }
 
+    void olvidarVersiones()
+    {
+        std::lock_guard<std::mutex> l(candadoVersiones);
+        memoVersiones.clear();
+    }
+
+    void precalentar(const nlohmann::ordered_json& nxlinks)
+    {
+        std::map<std::string, std::string> nuevas;
+        const auto all = nxlinks.find(NXLINKS_KEY);
+        if (all != nxlinks.end() && all->is_object()) {
+            for (const auto& [url, app] : all->items()) {
+                std::vector<std::string> rutas;
+                if (url.size() > 4 && url.substr(url.size() - 4) == ".nro")
+                    rutas.push_back(util::resolveNroDestination(url.substr(url.rfind('/') + 1)));
+                if (app.is_object()) {
+                    const auto nros = app.find("nros");
+                    if (nros != app.end() && nros->is_array())
+                        for (const auto& n : *nros)
+                            if (n.is_object()) rutas.push_back(text(n, "ruta"));
+                }
+                for (const auto& r : rutas)
+                    if (!r.empty() && !nuevas.count(r)) nuevas[r] = util::existeEnSd(r) ? leerNroVersion(r) : "";
+            }
+        }
+        {
+            std::lock_guard<std::mutex> l(candadoVersiones);
+            memoVersiones = std::move(nuevas);
+        }
+        avisarInstalacion();
+    }
+
     int generacionInstalaciones()
     {
         return instalaciones.load();
@@ -493,12 +520,13 @@ namespace appUpdates {
 
     void recordInstalled(const std::string& url, const std::string& date)
     {
+        // Primero se escribe y despues se avisa: si no, las vistas releian el registro viejo.
+        if (!url.empty() && !date.empty()) {
+            nlohmann::ordered_json registro = installed();
+            registro[url] = date;
+            fs::writeJsonToFile(registro, APP_VERSIONS_PATH);
+        }
         instalaciones.fetch_add(1);
-        if (url.empty() || date.empty())
-            return;
-        nlohmann::ordered_json registro = installed();
-        registro[url] = date;
-        fs::writeJsonToFile(registro, APP_VERSIONS_PATH);
     }
 
     void forgetInstalled(const std::string& url)

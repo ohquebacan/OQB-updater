@@ -467,6 +467,7 @@ void BacanShopTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned h
 {
     // Termino una instalacion (esta tienda o una app sugerida): se vuelve a mirar.
     if (const int gen = appUpdates::generacionInstalaciones(); gen != this->genInstalaciones) {
+        util::LecturaSwitch lectura;
         this->genInstalaciones = gen;
         this->refrescarEstado();
         for (auto& [item, u] : this->sugeridas) {

@@ -714,6 +714,7 @@ void MainFrame::irA(brls::View* item)
 
 void MainFrame::recalcularAvisos()
 {
+    util::LecturaSwitch lectura;
     const nlohmann::ordered_json& nxlinks = this->catalogo;
     const nlohmann::ordered_json instaladas = appUpdates::installed();
     if (this->appsSidebar) {

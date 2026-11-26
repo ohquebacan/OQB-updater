@@ -37,7 +37,7 @@ void instalarAppDelCatalogo(const nlohmann::ordered_json& nxlinks, const std::st
     frame->setTitle(nombre);
     frame->addStage(new ConfirmPage(frame, "menus/common/download"_i18n + nombre));
 
-    agregarEtapasApp(frame, nombre, url, fecha);
+    agregarEtapasApp(frame, nxlinks, nombre, url, fecha);
     brls::Application::pushView(frame);
 }
 
@@ -51,7 +51,7 @@ void abrirOInstalar(const nlohmann::ordered_json& nxlinks, const std::string& no
         instalarAppDelCatalogo(nxlinks, nombre, url);
 }
 
-void agregarEtapasApp(brls::StagedAppletFrame* frame, const std::string& nombre, const std::string& url, const std::string& fecha)
+void agregarEtapasApp(brls::StagedAppletFrame* frame, const nlohmann::ordered_json& nxlinks, const std::string& nombre, const std::string& url, const std::string& fecha)
 {
     // Donde queda el .nro, para ofrecer el acceso directo. En un zip lo descubre el paso de extraer.
     auto nroPath = std::make_shared<std::string>();
@@ -90,6 +90,8 @@ void agregarEtapasApp(brls::StagedAppletFrame* frame, const std::string& nombre,
             if (R_SUCCEEDED(rc)) appUpdates::recordInstalled(url, fecha);
         }});
     }
+    // Despues de terminar: las versiones se releen en la cola, no en la pantalla.
+    pasos.push_back({"", [nxlinks]() { appUpdates::precalentar(nxlinks); }});
     frame->addStage(WorkerPage::deCola(frame, [nombre, pasos, nroPath]() {
         return cola::agregar(nombre, pasos, [nroPath]() {
             return nroPath->empty() ? std::vector<std::string>{} : std::vector<std::string>{*nroPath};

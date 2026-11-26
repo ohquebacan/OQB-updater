@@ -169,6 +169,7 @@ AppsPage::~AppsPage()
 void AppsPage::releer(bool conPack)
 {
     this->genInstalaciones = appUpdates::generacionInstalaciones();
+    util::LecturaSwitch lectura;  // /switch se lee una vez para todas
     const nlohmann::ordered_json instaladas = appUpdates::installed();
     int nuevas = 0;
     int pendientes = 0;

@@ -49,6 +49,7 @@ void AppsTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height
     // Termino una instalacion: el "N nuevas" de cada seccion se vuelve a contar.
     if (const int gen = appUpdates::generacionInstalaciones(); gen != this->genInstalaciones) {
         this->genInstalaciones = gen;
+        util::LecturaSwitch lectura;
         const nlohmann::ordered_json instaladas = appUpdates::installed();
         for (auto& [item, key] : this->secciones) {
             const size_t nuevas = countUpdates(this->nxlinks, instaladas, key);

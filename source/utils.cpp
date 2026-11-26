@@ -1067,13 +1067,16 @@ namespace util {
     // sus datos al lado. Si bajáramos siempre a /switch/<app>.nro quedarían dos
     // copias: la suelta se abre sin sus datos y el acceso directo apunta a ella.
     namespace {
-        // El índice de /switch de la LecturaSwitch activa.
+        /* El índice de /switch de la LecturaSwitch activa. Uno por hilo (5.0.0):
+           la cola de descargas y las tareas de fondo consultan la SD mientras la
+           pantalla arma el suyo, y compartirlo era leerlo a medio llenar. */
         struct IndiceSwitch {
             int activas = 0;
             int generacion = 0;
             std::set<std::string> rutas;          // archivos y carpetas, en minúsculas (FAT no distingue)
             std::vector<std::string> carpetas;    // subcarpetas de /switch, en el orden del disco
-        } indice;
+        };
+        thread_local IndiceSwitch indice;
 
         std::string minus(std::string s)
         {

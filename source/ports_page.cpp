@@ -1004,6 +1004,7 @@ namespace ports {
         const std::vector<std::string> propios = port.accesos;
         const std::string nombre = port.nombre;
         std::vector<cola::Paso> pasos = pasosDe(nxlinks, port, aInstalar, nroPath);
+        pasos.push_back({"", [nxlinks]() { appUpdates::precalentar(nxlinks); }});
         // La pantalla de siempre, mirando ese trabajo de la cola.
         brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
         frame->setTitle(port.nombre);

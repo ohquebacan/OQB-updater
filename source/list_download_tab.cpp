@@ -53,6 +53,7 @@ void ListDownloadTab::draw(NVGcontext* vg, int x, int y, unsigned width, unsigne
     // actualizada deja de decir "Version nueva").
     if (const int gen = appUpdates::generacionInstalaciones(); gen != this->genInstalaciones) {
         this->genInstalaciones = gen;
+        util::LecturaSwitch lectura;  // /switch se lee una vez para toda la lista
         const nlohmann::ordered_json instaladas = appUpdates::installed();
         for (auto& [item, url] : this->filasApps) {
             if (appUpdates::hasUpdate(this->nxlinks, instaladas, url))
@@ -262,7 +263,7 @@ void ListDownloadTab::createList(contentType type)
                 }
                 if (type == contentType::apps) {
                     // Por la cola (5.0.0), con la pantalla de descarga de siempre.
-                    agregarEtapasApp(stagedFrame, title, url, fecha);
+                    agregarEtapasApp(stagedFrame, this->nxlinks, title, url, fecha);
                     brls::Application::pushView(stagedFrame);
                     return;
                 }
