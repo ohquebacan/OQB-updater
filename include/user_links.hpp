@@ -82,6 +82,15 @@ namespace userlinks {
     bool chooseAsset(const std::vector<Asset>& assets, const Link& link, Asset& out);
     Resolved resolveFromRelease(const nlohmann::ordered_json& release, const Link& link);
 
+    // Releases often carry a PC version next to the Switch one. Hides the PC zips
+    // (names with pc / windows / win64 / desktop ...) and, if some zips are marked
+    // switch / nx / app / nro / console while others are not, keeps only the marked ones.
+    // Never returns an empty list when the input was not empty.
+    // Release NAME like "... Nexus (PC-Version)" vs "... NexCards (Switch-App)": true for the PC ones
+    // (pc / windows / win64 / desktop ... in the name and no app / nro / console marker).
+    bool isPcRelease(const std::string& releaseName);
+    std::vector<Asset> switchAssetsOnly(const std::vector<Asset>& zips);
+
     nlohmann::ordered_json linksToJson(const std::vector<Link>& links);
     std::vector<Link> linksFromJson(const nlohmann::ordered_json& json);
 

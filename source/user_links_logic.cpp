@@ -1,3 +1,6 @@
+#include <set>
+#include <cctype>
+#include <initializer_list>
 #include <algorithm>
 #include <cctype>
 
@@ -335,6 +338,56 @@ namespace userlinks {
         return links;
     }
 
+    namespace {
+        std::set<std::string> nameTokens(const std::string& name)
+        {
+            std::set<std::string> tokens;
+            std::string cur;
+            for (char ch : name) {
+                const unsigned char c = static_cast<unsigned char>(ch);
+                if (std::isalnum(c)) cur += static_cast<char>(std::tolower(c));
+                else if (!cur.empty()) {
+                    tokens.insert(cur);
+                    cur.clear();
+                }
+            }
+            if (!cur.empty()) tokens.insert(cur);
+            return tokens;
+        }
+
+        bool hasAny(const std::set<std::string>& tokens, std::initializer_list<const char*> words)
+        {
+            for (const char* w : words)
+                if (tokens.count(w)) return true;
+            return false;
+        }
+    }  // namespace
+
+    bool isPcRelease(const std::string& releaseName)
+    {
+        const auto t = nameTokens(releaseName);
+        const bool pc = hasAny(t, {"pc", "windows", "win", "win32", "win64", "desktop", "computer"});
+        const bool app = hasAny(t, {"app", "nro", "console", "konsole"});
+        return pc && !app;
+    }
+
+    std::vector<Asset> switchAssetsOnly(const std::vector<Asset>& zips)
+    {
+        std::vector<Asset> notPc;
+        std::vector<Asset> marked;
+        for (const auto& a : zips) {
+            const auto t = nameTokens(a.name);
+            const bool isSwitch = hasAny(t, {"switch", "nx", "app", "nro", "console", "konsole"});
+            const bool isPc = hasAny(t, {"pc", "windows", "win", "win32", "win64", "desktop", "computer"});
+            if (isPc && !isSwitch) continue;
+            notPc.push_back(a);
+            if (isSwitch) marked.push_back(a);
+        }
+        if (notPc.empty()) return zips;  // everything looked like PC: better show it than nothing
+        if (!marked.empty()) return marked;
+        return notPc;
+    }
+
     json packsFromReleases(const json& releases, const Link& link)
     {
         json packs = json::object();
@@ -347,7 +400,7 @@ namespace userlinks {
 
             std::string base = str(release, "name");
             if (base.empty()) base = str(release, "tag_name");
-            if (base.empty()) continue;
+            if (base.empty() || isPcRelease(base)) continue;
             const std::string label = lower(base).find(lower(link.name)) != std::string::npos ? base : link.name + " " + base;
 
             std::vector<Asset> zips;
@@ -355,6 +408,7 @@ namespace userlinks {
                 if (endsWith(lower(a.name), ".zip")) zips.push_back(a);
             }
             if (zips.empty()) continue;
+            zips = switchAssetsOnly(zips);
             used++;
             for (const auto& z : zips) {
                 packs[(zips.size() > 1 ? label + " - " + z.name : label) + " [PACK]"] = z.url;

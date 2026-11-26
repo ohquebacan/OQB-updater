@@ -103,19 +103,23 @@ nlohmann::ordered_json AmsTab::FetchGithubReleasePacks()
         std::string name = str(release, "name");
         if (name.empty()) name = str(release, "tag_name");
         if (RELEASE_NAME_FILTER[0] != '\0' && name.rfind(RELEASE_NAME_FILTER, 0) != 0) continue;
+        if (userlinks::isPcRelease(name)) continue;  // "(PC-Version)" releases are of no use on the Switch
 
         auto assets = release.find("assets");
         if (assets == release.end() || !assets->is_array()) continue;
 
-        std::vector<std::pair<std::string, std::string>> zips;  // asset name, url
+        std::vector<userlinks::Asset> allZips;
         for (const auto& asset : *assets) {
             const std::string assetName = str(asset, "name");
             const std::string url = str(asset, "browser_download_url");
             if (url.empty() || assetName.size() < 5) continue;
             std::string ext = assetName.substr(assetName.size() - 4);
             std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
-            if (ext == ".zip") zips.emplace_back(assetName, url);
+            if (ext == ".zip") allZips.push_back({assetName, url});
         }
+        // the PC version of a release is of no use on the Switch
+        std::vector<std::pair<std::string, std::string>> zips;  // asset name, url
+        for (const auto& z : userlinks::switchAssetsOnly(allZips)) zips.emplace_back(z.name, z.url);
         for (const auto& [assetName, url] : zips) {
             // "[PACK]" = the zip already brings its own hekate, don't offer the stock one afterwards.
             std::string label = zips.size() > 1 ? name + " - " + assetName : name;
