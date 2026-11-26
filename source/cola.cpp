@@ -5,6 +5,7 @@
 #include <deque>
 #include <mutex>
 #include <thread>
+#include <chrono>
 
 #include <switch.h>
 
@@ -22,6 +23,7 @@ namespace cola {
             std::string nombre;
             std::vector<Paso> pasos;
             std::function<std::vector<std::string>()> accesos;
+            long long bytes = 0;
         };
 
         std::mutex m;
@@ -29,6 +31,10 @@ namespace cola {
         std::deque<Trabajo> espera;
         std::vector<Hecho> hechos;
         std::deque<Oferta> ofertas;
+        std::deque<Hecho> fallos;
+        long long bytesActual = 0;
+        int miradoId = 0;
+        std::chrono::steady_clock::time_point miradoCuando{};
         std::thread* hilo = nullptr;
         bool parar = false;
         bool trabajando = false;
@@ -60,6 +66,7 @@ namespace cola {
                     trabajando = true;
                     actual = t.nombre;
                     actualId = t.id;
+                    bytesActual = t.bytes;
                     pasoTexto.clear();
                     detalle.clear();
                     pasoNum = 0;
@@ -110,6 +117,10 @@ namespace cola {
                     std::lock_guard<std::mutex> l(m);
                     anotar(h);
                     if (!nros.empty()) ofertas.push_back({h.nombre, nros});
+                    // Fallo sin su pantalla a la vista: se avisa (main.cpp).
+                    const bool mirado = miradoId == h.id && std::chrono::steady_clock::now() - miradoCuando < std::chrono::seconds(1);
+                    if (!h.error.empty() && !h.cancelado && !mirado) fallos.push_back(h);
+                    bytesActual = 0;
                     trabajando = false;
                     actual.clear();
                     actualId = 0;
@@ -130,13 +141,13 @@ namespace cola {
 
     }  // namespace
 
-    int agregar(const std::string& nombre, std::vector<Paso> pasos, std::function<std::vector<std::string>()> accesos)
+    int agregar(const std::string& nombre, std::vector<Paso> pasos, std::function<std::vector<std::string>()> accesos, long long bytes)
     {
         int id;
         {
             std::lock_guard<std::mutex> l(m);
             id = ++ultimoId;
-            espera.push_back({id, nombre, std::move(pasos), std::move(accesos)});
+            espera.push_back({id, nombre, std::move(pasos), std::move(accesos), bytes});
             if (!hilo) {
                 parar = false;
                 hilo = new std::thread(bucle);
@@ -152,6 +163,39 @@ namespace cola {
         if (ofertas.empty()) return false;
         out = std::move(ofertas.front());
         ofertas.pop_front();
+        return true;
+    }
+
+    int idDe(const std::string& nombre)
+    {
+        std::lock_guard<std::mutex> l(m);
+        if (trabajando && actual == nombre) return actualId;
+        for (const auto& t : espera)
+            if (t.nombre == nombre) return t.id;
+        return 0;
+    }
+
+    long long reservado()
+    {
+        std::lock_guard<std::mutex> l(m);
+        long long total = trabajando ? bytesActual : 0;
+        for (const auto& t : espera) total += t.bytes;
+        return total;
+    }
+
+    void mirando(int id)
+    {
+        std::lock_guard<std::mutex> l(m);
+        miradoId = id;
+        miradoCuando = std::chrono::steady_clock::now();
+    }
+
+    bool siguienteFallo(Hecho& out)
+    {
+        std::lock_guard<std::mutex> l(m);
+        if (fallos.empty()) return false;
+        out = fallos.front();
+        fallos.pop_front();
         return true;
     }
 

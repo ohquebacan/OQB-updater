@@ -22,7 +22,18 @@ namespace cola {
     /* Agrega una instalacion al final; empieza sola cuando le toca. Devuelve su id.
        `accesos`: si salio bien, que .nro ofrecer como acceso directo (se pregunta
        al terminar, con siguienteOferta). */
-    int agregar(const std::string& nombre, std::vector<Paso> pasos, std::function<std::vector<std::string>()> accesos = {});
+    int agregar(const std::string& nombre, std::vector<Paso> pasos, std::function<std::vector<std::string>()> accesos = {}, long long bytes = 0);
+
+    // El id de lo que se llama asi si ya esta en la cola (instalandose o esperando); 0 si no.
+    int idDe(const std::string& nombre);
+
+    // Lo que van a ocupar en la SD lo que se instala y lo que espera (para no pasarse de espacio).
+    long long reservado();
+
+    /* La pantalla de descarga de ese trabajo esta a la vista (se llama en cada
+       cuadro). Si falla mientras se mira, el error lo muestra ella; si no, se
+       avisa con siguienteFallo. */
+    void mirando(int id);
 
     struct Oferta {
         std::string nombre;
@@ -40,6 +51,9 @@ namespace cola {
         std::string error;  // vacio: salio bien
         bool cancelado = false;
     };
+
+    // Lo que fallo sin que nadie mirara su pantalla (se saca de la lista).
+    bool siguienteFallo(Hecho& out);
 
     struct Estado {
         bool trabajando = false;

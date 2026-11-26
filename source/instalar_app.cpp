@@ -93,6 +93,8 @@ void agregarEtapasApp(brls::StagedAppletFrame* frame, const nlohmann::ordered_js
     // Despues de terminar: las versiones se releen en la cola, no en la pantalla.
     pasos.push_back({"", [nxlinks]() { appUpdates::precalentar(nxlinks); }});
     frame->addStage(WorkerPage::deCola(frame, [nombre, pasos, nroPath]() {
+        // Ya en la cola: se muestra esa, no se baja otra vez.
+        if (const int ya = cola::idDe(nombre)) return ya;
         return cola::agregar(nombre, pasos, [nroPath]() {
             return nroPath->empty() ? std::vector<std::string>{} : std::vector<std::string>{*nroPath};
         });

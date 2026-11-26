@@ -1054,6 +1054,7 @@
         "err_otro": "The service answered something unexpected (code {}). Try again in a few minutes or send the file by hand."
     },
     "cola": {
+        "fallo": "{} could not be installed.\n\n{}\n\nWhat was already downloaded is marked: install it again to finish.",
         "acceso_listo": "Shortcut for {} created",
         "acceso_fallo": "Couldn't create the shortcut for {}",
         "ver": "View",

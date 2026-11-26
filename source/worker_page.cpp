@@ -241,6 +241,7 @@ void WorkerPage::drawCola(NVGcontext* vg, int x, int y, unsigned width, unsigned
 {
     // Se agrega a la cola al llegar a esta etapa (despues de confirmar).
     if (this->colaId < 0) this->colaId = this->colaAgregar ? this->colaAgregar() : 0;
+    cola::mirando(this->colaId);
     const cola::Estado e = cola::estado();
     int antes = -1;
     for (size_t i = 0; i < e.esperaIds.size(); ++i)

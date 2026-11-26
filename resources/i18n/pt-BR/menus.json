@@ -1075,6 +1075,7 @@
     "err_otro": "O serviço respondeu algo inesperado (código {}). Tente em alguns minutos ou envie o arquivo manualmente."
   },
   "cola": {
+      "fallo": "Não foi possível instalar {}.\n\n{}\n\nO que chegou a baixar ficou marcado: instale de novo para terminar.",
       "acceso_listo": "Atalho de {} criado",
       "acceso_fallo": "Não foi possível criar o atalho de {}",
       "ver": "Ver",

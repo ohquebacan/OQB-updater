@@ -869,6 +869,8 @@ namespace ports {
         }
         s64 libre = -1;
         if (R_FAILED(fs::getFreeStorageSD(libre))) libre = -1;
+        // Lo que ya esta en la cola va a ocupar su parte (5.0.0).
+        if (libre >= 0) libre = std::max<s64>(0, libre - cola::reservado());
 
         brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
         frame->setTitle(port.nombre);
@@ -1008,11 +1010,16 @@ namespace ports {
         // La pantalla de siempre, mirando ese trabajo de la cola.
         brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
         frame->setTitle(port.nombre);
-        frame->addStage(WorkerPage::deCola(frame, [nombre, pasos, nroPath, propios]() {
+        // Lo que va a ocupar, para que lo siguiente que se encole lo descuente del espacio libre.
+        long long bytes = 0;
+        for (int i : aInstalar) bytes += port.partes[i].descomprimido > 0 ? port.partes[i].descomprimido : port.partes[i].bytes;
+        frame->addStage(WorkerPage::deCola(frame, [nombre, pasos, nroPath, propios, bytes]() {
+            // Ya en la cola (se toco Instalar dos veces): se muestra ese, no se baja otra vez.
+            if (const int ya = cola::idDe(nombre)) return ya;
             return cola::agregar(nombre, pasos, [nroPath, propios]() {
                 if (!propios.empty()) return propios;
                 return nroPath->empty() ? std::vector<std::string>{} : std::vector<std::string>{*nroPath};
-            });
+            }, bytes);
         }));
         frame->addStage((new ConfirmPage_Done(frame, "menus/common/all_done"_i18n))->returnToList());
         brls::Application::pushView(frame);

@@ -367,6 +367,14 @@ int main(int argc, char* argv[])
             for (const auto& a : g_avisos) brls::Application::notify(a);
             g_avisos.clear();
         }
+        // Fallo algo de la cola sin su pantalla a la vista: se avisa estes donde estes.
+        cola::Hecho fallo;
+        if (cola::siguienteFallo(fallo)) {
+            brls::Dialog* d = new brls::Dialog(fmt::format("menus/cola/fallo"_i18n, fallo.nombre, fallo.error));
+            d->addButton("menus/common/ok"_i18n, [d](brls::View*) { d->close(); });
+            d->setCancelable(true);
+            d->open();
+        }
         cola::Oferta oferta;
         if (cola::siguienteOferta(oferta)) {
             const std::string texto = oferta.nros.size() > 1

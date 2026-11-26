@@ -1075,6 +1075,7 @@
         "err_otro": "El servicio respondió algo inesperado (código {}). Prueba en unos minutos o manda el archivo a mano."
     },
     "cola": {
+        "fallo": "{} no se pudo instalar.\n\n{}\n\nLo que alcanzó a bajar quedó marcado: vuelve a instalarlo para terminar.",
         "acceso_listo": "Acceso directo de {} creado",
         "acceso_fallo": "No se pudo crear el acceso directo de {}",
         "ver": "Ver",
