@@ -23,6 +23,8 @@ extern "C" u32 __nx_applet_exit_mode;
 #include "main_frame.hpp"
 #include "cola.hpp"
 #include "cola_page.hpp"
+#include "confirm_page.hpp"
+#include "worker_page.hpp"
 #include "list_download_tab.hpp"
 #include "ntp.hpp"
 #include "oqb_theme.hpp"
@@ -364,10 +366,16 @@ int main(int argc, char* argv[])
                 d->close([oferta] {
                     const std::vector<std::string> nros = oferta.nros;
                     const std::string nombre = fmt::format("menus/cola/acceso_de"_i18n, oferta.nombre);
-                    const int id = cola::agregar(nombre, {{"menus/apps/forwarder_creating"_i18n, [nros]() {
-                        for (const auto& n : nros) ListDownloadTab::crearAcceso(n);
-                    }}});
-                    InstalacionPage::abrir(id, nombre);
+                    // La misma pantalla de descarga de siempre, sobre la cola.
+                    brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+                    frame->setTitle(nombre);
+                    frame->addStage(WorkerPage::deCola(frame, [nombre, nros]() {
+                        return cola::agregar(nombre, {{"menus/apps/forwarder_creating"_i18n, [nros]() {
+                            for (const auto& n : nros) ListDownloadTab::crearAcceso(n);
+                        }}});
+                    }));
+                    frame->addStage((new ConfirmPage_Done(frame, "menus/common/all_done"_i18n))->returnToList());
+                    brls::Application::pushView(frame);
                 });
             });
             d->setCancelable(true);
