@@ -261,47 +261,8 @@ void ListDownloadTab::createList(contentType type)
                     stagedFrame->addStage(new DialoguePage_optional(stagedFrame, fmt::format("menus/firmware/offer_app"_i18n, ofertaNombre), llevarOferta));
                 }
                 if (type == contentType::apps) {
-                    // La ruta del NRO se conoce de entrada si el link es un .nro;
-                    // si viene en zip, la descubre el worker de extracción.
-                    auto nroPath = std::make_shared<std::string>();
-
-                    if (url.size() > 4 && url.substr(url.size() - 4) == ".nro") {
-                        const std::string dest = util::resolveNroDestination(url.substr(url.rfind('/') + 1));
-                        *nroPath = dest;
-                        fs::createTree(dest.substr(0, dest.rfind('/') + 1));
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest, fecha]() {
-                            // Solo si bajo de verdad: un error deja el archivo viejo en su lugar.
-                            if (download::downloadFile(url, dest, OFF) == 200)
-                                appUpdates::recordInstalled(url, fecha);
-                        }));
-                    }
-                    else if (nspInstaller::isNspUrl(url)) {
-                        const std::string dest = "/config/aio-switch-updater/download.nsp";
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, dest]() {
-                            download::downloadFile(url, dest, OFF);
-                        }));
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/instalando_nsp"_i18n, [url, dest, fecha]() {
-                            if (R_SUCCEEDED(nspInstaller::installAndDelete(dest)))
-                                appUpdates::recordInstalled(url, fecha);
-                        }));
-                    }
-                    else {
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() { util::downloadArchive(url, contentType::apps); }));
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [nroPath, url, fecha]() {
-                            const std::string wrapper = extract::detectWrapperDir(CUSTOM_FILENAME);
-                            *nroPath = extract::findNroInArchive(CUSTOM_FILENAME, ROOT_PATH, wrapper);
-                            const auto nsps = nspInstaller::findInArchive(CUSTOM_FILENAME, wrapper);
-                            util::extractArchive(contentType::apps);
-                            Result rc = 0;
-                            for (const auto& nsp : nsps) {
-                                rc = nspInstaller::installAndDelete(nsp);
-                                if (R_FAILED(rc)) break;
-                            }
-                            if (R_SUCCEEDED(rc)) appUpdates::recordInstalled(url, fecha);
-                        }));
-                    }
-
-                    this->addForwarderStages(stagedFrame, nroPath);
+                    // Por la cola (5.0.0), con la pantalla de descarga de siempre.
+                    agregarEtapasApp(stagedFrame, title, url, fecha);
                     brls::Application::pushView(stagedFrame);
                     return;
                 }

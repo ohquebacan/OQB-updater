@@ -1002,14 +1002,17 @@ namespace ports {
            app. El acceso directo se ofrece al terminar (main.cpp, siguienteOferta). */
         auto nroPath = std::make_shared<std::string>();
         const std::vector<std::string> propios = port.accesos;
-        const int id = cola::agregar(port.nombre, pasosDe(nxlinks, port, aInstalar, nroPath), [nroPath, propios]() {
-            if (!propios.empty()) return propios;
-            return nroPath->empty() ? std::vector<std::string>{} : std::vector<std::string>{*nroPath};
-        });
+        const std::string nombre = port.nombre;
+        std::vector<cola::Paso> pasos = pasosDe(nxlinks, port, aInstalar, nroPath);
         // La pantalla de siempre, mirando ese trabajo de la cola.
         brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
         frame->setTitle(port.nombre);
-        frame->addStage(WorkerPage::deCola(frame, id));
+        frame->addStage(WorkerPage::deCola(frame, [nombre, pasos, nroPath, propios]() {
+            return cola::agregar(nombre, pasos, [nroPath, propios]() {
+                if (!propios.empty()) return propios;
+                return nroPath->empty() ? std::vector<std::string>{} : std::vector<std::string>{*nroPath};
+            });
+        }));
         frame->addStage((new ConfirmPage_Done(frame, "menus/common/all_done"_i18n))->returnToList());
         brls::Application::pushView(frame);
     }

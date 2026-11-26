@@ -15,3 +15,9 @@ void abrirOInstalar(const nlohmann::ordered_json& nxlinks, const std::string& no
 /** sys-icon con Nexus Bacan deja la consola en el logo al encender: mientras no
     este arreglado, no se instala. Muestra el aviso y devuelve true si se bloquea. */
 bool bloqueadoPorNexus(const std::string& url);
+
+// Las etapas para instalar una app por la cola (5.0.0): la pantalla de descarga
+// de siempre mirando ese trabajo, y al final la de listo. El acceso directo se
+// ofrece al terminar (main.cpp).
+namespace brls { class StagedAppletFrame; }
+void agregarEtapasApp(brls::StagedAppletFrame* frame, const std::string& nombre, const std::string& url, const std::string& fecha);

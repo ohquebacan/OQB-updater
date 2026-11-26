@@ -210,15 +210,17 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
     }
 }
 
-WorkerPage* WorkerPage::deCola(brls::StagedAppletFrame* frame, int id)
+WorkerPage* WorkerPage::deCola(brls::StagedAppletFrame* frame, std::function<int()> agregar)
 {
     WorkerPage* w = new WorkerPage(frame, "", nullptr);
-    w->colaId = id;
+    w->colaId = -1;
+    w->colaAgregar = std::move(agregar);
     w->registerAction("menus/cola/a_la_cola"_i18n, brls::Key::B, [] {
         brls::Application::popView();
         return true;
     });
-    w->registerAction("menus/common/cancel"_i18n, brls::Key::X, [id] {
+    w->registerAction("menus/common/cancel"_i18n, brls::Key::X, [w] {
+        const int id = w->colaId;
         const cola::Estado e = cola::estado();
         if (e.actualId == id)
             cola::cancelarActual();
@@ -234,6 +236,8 @@ WorkerPage* WorkerPage::deCola(brls::StagedAppletFrame* frame, int id)
 
 void WorkerPage::drawCola(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
+    // Se agrega a la cola al llegar a esta etapa (despues de confirmar).
+    if (this->colaId < 0) this->colaId = this->colaAgregar ? this->colaAgregar() : 0;
     const cola::Estado e = cola::estado();
     int antes = -1;
     for (size_t i = 0; i < e.esperaIds.size(); ++i)
