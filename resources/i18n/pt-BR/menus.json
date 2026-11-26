@@ -1075,6 +1075,8 @@
     "err_otro": "O serviço respondeu algo inesperado (código {}). Tente em alguns minutos ou envie o arquivo manualmente."
   },
   "cola": {
+      "abrir": "Abrir fila",
+      "a_la_cola": "Mandar para a fila",
       "oferta_uno": "{} foi instalado.\n\nCriar o atalho no menu HOME?",
       "oferta_varios": "{} foi instalado.\n\nCriar os {} atalhos no menu HOME?",
       "acceso_de": "Atalho de {}",

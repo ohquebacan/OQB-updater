@@ -1075,6 +1075,8 @@
         "err_otro": "El servicio respondió algo inesperado (código {}). Prueba en unos minutos o manda el archivo a mano."
     },
     "cola": {
+        "abrir": "Abrir cola",
+        "a_la_cola": "Mandar a la cola",
         "oferta_uno": "{} quedó instalado.\n\n¿Crear su acceso directo en el menú HOME?",
         "oferta_varios": "{} quedó instalado.\n\n¿Crear sus {} accesos directos en el menú HOME?",
         "acceso_de": "Acceso directo de {}",

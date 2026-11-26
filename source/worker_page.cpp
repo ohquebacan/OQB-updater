@@ -122,6 +122,10 @@ std::string formatLabelText(double speed, double fileSizeCurrent, double fileSiz
 
 void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
 {
+    if (this->colaId) {
+        if (this->draw_page) this->drawCola(vg, x, y, width, height, style, ctx);
+        return;
+    }
     if (this->draw_page) {
         if (!this->workStarted && !this->exclusiva && !cola::tomarExclusiva()) {
             // La cola de descargas esta trabajando: esto empieza cuando termine.
@@ -206,6 +210,94 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
     }
 }
 
+WorkerPage* WorkerPage::deCola(brls::StagedAppletFrame* frame, int id)
+{
+    WorkerPage* w = new WorkerPage(frame, "", nullptr);
+    w->colaId = id;
+    w->registerAction("menus/cola/a_la_cola"_i18n, brls::Key::B, [] {
+        brls::Application::popView();
+        return true;
+    });
+    w->registerAction("menus/common/cancel"_i18n, brls::Key::X, [id] {
+        const cola::Estado e = cola::estado();
+        if (e.actualId == id)
+            cola::cancelarActual();
+        else {
+            for (size_t i = 0; i < e.esperaIds.size(); ++i)
+                if (e.esperaIds[i] == id) cola::quitar(i);
+            brls::Application::popView();
+        }
+        return true;
+    });
+    return w;
+}
+
+void WorkerPage::drawCola(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx)
+{
+    const cola::Estado e = cola::estado();
+    int antes = -1;
+    for (size_t i = 0; i < e.esperaIds.size(); ++i)
+        if (e.esperaIds[i] == this->colaId) antes = i;
+    const cola::Hecho* hecho = nullptr;
+    for (const auto& h : e.hechos)
+        if (h.id == this->colaId) hecho = &h;
+
+    if (hecho) {
+        // Termino: igual que una tarea propia (error, cancelado o la etapa siguiente).
+        this->draw_page = false;
+        if (hecho->cancelado) {
+            util::volverAtras(this->nivelesAlVolver);
+            return;
+        }
+        if (!hecho->error.empty()) {
+            const std::string mensaje = fmt::format("menus/errors/error_message"_i18n, hecho->error);
+            const int niveles = this->nivelesAlVolver;
+            brls::Dialog* aviso = new brls::Dialog(mensaje);
+            aviso->addButton("menus/common/back"_i18n, [aviso, niveles](brls::View* view) {
+                aviso->close([niveles] { util::volverAtras(niveles); });
+            });
+            aviso->setCancelable(false);
+            aviso->open();
+            return;
+        }
+        frame->nextStage();
+        return;
+    }
+
+    std::string texto;
+    if (e.actualId == this->colaId) {
+        if (ProgressEvent::instance().getTotal() && ProgressEvent::instance().getSpeed() > 0)
+            texto = formatLabelText(ProgressEvent::instance().getSpeed(), ProgressEvent::instance().getNow(), ProgressEvent::instance().getTotal());
+        else
+            texto = e.pasos > 1 ? fmt::format("{} ({}/{})", e.paso, e.pasoNum, e.pasos) : e.paso;
+        this->progressDisp->setProgress(ProgressEvent::instance().getStep(), ProgressEvent::instance().getMax());
+        this->progressDisp->frame(ctx);
+    }
+    else if (antes >= 0) {
+        texto = fmt::format("menus/cola/en_cola"_i18n, antes + (e.trabajando ? 1 : 0));
+        if (e.trabajando) texto += "\n" + fmt::format("menus/cola/instalando_otro"_i18n, e.actual);
+    }
+    if (texto != this->text) {
+        this->text = texto;
+        this->label->setText(texto);
+    }
+    this->label->frame(ctx);
+
+    const float tAnim = std::chrono::duration<float>(std::chrono::steady_clock::now() - this->inicioAnimacion).count();
+    drawIconoCarga(vg, this->x + this->width / 2.0f, this->y + this->height / 2.0f - 145.0f, tAnim);
+    if (e.actualId == this->colaId)
+        this->drawCascada(vg, this->x + this->width / 2.0f, this->y + this->height / 2.0f + style->CrashFrame.buttonHeight + 28.0f, this->width * 0.8f, ctx);
+
+    // Lo nuevo de la cola, abajo del todo.
+    nvgFontFaceId(vg, ctx->fontStash->regular);
+    nvgFontSize(vg, 18.0f);
+    nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_BOTTOM);
+    const NVGcolor gris = ctx->theme->descriptionColor;
+    nvgFillColor(vg, nvgRGBAf(gris.r, gris.g, gris.b, this->getAlpha()));
+    nvgBeginPath(vg);
+    nvgText(vg, this->x + this->width / 2.0f, this->y + this->height - 24.0f, "menus/cola/puedes_salir"_i18n.c_str(), nullptr);
+}
+
 void WorkerPage::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash)
 {
     this->label->setWidth(roundf((float)this->width * style->CrashFrame.labelWidth));
@@ -270,7 +362,8 @@ void WorkerPage::drawCascada(NVGcontext* vg, float cx, float y, float ancho, brl
     const auto ahora = std::chrono::steady_clock::now();
     if (ahora - this->cambio >= std::chrono::milliseconds(150)) {
         std::string nueva;
-        if (actividad::siguiente(nueva) && (this->cascada.empty() || this->cascada.front() != nueva)) {
+        const bool hay = this->colaId ? cola::siguienteLinea(nueva) : actividad::siguiente(nueva);
+        if (hay && (this->cascada.empty() || this->cascada.front() != nueva)) {
             this->cascada.push_front(nueva);
             while (this->cascada.size() > 4)
                 this->cascada.pop_back();

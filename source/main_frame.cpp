@@ -826,6 +826,8 @@ void MainFrame::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned heig
         frac = std::max(0.0, std::min(1.0, frac));
         std::string t = e.trabajando ? e.actual + "  " + std::to_string((int)(frac * 100)) + " %" : "menus/cola/esperando_corto"_i18n;
         if (!e.espera.empty()) t += "  +" + std::to_string(e.espera.size());
+        // Como se abre la cola: el boton − (la letra del sistema).
+        t += "   \uE0F0 " + "menus/cola/abrir"_i18n;
         nvgFontFaceId(vg, ctx->fontStash->regular);
         nvgFontSize(vg, 17.0f);
         float b[4];

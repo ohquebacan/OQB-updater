@@ -22,6 +22,7 @@ private:
     std::deque<std::string> cascada;
     std::chrono::steady_clock::time_point cambio {};
     void drawCascada(NVGcontext* vg, float cx, float y, float ancho, brls::FrameContext* ctx);
+    void drawCola(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx);
     std::string text;
     int progressValue = 0;
     bool workStarted = false;
@@ -31,7 +32,8 @@ private:
     std::atomic<bool> workDone{false};
     bool draw_page = true;
     int nivelesAlVolver = 1;
-    std::thread* workerThread;
+    std::thread* workerThread = nullptr;
+    int colaId = 0;  // 5.0.0: en vez de su propia tarea, muestra la de la cola con este id
     worker_func_t workerFunc;
 
 public:
@@ -45,6 +47,11 @@ public:
         return this;
     }
     ~WorkerPage();
+
+    /* La misma pantalla para un trabajo de la cola (los ports, 5.0.0): muestra
+       su avance con la Trifuerza, la barra y la cascada; B lo manda a la cola
+       y se sigue usando la app; X lo cancela. */
+    static WorkerPage* deCola(brls::StagedAppletFrame* frame, int id);
 
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override;
     void layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash) override;

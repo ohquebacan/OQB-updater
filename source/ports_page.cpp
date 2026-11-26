@@ -1006,7 +1006,12 @@ namespace ports {
             if (!propios.empty()) return propios;
             return nroPath->empty() ? std::vector<std::string>{} : std::vector<std::string>{*nroPath};
         });
-        InstalacionPage::abrir(id, port.nombre);
+        // La pantalla de siempre, mirando ese trabajo de la cola.
+        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+        frame->setTitle(port.nombre);
+        frame->addStage(WorkerPage::deCola(frame, id));
+        frame->addStage((new ConfirmPage_Done(frame, "menus/common/all_done"_i18n))->returnToList());
+        brls::Application::pushView(frame);
     }
 
 
