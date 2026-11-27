@@ -1224,13 +1224,36 @@ namespace util {
         push(std::string(APP_PATH) + stem + "/" + filename);
         push(std::string(APP_PATH) + filename);
 
+        /* El acceso directo se identifica por la ruta tal cual, con sus mayusculas,
+           pero la SD no las distingue: /switch/pipensx/pipensx.nro y
+           /switch/PipensX/PipensX.nro son el mismo archivo y dos accesos. Se
+           agregan las escrituras reales de la SD (carpetas y archivos con ese
+           nombre en cualquier caso) y la version en minusculas de cada una, para
+           que al rehacer el acceso no quede el viejo duplicado (5.0.2). */
+        const auto minus = [](std::string t) {
+            std::transform(t.begin(), t.end(), t.begin(), [](unsigned char c) { return std::tolower(c); });
+            return t;
+        };
+        const std::string bajo = minus(filename);
         if (std::filesystem::exists(APP_PATH, ec)) {
             for (const auto& entry : std::filesystem::directory_iterator(APP_PATH, ec)) {
                 if (ec) break;
-                if (!entry.is_directory(ec)) continue;
+                const std::string nombre = entry.path().filename().string();
+                if (!entry.is_directory(ec)) {
+                    if (minus(nombre) == bajo) push(std::string(APP_PATH) + nombre);  // suelto en /switch
+                    continue;
+                }
                 push(entry.path().string() + "/" + filename);
+                std::error_code ec2;
+                for (const auto& f : std::filesystem::directory_iterator(entry.path(), ec2)) {
+                    if (ec2) break;
+                    const std::string fn = f.path().filename().string();
+                    if (minus(fn) == bajo) push(entry.path().string() + "/" + fn);
+                }
             }
         }
+        const size_t reales = out.size();
+        for (size_t i = 0; i < reales; ++i) push(minus(out[i]));
 
         return out;
     }
