@@ -146,7 +146,12 @@ namespace homeRotos {
             /* Los del USB de Nexus que funcionan tienen su ícono en la caché aunque
                el USB no esté. Sin caché ni contenido son entradas dañadas que dejó
                Nexus: también cuentan, pero solo se les quita el registro. */
-            const bool roto = !cache && !juego && !cartucho;
+            /* Sin caché ni datos del juego es un ícono roto, también si es de
+               cartucho: la limpieza de la emuNAND con la tarjeta puesta dejaba
+               el registro sin nombre (el «?» en Gestión de datos) y el HOME
+               no leía la tarjeta (Mario Kart en la Lite, 27-nov-2026). Al
+               quitarlo y volver a poner la tarjeta, el HOME lo crea bien. */
+            const bool roto = !cache && !juego;
             if (log)
                 log << fmt::format("{:016X} evento={} cache={:X} juego={:X} usb={} contenido=[{}] {} {}\n", id, r.last_event,
                                    rcCache, rcJuego, enUsb ? 1 : 0, metas, roto ? "ROTO" : "ok", nombre);

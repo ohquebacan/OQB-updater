@@ -225,6 +225,13 @@ namespace limpiarEmunand {
                     if (R_SUCCEEDED(rc2)) rc = 0;
                 }
             }
+            else {
+                /* Un juego de cartucho con la tarjeta puesta: el borrado completo
+                   quita lo instalado pero el registro queda vivo y sin datos (el
+                   «?» que no deja leer la tarjeta). Se quita también; al poner la
+                   tarjeta, el HOME lo vuelve a crear bien. */
+                rc2 = homeRotos::quitarRegistro(id);
+            }
             /* La consola recuerda la versión más alta con la que se abrió y la
                exige al reinstalar: en cero, el juego base vuelve a abrir. */
             Result rc3 = 0;
