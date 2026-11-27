@@ -26,6 +26,8 @@
 #include "limpieza_mac.hpp"
 #include "home_rotos.hpp"
 #include "limpiar_emunand.hpp"
+#include "cuentas_offline.hpp"
+#include "dialogue_page.hpp"
 #include "version_inicio.hpp"
 #include "net_page.hpp"
 #include "ntp.hpp"
@@ -112,6 +114,47 @@ namespace {
         return barra == std::string::npos ? limpia : limpia.substr(barra + 1);
     }
 }
+
+namespace {
+    /* La página final de la limpieza: si se vincularon las cuentas, el botón
+       reinicia (los servicios de cuentas quedaron detenidos). Mismo reinicio
+       que al actualizar Atmosphère. */
+    class ConfirmPage_Reinicio : public ConfirmPage_Deferred
+    {
+    public:
+        ConfirmPage_Reinicio(brls::StagedAppletFrame* frame, std::shared_ptr<std::string> mensaje, std::shared_ptr<bool> reiniciar, bool erista)
+            : ConfirmPage_Deferred(frame, mensaje), reiniciar(reiniciar), erista(erista)
+        {
+            this->button->getClickEvent()->subscribe([reiniciar, erista](brls::View*) {
+                if (!*reiniciar) return;
+                if (erista) {
+                    util::rebootToPayload(RCM_PAYLOAD_PATH);
+                    return;
+                }
+                if (!util::prepareMarikoPayload()) {
+                    util::showDialogBoxInfo("menus/errors/mariko_payload_failed"_i18n);
+                    return;
+                }
+                util::shutDown(true);
+            });
+        }
+        void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height, brls::Style* style, brls::FrameContext* ctx) override
+        {
+            if (*this->reiniciar && !this->etiqueta) {
+                this->etiqueta = true;
+                this->goHome = false;
+                this->button->setLabel(this->erista ? "menus/common/reboot"_i18n : "menus/common/shut_down"_i18n);
+                this->registerAction("", brls::Key::B, [] { return true; });
+            }
+            ConfirmPage_Deferred::draw(vg, x, y, width, height, style, ctx);
+        }
+
+    private:
+        std::shared_ptr<bool> reiniciar;
+        bool erista;
+        bool etiqueta = false;
+    };
+}  // namespace
 
 ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus,
                    const nlohmann::ordered_json& nxlinks) : brls::List()
@@ -261,7 +304,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
        que una emuNAND recién hecha copió de la consola y, si se elige, sus
        partidas. Solo en emuNAND con su propia carpeta Nintendo. */
     brls::ListItem* limpiarEmu = new brls::ListItem("menus/tools/limpiar_emunand"_i18n, "", "menus/tools/limpiar_emunand_sub"_i18n);
-    limpiarEmu->getClickEvent()->subscribe([](brls::View* view) {
+    limpiarEmu->getClickEvent()->subscribe([erista](brls::View* view) {
         auto plan = std::make_shared<limpiarEmunand::Plan>(limpiarEmunand::armar());
         using limpiarEmunand::Donde;
         if (plan->donde == Donde::SysNand) {
@@ -282,7 +325,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         }
         using limpiarEmunand::Modo;
         const size_t sinArchivos = plan->juegos.size() - plan->conArchivos;
-        auto abrir = [plan, sinArchivos](Modo modo) {
+        auto abrir = [plan, sinArchivos, erista](Modo modo) {
             brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
             frame->setTitle("menus/tools/limpiar_emunand"_i18n);
             std::string confirmar;
@@ -310,7 +353,26 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
                 }
                 ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
             }));
-            frame->addStage(new ConfirmPage_Deferred(frame, mensaje));
+            /* Al terminar: vincular las cuentas sin conexión (linkalho), para que
+               los juegos no se queden esperando la nube ni pidan vincular. */
+            auto vincular = std::make_shared<bool>(false);
+            auto reiniciar = std::make_shared<bool>(false);
+            frame->addStage(new DialoguePage_optional(frame, "menus/tools/cuentas_offline_pregunta"_i18n, vincular));
+            frame->addStage(new WorkerPage(frame, "menus/tools/cuentas_offline_trabajando"_i18n, [vincular, reiniciar, mensaje]() {
+                if (*vincular) {
+                    const cuentasOffline::Resultado c = cuentasOffline::vincular();
+                    *reiniciar = c.reiniciar;
+                    if (c.error)
+                        *mensaje += "menus/tools/cuentas_offline_error"_i18n;
+                    else if (c.vinculadas == 0 && c.fallos == 0)
+                        *mensaje += "menus/tools/cuentas_offline_nada"_i18n;
+                    else
+                        *mensaje += fmt::format("menus/tools/cuentas_offline_listo"_i18n, c.vinculadas);
+                    if (c.reiniciar) *mensaje += "menus/tools/cuentas_offline_reiniciar"_i18n;
+                }
+                ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            }));
+            frame->addStage(new ConfirmPage_Reinicio(frame, mensaje, reiniciar, erista));
             brls::Application::pushView(frame);
         };
         /* Corto: el diálogo crece con el texto y, con un párrafo más, los
@@ -328,13 +390,16 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             std::string texto;
             Modo modo;
         };
+        /* El borrón total (juegos, partidas y versiones mínimas) va primero y a
+           la vista: es lo que se usa para dejar la emuNAND como nueva sin
+           restaurarla. Lo demás, en «Más opciones». */
         std::vector<Opcion> opciones;
+        if (!plan->partidas.empty())
+            opciones.push_back({"menus/tools/limpiar_emunand_con_partidas"_i18n, Modo::JuegosYPartidas});
         if (sinArchivos)
             opciones.push_back({fmt::format("menus/tools/limpiar_emunand_solo_sin_archivos"_i18n, sinArchivos), Modo::SinArchivos});
         if (!plan->juegos.empty())
             opciones.push_back({"menus/tools/limpiar_emunand_solo_juegos"_i18n, Modo::Juegos});
-        if (!plan->partidas.empty())
-            opciones.push_back({"menus/tools/limpiar_emunand_con_partidas"_i18n, Modo::JuegosYPartidas});
         auto boton = [abrir](brls::Dialog* d, const Opcion& o) {
             const Modo modo = o.modo;
             d->addButton(o.texto, [d, abrir, modo](brls::View*) { d->close([abrir, modo]() { abrir(modo); }); });
