@@ -198,6 +198,8 @@
     "home_rotos_listo": "Pronto: {} ícones removidos do HOME.",
     "home_rotos_parcial": "Foram removidos {} de {} ícones. Os que restam provavelmente estão em uso: reinicie o console e tente de novo.",
     "home_rotos_mas": "... e mais {}",
+    "cuentas_offline": "Vincular contas sem conexão",
+    "cuentas_offline_sub": "Como o linkalho: os jogos param de pedir vínculo da conta",
     "cuentas_offline_pregunta": "Vincular também as contas sem conexão?\n\nCada perfil sem conta Nintendo recebe um vínculo falso (como o linkalho): os jogos param de pedir vínculo ou de esperar a nuvem. Contas reais não são tocadas e é feito um backup. No final é preciso reiniciar.",
     "cuentas_offline_trabajando": "Vinculando as contas...",
     "cuentas_offline_listo": "\n\nContas vinculadas sem conexão: {}.",

@@ -168,6 +168,8 @@
     "home_rotos_listo": "Terminé : {} icônes retirées du HOME.",
     "home_rotos_parcial": "{} icônes sur {} retirées. Les autres sont probablement en cours d’utilisation : redémarrez la console et réessayez.",
     "home_rotos_mas": "... et {} de plus",
+    "cuentas_offline": "Link accounts offline",
+    "cuentas_offline_sub": "Like linkalho: games stop asking to link the account",
     "cuentas_offline_pregunta": "Also link the accounts offline?\n\nEvery profile without a Nintendo Account gets a fake link (like linkalho): games stop asking to link or waiting for the cloud. Real accounts are left alone and a backup is made. You'll need to restart at the end.",
     "cuentas_offline_trabajando": "Linking the accounts...",
     "cuentas_offline_listo": "\n\nAccounts linked offline: {}.",

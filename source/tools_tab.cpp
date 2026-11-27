@@ -662,6 +662,29 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     siVisible(juegos, "cheats", cheats);
     siVisible(juegos, "outdatedtitles", outdatedTitles);
     siVisible(juegos, "limpiaremunand", limpiarEmu);
+    // Vincular las cuentas sin conexión también por separado, sin limpiar nada.
+    brls::ListItem* cuentasItem = new brls::ListItem("menus/tools/cuentas_offline"_i18n, "", "menus/tools/cuentas_offline_sub"_i18n);
+    cuentasItem->getClickEvent()->subscribe([erista](brls::View*) {
+        brls::StagedAppletFrame* frame = new brls::StagedAppletFrame();
+        frame->setTitle("menus/tools/cuentas_offline"_i18n);
+        frame->addStage(new ConfirmPage(frame, "menus/tools/cuentas_offline_pregunta"_i18n));
+        auto mensaje = std::make_shared<std::string>();
+        auto reiniciar = std::make_shared<bool>(false);
+        frame->addStage(new WorkerPage(frame, "menus/tools/cuentas_offline_trabajando"_i18n, [mensaje, reiniciar]() {
+            const cuentasOffline::Resultado c = cuentasOffline::vincular();
+            *reiniciar = c.reiniciar;
+            std::string t = c.error ? "menus/tools/cuentas_offline_error"_i18n
+                          : (c.vinculadas == 0 && c.fallos == 0) ? "menus/tools/cuentas_offline_nada"_i18n
+                                                                 : fmt::format("menus/tools/cuentas_offline_listo"_i18n, c.vinculadas);
+            if (c.reiniciar) t += "menus/tools/cuentas_offline_reiniciar"_i18n;
+            while (!t.empty() && (t[0] == '\n')) t.erase(0, 1);
+            *mensaje = t;
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+        }));
+        frame->addStage(new ConfirmPage_Reinicio(frame, mensaje, reiniciar, erista));
+        brls::Application::pushView(frame);
+    });
+    siVisible(juegos, "cuentasoffline", cuentasItem);
     siVisible(juegos, "versioninicio", versionItem);
 
     siVisible(consola, "protection", protectionCheck);
