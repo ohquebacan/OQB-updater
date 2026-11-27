@@ -169,7 +169,7 @@ namespace cuentasOffline {
            (acc:u0) si algo ya la abrio, y esa no responde por la vinculacion. */
         Service acc{};
         Result rc = smGetService(&acc, "acc:su");
-        log << fmt::format("acc:su={:X}\n", rc);
+        log << fmt::format("acc:su={:X}\n", rc) << std::flush;
         if (R_FAILED(rc)) {
             r.error = true;
             return r;
@@ -183,7 +183,7 @@ namespace cuentasOffline {
             for (const auto& u : uids)
                 if (u.uid[0] || u.uid[1]) ++cuantos;
         }
-        log << fmt::format("lista={:X} perfiles={}\n", rc, cuantos);
+        log << fmt::format("lista={:X} perfiles={}\n", rc, cuantos) << std::flush;
         if (R_SUCCEEDED(rc)) {
             for (s32 i = 0; i < cuantos; ++i) {
                 Service baas;
@@ -198,7 +198,7 @@ namespace cuentasOffline {
                     if (R_SUCCEEDED(rcV) && vinculado && R_FAILED(nasId(&baas, &nas))) nas = 0;
                     serviceClose(&baas);
                 }
-                log << fmt::format("perfil {} baas={:X} consulta={:X} vinculado={} nas={:016x}\n", uidTexto(uids[i]), rcB, rcV, vinculado ? 1 : 0, nas);
+                log << fmt::format("perfil {} baas={:X} consulta={:X} vinculado={} nas={:016x}\n", uidTexto(uids[i]), rcB, rcV, vinculado ? 1 : 0, nas) << std::flush;
                 if (vinculado) ++r.yaTenian;
                 aVincular.push_back({uids[i], uidTexto(uids[i]), nas});
             }
@@ -223,7 +223,7 @@ namespace cuentasOffline {
 
         FsFileSystem fs{};
         rc = fsOpen_SystemSaveData(&fs, FsSaveDataSpaceId_System, PARTIDA_CUENTAS, (AccountUid){0});
-        log << fmt::format("partida={:X}\n", rc);
+        log << fmt::format("partida={:X}\n", rc) << std::flush;
         if (R_FAILED(rc)) {
             r.error = true;
             return r;
@@ -240,9 +240,33 @@ namespace cuentasOffline {
         r.respaldo = std::string(CONFIG_PATH) + "cuentas_respaldo/" + fecha();
         std::error_code ec;
         std::filesystem::create_directories(r.respaldo, ec);
-        std::filesystem::copy(su, r.respaldo + "/su", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing, ec);
-        log << "respaldo=" << r.respaldo << " error=" << ec.message() << "\n";
-        if (ec) {
+        /* Copia archivo por archivo: std::filesystem::copy se cortaba a la mitad
+           con la partida montada (quedaban cache/ y nas/, sin baas/ ni registry). */
+        bool copiaBien = !ec;
+        int copiados = 0;
+        for (auto it = std::filesystem::recursive_directory_iterator(su, ec); copiaBien && !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
+            const std::string origen = it->path().string();
+            const std::string destino = r.respaldo + "/su" + origen.substr(su.size());
+            std::error_code e2;
+            if (it->is_directory(e2)) {
+                std::filesystem::create_directories(destino, e2);
+                continue;
+            }
+            std::ifstream in(origen, std::ios::binary);
+            std::filesystem::create_directories(destino.substr(0, destino.rfind('/')), e2);
+            std::ofstream out(destino, std::ios::binary | std::ios::trunc);
+            out << in.rdbuf();
+            out.close();
+            if (!in || !out) {
+                log << "no se copio " << origen << std::endl;
+                copiaBien = false;
+            }
+            else
+                ++copiados;
+        }
+        if (ec) copiaBien = false;
+        log << "respaldo=" << r.respaldo << " archivos=" << copiados << " bien=" << copiaBien << " error=" << ec.message() << std::endl;
+        if (!copiaBien) {
             // Sin respaldo no se escribe.
             fsdevUnmountDevice(MONTAJE);
             r.error = true;
@@ -265,7 +289,7 @@ namespace cuentasOffline {
             escribirVinculacion(su, p.uidTexto, lengua, zona) ? ++r.vinculadas : ++r.fallos;
         }
 
-        log << fmt::format("vinculadas={} fallos={}\n", r.vinculadas, r.fallos);
+        log << fmt::format("vinculadas={} fallos={}\n", r.vinculadas, r.fallos) << std::flush;
         if (R_FAILED(fsdevCommitDevice(MONTAJE))) {
             r.fallos += r.vinculadas;
             r.vinculadas = 0;
