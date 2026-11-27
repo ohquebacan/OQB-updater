@@ -235,43 +235,8 @@ namespace cuentasOffline {
         }
         const std::string su = std::string(MONTAJE) + ":/su";
 
-        // 3. Respaldo de su/ en la SD antes de escribir nada.
-        actividad::paso("Respaldando las cuentas");
-        r.respaldo = std::string(CONFIG_PATH) + "cuentas_respaldo/" + fecha();
+        // Sin respaldo: la idea es dejar los perfiles vinculados, no conservar lo de antes.
         std::error_code ec;
-        std::filesystem::create_directories(r.respaldo, ec);
-        /* Copia archivo por archivo: std::filesystem::copy se cortaba a la mitad
-           con la partida montada (quedaban cache/ y nas/, sin baas/ ni registry). */
-        bool copiaBien = !ec;
-        int copiados = 0;
-        for (auto it = std::filesystem::recursive_directory_iterator(su, ec); copiaBien && !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
-            const std::string origen = it->path().string();
-            const std::string destino = r.respaldo + "/su" + origen.substr(su.size());
-            std::error_code e2;
-            if (it->is_directory(e2)) {
-                std::filesystem::create_directories(destino, e2);
-                continue;
-            }
-            std::ifstream in(origen, std::ios::binary);
-            std::filesystem::create_directories(destino.substr(0, destino.rfind('/')), e2);
-            std::ofstream out(destino, std::ios::binary | std::ios::trunc);
-            out << in.rdbuf();
-            out.close();
-            if (!in || !out) {
-                log << "no se copio " << origen << std::endl;
-                copiaBien = false;
-            }
-            else
-                ++copiados;
-        }
-        if (ec) copiaBien = false;
-        log << "respaldo=" << r.respaldo << " archivos=" << copiados << " bien=" << copiaBien << " error=" << ec.message() << std::endl;
-        if (!copiaBien) {
-            // Sin respaldo no se escribe.
-            fsdevUnmountDevice(MONTAJE);
-            r.error = true;
-            return r;
-        }
 
         // 4. Las vinculaciones.
         std::filesystem::create_directories(su + "/baas", ec);

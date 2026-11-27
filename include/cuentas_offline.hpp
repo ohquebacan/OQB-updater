@@ -11,7 +11,7 @@
    se vinculan todos: se sobrescribe la vinculacion que hubiera (tambien una
    cuenta Nintendo real). Las partidas no se tocan.
 
-   Antes de escribir se respalda la carpeta su/ de esa partida en la SD. Hay que
+   No se respalda nada: el punto es dejar los perfiles vinculados. Hay que
    detener los servicios de cuentas, BCAT y OLSC, así que al terminar la consola
    tiene que reiniciarse. */
 namespace cuentasOffline {
