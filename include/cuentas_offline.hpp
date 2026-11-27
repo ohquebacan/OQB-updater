@@ -7,8 +7,9 @@
 
    A cada perfil sin cuenta Nintendo se le escribe una vinculación falsa en la
    partida de sistema de las cuentas (0x8000000000000010): así los juegos dejan
-   de pedir vincular la cuenta o de quedarse esperando la nube. Los perfiles que
-   ya tienen una cuenta real no se tocan.
+   de pedir vincular la cuenta o de quedarse esperando la nube. Como linkalho,
+   se vinculan todos: se sobrescribe la vinculacion que hubiera (tambien una
+   cuenta Nintendo real). Las partidas no se tocan.
 
    Antes de escribir se respalda la carpeta su/ de esa partida en la SD. Hay que
    detener los servicios de cuentas, BCAT y OLSC, así que al terminar la consola
@@ -17,7 +18,7 @@ namespace cuentasOffline {
 
     struct Resultado {
         int vinculadas = 0;   // perfiles a los que se les puso la vinculación
-        int yaTenian = 0;     // ya vinculados (real o de antes): no se tocaron
+        int yaTenian = 0;     // tenian una vinculacion (real o de antes): se sobrescribio
         int fallos = 0;
         bool error = false;   // no se pudo abrir la partida de cuentas: no se cambió nada
         std::string respaldo; // carpeta del respaldo en la SD

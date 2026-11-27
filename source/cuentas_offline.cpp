@@ -26,6 +26,7 @@ namespace cuentasOffline {
         struct Perfil {
             AccountUid uid;
             std::string uidTexto;  // como lo nombra la partida: baas/<uid>.dat
+            u64 nasAnterior = 0;   // la vinculacion que tenia (para quitar sus archivos)
         };
 
         // Lo mismo que linkalho: el nombre del archivo en baas/ es el uid en este formato.
@@ -57,6 +58,11 @@ namespace cuentasOffline {
         Result estaVinculado(Service* baas, bool* vinculado)
         {
             return serviceDispatchOut(baas, 250, *vinculado);
+        }
+
+        Result nasId(Service* baas, u64* id)
+        {
+            return serviceDispatchOut(baas, 120, *id);
         }
 
         std::mt19937_64 motor(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -182,19 +188,19 @@ namespace cuentasOffline {
             for (s32 i = 0; i < cuantos; ++i) {
                 Service baas;
                 bool vinculado = false;
+                /* Como linkalho: se vinculan todos y se sobrescribe lo que hubiera
+                   (una vinculacion falsa de antes o una cuenta Nintendo real). Las
+                   partidas no se tocan. */
+                u64 nas = 0;
                 Result rcB = baasAdministrador(&acc, uids[i], &baas), rcV = 0;
                 if (R_SUCCEEDED(rcB)) {
                     rcV = estaVinculado(&baas, &vinculado);
-                    if (R_FAILED(rcV)) vinculado = true;  // sin saber: no se toca
+                    if (R_SUCCEEDED(rcV) && vinculado && R_FAILED(nasId(&baas, &nas))) nas = 0;
                     serviceClose(&baas);
                 }
-                else
-                    vinculado = true;
-                log << fmt::format("perfil {} baas={:X} consulta={:X} vinculado={}\n", uidTexto(uids[i]), rcB, rcV, vinculado ? 1 : 0);
-                if (vinculado)
-                    ++r.yaTenian;
-                else
-                    aVincular.push_back({uids[i], uidTexto(uids[i])});
+                log << fmt::format("perfil {} baas={:X} consulta={:X} vinculado={} nas={:016x}\n", uidTexto(uids[i]), rcB, rcV, vinculado ? 1 : 0, nas);
+                if (vinculado) ++r.yaTenian;
+                aVincular.push_back({uids[i], uidTexto(uids[i]), nas});
             }
         }
         else
@@ -248,6 +254,14 @@ namespace cuentasOffline {
         std::filesystem::create_directories(su + "/nas", ec);
         for (const Perfil& p : aVincular) {
             actividad::paso("Vinculando " + p.uidTexto);
+            // La vinculacion anterior fuera: su baas y sus archivos nas (con y sin ceros delante).
+            std::filesystem::remove(su + "/baas/" + p.uidTexto + ".dat", ec);
+            if (p.nasAnterior) {
+                for (const std::string& n : {fmt::format("{:016x}", p.nasAnterior), fmt::format("{:x}", p.nasAnterior)}) {
+                    std::filesystem::remove(su + "/nas/" + n + ".dat", ec);
+                    std::filesystem::remove(su + "/nas/" + n + "_user.json", ec);
+                }
+            }
             escribirVinculacion(su, p.uidTexto, lengua, zona) ? ++r.vinculadas : ++r.fallos;
         }
 
