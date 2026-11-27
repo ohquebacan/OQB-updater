@@ -12,6 +12,7 @@
 #include <sstream>
 #include <vector>
 
+#include <borealis.hpp>
 #include "actividad.hpp"
 #include "constants.hpp"
 
@@ -41,9 +42,16 @@ namespace cuentasOffline {
             return s.str();
         }
 
-        Result baasAdministrador(const AccountUid uid, Service* out)
+        Result baasAdministrador(Service* acc, const AccountUid uid, Service* out)
         {
-            return serviceDispatchIn(accountGetServiceSession(), 250, uid, .out_num_objects = 1, .out_objects = out);
+            return serviceDispatchIn(acc, 250, uid, .out_num_objects = 1, .out_objects = out);
+        }
+
+        // Cada paso, para soporte: si no vincula, aqui se ve por que.
+        std::ofstream& registro()
+        {
+            static std::ofstream f(std::string(CONFIG_PATH) + "cuentas_offline.log", std::ios::trunc);
+            return f;
         }
 
         Result estaVinculado(Service* baas, bool* vinculado)
@@ -150,22 +158,39 @@ namespace cuentasOffline {
 
         // 1. Los perfiles y cuáles ya tienen cuenta (antes de detener el servicio de cuentas).
         std::vector<Perfil> aVincular;
-        if (R_FAILED(accountInitialize(AccountServiceType_Administrator))) {
+        auto& log = registro();
+        /* La sesion de administrador (acc:su) propia: la de libnx puede ser otra
+           (acc:u0) si algo ya la abrio, y esa no responde por la vinculacion. */
+        Service acc{};
+        Result rc = smGetService(&acc, "acc:su");
+        log << fmt::format("acc:su={:X}\n", rc);
+        if (R_FAILED(rc)) {
             r.error = true;
             return r;
         }
-        AccountUid uids[ACC_USER_LIST_SIZE];
+        AccountUid uids[ACC_USER_LIST_SIZE] = {};
         s32 cuantos = 0;
-        if (R_SUCCEEDED(accountListAllUsers(uids, ACC_USER_LIST_SIZE, &cuantos))) {
+        // IAccountServiceForAdministrator 2: ListAllUsers
+        rc = serviceDispatch(&acc, 2, .buffer_attrs = {SfBufferAttr_HipcPointer | SfBufferAttr_Out}, .buffers = {{uids, sizeof(uids)}});
+        if (R_SUCCEEDED(rc)) {
+            cuantos = 0;
+            for (const auto& u : uids)
+                if (u.uid[0] || u.uid[1]) ++cuantos;
+        }
+        log << fmt::format("lista={:X} perfiles={}\n", rc, cuantos);
+        if (R_SUCCEEDED(rc)) {
             for (s32 i = 0; i < cuantos; ++i) {
                 Service baas;
                 bool vinculado = false;
-                if (R_SUCCEEDED(baasAdministrador(uids[i], &baas))) {
-                    if (R_FAILED(estaVinculado(&baas, &vinculado))) vinculado = true;  // sin saber: no se toca
+                Result rcB = baasAdministrador(&acc, uids[i], &baas), rcV = 0;
+                if (R_SUCCEEDED(rcB)) {
+                    rcV = estaVinculado(&baas, &vinculado);
+                    if (R_FAILED(rcV)) vinculado = true;  // sin saber: no se toca
                     serviceClose(&baas);
                 }
                 else
                     vinculado = true;
+                log << fmt::format("perfil {} baas={:X} consulta={:X} vinculado={}\n", uidTexto(uids[i]), rcB, rcV, vinculado ? 1 : 0);
                 if (vinculado)
                     ++r.yaTenian;
                 else
@@ -174,7 +199,8 @@ namespace cuentasOffline {
         }
         else
             r.error = true;
-        accountExit();
+        serviceClose(&acc);
+        log.flush();
         if (r.error || aVincular.empty()) return r;
 
         const std::string lengua = idioma(), zona = zonaHoraria();
@@ -190,7 +216,9 @@ namespace cuentasOffline {
         }
 
         FsFileSystem fs{};
-        if (R_FAILED(fsOpen_SystemSaveData(&fs, FsSaveDataSpaceId_System, PARTIDA_CUENTAS, (AccountUid){0}))) {
+        rc = fsOpen_SystemSaveData(&fs, FsSaveDataSpaceId_System, PARTIDA_CUENTAS, (AccountUid){0});
+        log << fmt::format("partida={:X}\n", rc);
+        if (R_FAILED(rc)) {
             r.error = true;
             return r;
         }
@@ -207,6 +235,7 @@ namespace cuentasOffline {
         std::error_code ec;
         std::filesystem::create_directories(r.respaldo, ec);
         std::filesystem::copy(su, r.respaldo + "/su", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing, ec);
+        log << "respaldo=" << r.respaldo << " error=" << ec.message() << "\n";
         if (ec) {
             // Sin respaldo no se escribe.
             fsdevUnmountDevice(MONTAJE);
@@ -222,6 +251,7 @@ namespace cuentasOffline {
             escribirVinculacion(su, p.uidTexto, lengua, zona) ? ++r.vinculadas : ++r.fallos;
         }
 
+        log << fmt::format("vinculadas={} fallos={}\n", r.vinculadas, r.fallos);
         if (R_FAILED(fsdevCommitDevice(MONTAJE))) {
             r.fallos += r.vinculadas;
             r.vinculadas = 0;
